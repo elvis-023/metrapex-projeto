@@ -12,11 +12,11 @@ Convenção de branch: `milestone/NN-slug`, criada a partir de `main`, mergeada 
 **Branch:** `milestone/00-setup`
 **Objetivo:** Scaffolding do repositório, tooling e pipeline de deploy vazio, para que todo milestone seguinte só adicione código de produto.
 
-- [ ] Inicializar projeto Next.js (App Router, TypeScript estrito)
-- [ ] Configurar Tailwind CSS e shadcn/ui
-- [ ] Configurar ESLint, Prettier e checagem de tipos no CI
-- [ ] Criar estrutura de pastas base (`app/`, `lib/`, `components/`, `docs/`) conforme [CLAUDE.md](../CLAUDE.md#estrutura-de-pastas-proposta)
-- [ ] Inicializar repositório Git e primeiro push
+- [x] Inicializar projeto Next.js (App Router, TypeScript estrito)
+- [x] Configurar Tailwind CSS e shadcn/ui
+- [x] Configurar ESLint, Prettier e checagem de tipos no CI
+- [x] Criar estrutura de pastas base (`app/`, `lib/`, `components/`, `docs/`) conforme [CLAUDE.md](../CLAUDE.md#estrutura-de-pastas-proposta)
+- [x] Inicializar repositório Git e primeiro push
 - [ ] Criar projeto no Supabase (ambiente dev) e projeto na Vercel, conectados
 - [ ] Configurar variáveis de ambiente (`.env.local.example`) e segredos na Vercel
 - [ ] Deploy inicial "hello world" na Vercel (valida pipeline antes de existir produto)
