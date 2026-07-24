@@ -1,0 +1,8 @@
+.next
+node_modules
+package-lock.json
+
+# documentos de especificação do motor de impostos e skills — formatação própria, não tocar
+.claude/
+docs/
+briefing-motor-impostos.md
