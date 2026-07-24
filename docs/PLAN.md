@@ -33,11 +33,11 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/01-design-system`
 **Objetivo:** Estabelecer os tokens visuais e os componentes de layout que toda tela subsequente vai reusar.
 
-- [ ] Tokens de tema no Tailwind (cores neutras + accent, cores semânticas, tipografia) conforme [CLAUDE.md](../CLAUDE.md#identidade-visual-proposta-inicial--ajustar-quando-houver-definição-de-marca)
-- [ ] Componentes base do shadcn/ui instalados e customizados (button, input, select, dialog, dropdown, table, card, badge, toast)
-- [ ] Layout do painel autenticado: sidebar de navegação, topbar com dropdown de troca de organização, área de conteúdo
-- [ ] Modo claro/escuro (se aplicável) e responsividade básica
-- [ ] Página de estados vazios/erro/loading padrão (skeletons)
+- [x] Tokens de tema no Tailwind (cores neutras + accent, cores semânticas, tipografia) conforme [CLAUDE.md](../CLAUDE.md#identidade-visual-proposta-inicial--ajustar-quando-houver-definição-de-marca)
+- [x] Componentes base do shadcn/ui instalados e customizados (button, input, select, dialog, dropdown, table, card, badge, toast)
+- [x] Layout do painel autenticado: sidebar de navegação, topbar com dropdown de troca de organização, área de conteúdo
+- [x] Modo claro/escuro (se aplicável) e responsividade básica
+- [x] Página de estados vazios/erro/loading padrão (skeletons)
 
 **Commit final:** `feat(ui): design system tokens and base layout components`
 
