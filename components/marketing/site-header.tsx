@@ -19,7 +19,7 @@ export function SiteHeader() {
           Metrapex
         </Link>
 
-        <nav className="hidden items-center gap-5 text-sm text-muted-foreground md:flex">
+        <nav className="text-muted-foreground hidden items-center gap-5 text-sm md:flex">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href} className="hover:text-foreground">
               {link.label}
@@ -29,8 +29,17 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
-          <Button variant="ghost" size="sm" render={<Link href="/login">Entrar</Link>} nativeButton={false} />
-          <Button size="sm" render={<Link href="/signup">Começar grátis</Link>} nativeButton={false} />
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<Link href="/login">Entrar</Link>}
+            nativeButton={false}
+          />
+          <Button
+            size="sm"
+            render={<Link href="/signup">Começar grátis</Link>}
+            nativeButton={false}
+          />
         </div>
       </div>
     </header>

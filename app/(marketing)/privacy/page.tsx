@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-const description = "Como o Metrapex coleta, usa e protege dados de organizações e clientes finais.";
+const description =
+  "Como o Metrapex coleta, usa e protege dados de organizações e clientes finais.";
 
 export const metadata: Metadata = {
   title: "Política de Privacidade",
@@ -23,16 +24,15 @@ export default function PrivacyPage() {
       <div className="mt-8 flex flex-col gap-6 text-sm leading-relaxed">
         <p>
           Este é um texto placeholder. A Política de Privacidade definitiva do Metrapex será
-          redigida por um profissional jurídico, em conformidade com a LGPD, antes do lançamento
-          em produção, e substituirá este conteúdo.
+          redigida por um profissional jurídico, em conformidade com a LGPD, antes do lançamento em
+          produção, e substituirá este conteúdo.
         </p>
 
         <section>
           <h2 className="text-lg font-medium">1. Dados que coletamos</h2>
           <p className="text-muted-foreground mt-2">
-            Dados de cadastro da organização e dos usuários (nome, e-mail), dados de clientes
-            finais informados no formulário público (CPF/CNPJ, endereço) e dados de uso da
-            plataforma.
+            Dados de cadastro da organização e dos usuários (nome, e-mail), dados de clientes finais
+            informados no formulário público (CPF/CNPJ, endereço) e dados de uso da plataforma.
           </p>
         </section>
 
@@ -64,8 +64,8 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-medium">5. Segurança</h2>
           <p className="text-muted-foreground mt-2">
-            Adotamos isolamento por organização via Row Level Security no banco de dados e
-            controles de acesso por papel (admin/vendedor).
+            Adotamos isolamento por organização via Row Level Security no banco de dados e controles
+            de acesso por papel (admin/vendedor).
           </p>
         </section>
       </div>

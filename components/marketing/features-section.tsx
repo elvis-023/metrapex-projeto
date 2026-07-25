@@ -36,8 +36,8 @@ export function FeaturesSection() {
           Tudo entre o pedido e o orçamento na mão do cliente
         </h2>
         <p className="text-muted-foreground mt-3 text-balance">
-          O KPI que importa é o tempo até o primeiro orçamento — cada peça existe para derrubar
-          esse número.
+          O KPI que importa é o tempo até o primeiro orçamento — cada peça existe para derrubar esse
+          número.
         </p>
       </div>
 

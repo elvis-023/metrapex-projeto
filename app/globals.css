@@ -170,11 +170,7 @@
   left: 0;
   right: 0;
   height: 13px;
-  background-image: radial-gradient(
-    circle at 7px 7px,
-    transparent 5px,
-    var(--card) 5.5px
-  );
+  background-image: radial-gradient(circle at 7px 7px, transparent 5px, var(--card) 5.5px);
   background-size: 14px 14px;
   background-repeat: repeat-x;
   background-position: left top;

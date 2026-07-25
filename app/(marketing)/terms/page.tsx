@@ -22,16 +22,15 @@ export default function TermsPage() {
 
       <div className="mt-8 flex flex-col gap-6 text-sm leading-relaxed">
         <p>
-          Este é um texto placeholder. Os Termos de Uso definitivos do Metrapex serão redigidos
-          por um profissional jurídico antes do lançamento em produção e substituirão este
-          conteúdo.
+          Este é um texto placeholder. Os Termos de Uso definitivos do Metrapex serão redigidos por
+          um profissional jurídico antes do lançamento em produção e substituirão este conteúdo.
         </p>
 
         <section>
           <h2 className="text-lg font-medium">1. Aceitação dos termos</h2>
           <p className="text-muted-foreground mt-2">
-            Ao criar uma conta ou utilizar o Metrapex, você concorda com estes Termos de Uso e com
-            a nossa Política de Privacidade.
+            Ao criar uma conta ou utilizar o Metrapex, você concorda com estes Termos de Uso e com a
+            nossa Política de Privacidade.
           </p>
         </section>
 
@@ -46,9 +45,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-medium">3. Conta e responsabilidades</h2>
           <p className="text-muted-foreground mt-2">
-            Cada organização é responsável pela veracidade dos dados cadastrados, pela
-            configuração de suas regras fiscais e pelo uso adequado do formulário público
-            incorporável.
+            Cada organização é responsável pela veracidade dos dados cadastrados, pela configuração
+            de suas regras fiscais e pelo uso adequado do formulário público incorporável.
           </p>
         </section>
 
@@ -63,8 +61,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-medium">5. Alterações nestes termos</h2>
           <p className="text-muted-foreground mt-2">
-            Podemos atualizar estes termos periodicamente. Mudanças relevantes serão comunicadas
-            aos usuários com antecedência razoável.
+            Podemos atualizar estes termos periodicamente. Mudanças relevantes serão comunicadas aos
+            usuários com antecedência razoável.
           </p>
         </section>
       </div>

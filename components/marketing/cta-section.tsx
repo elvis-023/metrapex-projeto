@@ -13,7 +13,12 @@ export function CtaSection() {
           Configure seu catálogo e seus impostos uma vez. O resto — cálculo, PDF e envio — o
           Metrapex faz sozinho.
         </p>
-        <Button size="lg" variant="secondary" render={<Link href="/signup">Começar grátis</Link>} nativeButton={false} />
+        <Button
+          size="lg"
+          variant="secondary"
+          render={<Link href="/signup">Começar grátis</Link>}
+          nativeButton={false}
+        />
       </div>
     </section>
   );

@@ -15,7 +15,7 @@ export function SiteFooter() {
           © {new Date().getFullYear()} Metrapex. Todos os direitos reservados.
         </p>
 
-        <nav className="flex items-center gap-4 text-sm text-muted-foreground">
+        <nav className="text-muted-foreground flex items-center gap-4 text-sm">
           <Link href="/terms" className="hover:text-foreground">
             Termos de Uso
           </Link>

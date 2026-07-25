@@ -62,9 +62,7 @@ export function PricingSection() {
         <p className="text-muted-foreground font-mono text-xs tracking-[0.14em] uppercase">
           Condições de pagamento
         </p>
-        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance">
-          Planos e preços
-        </h2>
+        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance">Planos e preços</h2>
         <p className="text-muted-foreground mt-3 text-balance">
           Por número de vendedores e volume de orçamentos mensais. Sem fidelidade, cancele quando
           quiser.
@@ -73,10 +71,7 @@ export function PricingSection() {
 
       <div className="mt-12 grid gap-4 sm:grid-cols-3">
         {plans.map((plan) => (
-          <Card
-            key={plan.name}
-            className={cn(plan.highlighted && "ring-primary ring-2")}
-          >
+          <Card key={plan.name} className={cn(plan.highlighted && "ring-primary ring-2")}>
             <CardHeader>
               <div className="flex items-center gap-2">
                 <CardTitle>{plan.name}</CardTitle>

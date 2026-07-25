@@ -16,9 +16,9 @@ export function Hero() {
         </h1>
 
         <p className="text-muted-foreground max-w-lg text-lg text-balance">
-          Um formulário público gera o orçamento em PDF na hora, com imposto e condição de
-          pagamento já calculados. O time de vendas acompanha tudo num pipeline visual, sem
-          planilha e sem cálculo manual.
+          Um formulário público gera o orçamento em PDF na hora, com imposto e condição de pagamento
+          já calculados. O time de vendas acompanha tudo num pipeline visual, sem planilha e sem
+          cálculo manual.
         </p>
 
         <div className="flex flex-wrap items-center gap-3">
