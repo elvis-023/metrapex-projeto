@@ -14,6 +14,11 @@ export type FunnelStage = {
   count: number;
 };
 
+export type SourceBreakdown = {
+  sourceId: string;
+  count: number;
+};
+
 /**
  * Formato de retorno alinhado ao que a query real (Milestone 19) vai
  * devolver: valores numéricos crus, não strings pré-formatadas — a
@@ -27,11 +32,12 @@ export type DashboardMetrics = {
   avgTimeToFirstQuoteSeconds: number;
   funnel: FunnelStage[];
   expiringQuotes: FakeQuote[];
+  sourceBreakdown: SourceBreakdown[];
 };
 
 const metricsByPeriod: Record<
   DashboardPeriod,
-  Omit<DashboardMetrics, "funnel" | "expiringQuotes">
+  Omit<DashboardMetrics, "funnel" | "expiringQuotes" | "sourceBreakdown">
 > = {
   "7d": {
     quotesGenerated: { count: 9, previousCount: 7 },
@@ -83,6 +89,7 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_101",
       number: "ORC-0132",
       customerName: "Farmácia Vitalis",
+      sourceId: "site",
       total: 2140,
       status: "enviado",
       expiresAt: "2026-07-25",
@@ -91,6 +98,7 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_102",
       number: "ORC-0131",
       customerName: "Distribuidora Nortão",
+      sourceId: "crm",
       total: 5870.4,
       status: "negociacao",
       expiresAt: "2026-07-26",
@@ -101,6 +109,7 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_102",
       number: "ORC-0131",
       customerName: "Distribuidora Nortão",
+      sourceId: "crm",
       total: 5870.4,
       status: "negociacao",
       expiresAt: "2026-07-26",
@@ -109,6 +118,7 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_2",
       number: "ORC-0127",
       customerName: "Auto Peças Nova Era",
+      sourceId: "crm",
       total: 1150,
       status: "enviado",
       expiresAt: "2026-07-27",
@@ -117,6 +127,7 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_3",
       number: "ORC-0126",
       customerName: "Studio Fotográfico Luz",
+      sourceId: "site",
       total: 890.9,
       status: "negociacao",
       expiresAt: "2026-07-26",
@@ -125,6 +136,7 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_4",
       number: "ORC-0125",
       customerName: "Mercado Central",
+      sourceId: "crm",
       total: 6320,
       status: "gerado",
       expiresAt: "2026-07-25",
@@ -135,6 +147,7 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_2",
       number: "ORC-0127",
       customerName: "Auto Peças Nova Era",
+      sourceId: "crm",
       total: 1150,
       status: "enviado",
       expiresAt: "2026-07-27",
@@ -143,6 +156,7 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_3",
       number: "ORC-0126",
       customerName: "Studio Fotográfico Luz",
+      sourceId: "site",
       total: 890.9,
       status: "negociacao",
       expiresAt: "2026-07-26",
@@ -151,6 +165,7 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_4",
       number: "ORC-0125",
       customerName: "Mercado Central",
+      sourceId: "crm",
       total: 6320,
       status: "gerado",
       expiresAt: "2026-07-25",
@@ -159,10 +174,26 @@ const expiringQuotesByPeriod: Record<DashboardPeriod, FakeQuote[]> = {
       id: "q_90",
       number: "ORC-0090",
       customerName: "Papelaria Central",
+      sourceId: "crm",
       total: 780,
       status: "enviado",
       expiresAt: "2026-07-29",
     },
+  ],
+};
+
+const sourceBreakdownByPeriod: Record<DashboardPeriod, SourceBreakdown[]> = {
+  "7d": [
+    { sourceId: "site", count: 5 },
+    { sourceId: "crm", count: 4 },
+  ],
+  "30d": [
+    { sourceId: "site", count: 14 },
+    { sourceId: "crm", count: 10 },
+  ],
+  "90d": [
+    { sourceId: "site", count: 39 },
+    { sourceId: "crm", count: 32 },
   ],
 };
 
@@ -177,5 +208,6 @@ export async function getDashboardMetrics(period: DashboardPeriod): Promise<Dash
     ...metricsByPeriod[period],
     funnel: funnelByPeriod[period],
     expiringQuotes: expiringQuotesByPeriod[period],
+    sourceBreakdown: sourceBreakdownByPeriod[period],
   };
 }

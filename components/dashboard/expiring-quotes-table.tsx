@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/states/empty-state";
 import { QuoteStatusBadge } from "@/components/quotes/quote-status-badge";
+import { CustomerSourceBadge } from "@/components/customers/customer-source-badge";
 import type { FakeQuote } from "@/lib/mock-data";
-import { currencyFormatter, dateFormatter } from "@/lib/dashboard/format";
+import { currencyFormatter, dateFormatter, parseDateOnly } from "@/lib/dashboard/format";
 
 export function ExpiringQuotesTable({ quotes }: { quotes: FakeQuote[] }) {
   return (
@@ -40,12 +41,17 @@ export function ExpiringQuotesTable({ quotes }: { quotes: FakeQuote[] }) {
               {quotes.map((quote) => (
                 <TableRow key={quote.id}>
                   <TableCell className="font-medium">{quote.number}</TableCell>
-                  <TableCell>{quote.customerName}</TableCell>
+                  <TableCell className="max-w-40">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate">{quote.customerName}</span>
+                      <CustomerSourceBadge sourceId={quote.sourceId} />
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <QuoteStatusBadge status={quote.status} />
                   </TableCell>
                   <TableCell className="text-warning tabular-nums">
-                    {dateFormatter.format(new Date(quote.expiresAt))}
+                    {dateFormatter.format(parseDateOnly(quote.expiresAt))}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {currencyFormatter.format(quote.total)}

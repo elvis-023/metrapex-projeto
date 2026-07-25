@@ -1,14 +1,7 @@
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/states/empty-state";
+import { stageAccentClass } from "@/lib/pipeline/stage-colors";
 import type { FunnelStage } from "@/lib/dashboard/mock-data";
-
-const stageColor: Record<FunnelStage["status"], string> = {
-  gerado: "bg-chart-5",
-  enviado: "bg-chart-1",
-  negociacao: "bg-warning",
-  convertido: "bg-success",
-  expirado: "bg-danger",
-};
 
 export function SalesFunnelChart({ funnel }: { funnel: FunnelStage[] }) {
   const total = funnel.reduce((sum, stage) => sum + stage.count, 0);
@@ -32,7 +25,7 @@ export function SalesFunnelChart({ funnel }: { funnel: FunnelStage[] }) {
               <span className="text-muted-foreground w-32 shrink-0 text-xs">{stage.label}</span>
               <div className="bg-muted h-6 flex-1 overflow-hidden rounded-sm">
                 <div
-                  className={`h-full ${stageColor[stage.status]} flex items-center justify-end rounded-sm px-2 transition-[width]`}
+                  className={`h-full ${stageAccentClass[stage.status]} flex items-center justify-end rounded-sm px-2 transition-[width]`}
                   style={{ width: `${(stage.count / maxCount) * 100}%` }}
                 >
                   <span className="text-xs font-medium text-white tabular-nums">{stage.count}</span>

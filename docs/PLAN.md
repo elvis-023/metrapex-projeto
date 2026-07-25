@@ -103,11 +103,13 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/07-kanban-ui`
 **Objetivo:** Board de pipeline com as etapas fixas do orçamento e página de detalhe.
 
-- [ ] Board Kanban com as 5 etapas fixas (gerado, enviado, em negociação, convertido, expirado)
-- [ ] Cards com número, cliente, valor, responsável e validade
-- [ ] Drag-and-drop entre etapas (estado local, sem persistência ainda)
-- [ ] Filtro de apresentação por vendedor
-- [ ] Página de detalhe do orçamento com timeline de atividades (mockada)
+- [x] Board Kanban com as 5 etapas fixas (gerado, enviado, em negociação, convertido, expirado)
+- [x] Cards com número, cliente, origem do cliente, valor, responsável e validade
+- [x] Drag-and-drop entre etapas (estado local, sem persistência ainda)
+- [x] Filtro de apresentação por vendedor
+- [x] Página de detalhe do orçamento com timeline de atividades (mockada)
+- [x] Origem do cliente (Site, CRM) — tela dedicada de gerenciamento em `/customers`, exibida ao lado do nome do cliente no Kanban, no dashboard e no detalhe do orçamento
+- [x] Gráfico "Origem dos clientes" no dashboard (Milestone 5), respeitando o filtro de período existente
 
 **Commit final:** `feat(pipeline): kanban board and quote detail UI`
 
