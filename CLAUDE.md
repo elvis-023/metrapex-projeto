@@ -83,6 +83,14 @@ A direção visual é ancorada no próprio artefato que o produto emite: o orça
 
 Cada orçamento carrega a origem do cliente que o gerou — `Site` ou `CRM` por enquanto, mas a lista é gerenciável (não um enum fixo em código) na tela dedicada em `/customers` (`lib/customers/`). Aparece ao lado do nome do cliente no Kanban, no detalhe do orçamento e na tabela "Vencendo em breve" do dashboard, e alimenta o gráfico "Origem dos clientes" e, futuramente, a dimensão de origem nos relatórios (ver PRD > Relatórios).
 
+## Orçamento manual (Milestone 8, UI com dados mockados)
+
+O construtor de orçamento do vendedor (`components/quotes/`) tem entrada própria na navegação — **Criar Orçamento** → `/quotes/new` — e não fica restrito ao segmento `/pipeline`; a tela de nova revisão é que continua em `/pipeline/[id]/revise`, por ser uma ação sobre um orçamento existente do board.
+
+- **Desconto negociado** aceita percentual ou valor fixo (toggle R$/%), resolvido para R$ por `resolveDiscountAmount` (`lib/quotes/mock-data.ts`) — a mesma função alimenta a tela de revisão e o preview do PDF, para as duas nunca divergirem.
+- **Revisão é um registro novo**, não uma sobrescrita: `PipelineQuote` rastreia `revision`, `previousRevisionId` e `supersededByRevisionId`. A versão anterior fica congelada, continua acessível pelo link antigo e aparece marcada como "Versão antiga"; o board do Kanban mostra só a revisão atual de cada orçamento.
+- **`PipelineProvider` vive no layout do painel inteiro** (`app/(app)/layout.tsx`), não só em `/pipeline` — é o que permite `/quotes/new` gravar no mesmo estado mockado que o board lê. Ainda é só estado em memória da sessão (sem Supabase); um reload de página perde tudo, isso é esperado até o backend do motor de orçamento (Milestone 14) e do pipeline (Milestone 16) existir. Páginas de detalhe (`/pipeline/[id]`, `/pipeline/[id]/revise`) por isso leem do contexto ao vivo, não de fetch de servidor sobre o mock estático — senão um orçamento criado na sessão dá 404 ao abrir.
+
 ## Processo
 
 Construir em milestones incrementais, cada um um entregável testável — priorizar o núcleo (formulário público → cálculo → PDF → envio, e o Kanban básico) antes de relatórios, automações e integrações avançadas. Testar cada milestone antes de avançar para o próximo.

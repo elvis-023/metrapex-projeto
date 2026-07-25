@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState, type DragEvent } from "react";
+import Link from "next/link";
+import { PlusIcon } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
 import { ALL_SALESPEOPLE, PipelineFilters } from "@/components/kanban/pipeline-filters";
 import type { FakeQuoteStatus } from "@/lib/mock-data";
@@ -14,13 +17,15 @@ export function KanbanBoard({ salespeople }: { salespeople: Salesperson[] }) {
   const [dropTarget, setDropTarget] = useState<FakeQuoteStatus | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
-  const visibleQuotes = useMemo(
-    () =>
-      assigneeId === ALL_SALESPEOPLE
-        ? quotes
-        : quotes.filter((quote) => quote.assigneeId === assigneeId),
-    [quotes, assigneeId],
-  );
+  const visibleQuotes = useMemo(() => {
+    // Revisões antigas ficam de fora do board — só a versão atual de cada
+    // orçamento ocupa uma etapa do funil; o histórico continua acessível
+    // pela página de detalhe (`QuoteDetail`).
+    const currentRevisions = quotes.filter((quote) => !quote.supersededByRevisionId);
+    return assigneeId === ALL_SALESPEOPLE
+      ? currentRevisions
+      : currentRevisions.filter((quote) => quote.assigneeId === assigneeId);
+  }, [quotes, assigneeId]);
 
   function handleDragStart(event: DragEvent<HTMLAnchorElement>, quoteId: string) {
     event.dataTransfer.setData("text/plain", quoteId);
@@ -51,6 +56,16 @@ export function KanbanBoard({ salespeople }: { salespeople: Salesperson[] }) {
           salespeople={salespeople}
           assigneeId={assigneeId}
           onAssigneeChange={setAssigneeId}
+        />
+        <Button
+          size="sm"
+          render={
+            <Link href="/quotes/new">
+              <PlusIcon />
+              Novo orçamento
+            </Link>
+          }
+          nativeButton={false}
         />
       </div>
 

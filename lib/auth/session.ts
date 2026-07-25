@@ -9,6 +9,7 @@ export const PROTECTED_PATHS = [
   "/catalog",
   "/customers",
   "/pipeline",
+  "/quotes",
   "/settings",
 ] as const;
 
