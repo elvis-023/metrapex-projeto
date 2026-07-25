@@ -117,11 +117,13 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/08-quote-builder-ui`
 **Objetivo:** Fluxo do vendedor para montar um orçamento a partir do catálogo.
 
-- [ ] Seleção de cliente (busca/criação) e produtos do catálogo (com foto, preço e imposto exibidos)
-- [ ] Tela de revisão: subtotal, total de impostos, total, condição de pagamento
-- [ ] Aplicação de desconto negociado específico do orçamento
-- [ ] Preview do PDF (layout estático)
-- [ ] Tela de nova revisão (versionamento) a partir de um orçamento existente
+- [x] Seleção de cliente (busca/criação) e produtos do catálogo (com foto, preço e imposto exibidos)
+- [x] Tela de revisão: subtotal, total de impostos, total, condição de pagamento
+- [x] Aplicação de desconto negociado específico do orçamento — percentual ou valor fixo, com toggle e recálculo ao vivo
+- [x] Preview do PDF (layout estático)
+- [x] Tela de nova revisão (versionamento) a partir de um orçamento existente — a revisão anterior fica congelada, acessível pelo link antigo e marcada como "Versão antiga"; o board mostra só a revisão atual
+- [x] Entrada de criação de orçamento própria na navegação (`Criar Orçamento` → `/quotes/new`), não restrita ao segmento `/pipeline`
+- [x] Orçamento criado/revisado passa a existir no estado do pipeline (mock em memória, sem persistência real ainda) — aparece no board e tem página de detalhe navegável na mesma sessão
 
 **Commit final:** `feat(quotes): manual quote builder UI`
 

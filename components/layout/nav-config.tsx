@@ -1,4 +1,4 @@
-import { Kanban, LayoutDashboard, Package, Settings, Users } from "lucide-react";
+import { FilePlus2, Kanban, LayoutDashboard, Package, Settings, Users } from "lucide-react";
 
 export type NavItem = {
   title: string;
@@ -8,6 +8,7 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { title: "Criar Orçamento", href: "/quotes/new", icon: FilePlus2 },
   { title: "Pipeline", href: "/pipeline", icon: Kanban },
   { title: "Catálogo", href: "/catalog", icon: Package },
   { title: "Clientes", href: "/customers", icon: Users },

@@ -27,6 +27,11 @@ export const fakeSalespeople: Salesperson[] = [
 
 export type PipelineQuote = FakeQuote & {
   assigneeId: string;
+  revision: number;
+  /** Id da revisão anterior deste mesmo orçamento (mesmo `number`), quando existir. */
+  previousRevisionId?: string;
+  /** Preenchido quando uma revisão mais nova substituiu esta — marca o registro como antigo. */
+  supersededByRevisionId?: string;
 };
 
 const salespersonById = new Map(fakeSalespeople.map((person) => [person.id, person]));
@@ -45,6 +50,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "convertido",
     expiresAt: "2026-07-30",
     assigneeId: "user_1",
+    revision: 1,
   },
   {
     id: "q_2",
@@ -55,6 +61,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "enviado",
     expiresAt: "2026-07-27",
     assigneeId: "user_2",
+    revision: 1,
   },
   {
     id: "q_3",
@@ -65,6 +72,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "negociacao",
     expiresAt: "2026-07-26",
     assigneeId: "user_1",
+    revision: 1,
   },
   {
     id: "q_4",
@@ -75,6 +83,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "gerado",
     expiresAt: "2026-07-25",
     assigneeId: "user_3",
+    revision: 1,
   },
   {
     id: "q_5",
@@ -85,6 +94,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "expirado",
     expiresAt: "2026-07-18",
     assigneeId: "user_2",
+    revision: 1,
   },
   {
     id: "q_101",
@@ -95,6 +105,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "enviado",
     expiresAt: "2026-07-25",
     assigneeId: "user_1",
+    revision: 1,
   },
   {
     id: "q_102",
@@ -105,6 +116,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "negociacao",
     expiresAt: "2026-07-26",
     assigneeId: "user_3",
+    revision: 1,
   },
   {
     id: "q_103",
@@ -115,6 +127,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "gerado",
     expiresAt: "2026-07-29",
     assigneeId: "user_2",
+    revision: 1,
   },
   {
     id: "q_104",
@@ -125,6 +138,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "convertido",
     expiresAt: "2026-07-20",
     assigneeId: "user_3",
+    revision: 1,
   },
   {
     id: "q_105",
@@ -135,6 +149,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     status: "expirado",
     expiresAt: "2026-07-15",
     assigneeId: "user_1",
+    revision: 1,
   },
 ];
 
@@ -235,5 +250,10 @@ export async function getPipelineQuoteById(id: string): Promise<PipelineQuote | 
 
 export async function getQuoteActivities(quote: PipelineQuote): Promise<PipelineActivity[]> {
   await new Promise((resolve) => setTimeout(resolve, 300));
+  return getQuoteActivitiesSync(quote);
+}
+
+/** Variante síncrona para uso em Client Components que já leem o orçamento do `PipelineProvider` (sem o delay artificial do mock). */
+export function getQuoteActivitiesSync(quote: PipelineQuote): PipelineActivity[] {
   return fakeActivitiesByQuoteId[quote.id] ?? defaultActivities(quote);
 }
