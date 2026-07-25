@@ -81,10 +81,10 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/05-dashboard-ui`
 **Objetivo:** Tela inicial do painel autenticado com os cards e gráfico de métricas, dados mockados.
 
-- [ ] Cards: orçamentos gerados no período, valor total em pipeline, taxa de conversão, tempo médio até o primeiro orçamento
-- [ ] Gráfico de funil de vendas por etapa
-- [ ] Lista de orçamentos do vendedor logado com validade próxima do vencimento
-- [ ] Filtro de período no dashboard
+- [x] Cards: orçamentos gerados no período, valor total em pipeline, taxa de conversão, tempo médio até o primeiro orçamento
+- [x] Gráfico de funil de vendas por etapa
+- [x] Lista de orçamentos do vendedor logado com validade próxima do vencimento
+- [x] Filtro de período no dashboard
 
 **Commit final:** `feat(dashboard): metrics dashboard UI with mocked data`
 
