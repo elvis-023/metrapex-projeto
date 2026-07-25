@@ -84,7 +84,8 @@ export const initialPdfTemplate: PdfTemplateSettings = {
   issuerDocument: "12.345.678/0001-90",
   issuerAddress: "Av. Industrial, 1200 — Distrito Industrial, São Paulo/SP",
   warrantyText: "Garantia de 90 dias contra defeito de fabricação, conforme nota fiscal.",
-  termsText: "Orçamento válido por 15 dias. Preços sujeitos a alteração sem aviso prévio após o vencimento.",
+  termsText:
+    "Orçamento válido por 15 dias. Preços sujeitos a alteração sem aviso prévio após o vencimento.",
   shippingText: "Frete não incluso — calculado conforme CEP de entrega no fechamento do pedido.",
 };
 
@@ -123,9 +124,30 @@ export const initialTeamInvites: TeamInvite[] = [
 
 /** Mesmos nomes de plano usados no dropdown de organização (`lib/mock-data.ts`). */
 export const planTiers: PlanTier[] = [
-  { id: "entrada", name: "Entrada", priceLabel: "R$ 49/mês", sellerLimit: 1, monthlyQuoteLimit: 30, whatsappIncluded: false },
-  { id: "profissional", name: "Profissional", priceLabel: "R$ 149/mês", sellerLimit: 5, monthlyQuoteLimit: 200, whatsappIncluded: true },
-  { id: "escala", name: "Escala", priceLabel: "Sob consulta", sellerLimit: Infinity, monthlyQuoteLimit: Infinity, whatsappIncluded: true },
+  {
+    id: "entrada",
+    name: "Entrada",
+    priceLabel: "R$ 49/mês",
+    sellerLimit: 1,
+    monthlyQuoteLimit: 30,
+    whatsappIncluded: false,
+  },
+  {
+    id: "profissional",
+    name: "Profissional",
+    priceLabel: "R$ 149/mês",
+    sellerLimit: 5,
+    monthlyQuoteLimit: 200,
+    whatsappIncluded: true,
+  },
+  {
+    id: "escala",
+    name: "Escala",
+    priceLabel: "Sob consulta",
+    sellerLimit: Infinity,
+    monthlyQuoteLimit: Infinity,
+    whatsappIncluded: true,
+  },
 ];
 
 export const currentPlan: PlanTier =

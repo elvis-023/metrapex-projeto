@@ -7,13 +7,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -226,9 +220,7 @@ export function TeamManager({
                       <div className="flex min-w-0 flex-col">
                         <span className="flex items-center gap-1.5 truncate font-medium">
                           {member.name}
-                          {member.isCurrentUser ? (
-                            <Badge variant="outline">Você</Badge>
-                          ) : null}
+                          {member.isCurrentUser ? <Badge variant="outline">Você</Badge> : null}
                         </span>
                         <span className="text-muted-foreground truncate text-xs">
                           {member.email}
@@ -242,7 +234,9 @@ export function TeamManager({
                       onValueChange={(value) => value && changeRole(member, value as TeamRole)}
                     >
                       <SelectTrigger size="sm" aria-label={`Papel de ${member.name}`}>
-                        <SelectValue>{(value: string) => roleLabels[value as TeamRole]}</SelectValue>
+                        <SelectValue>
+                          {(value: string) => roleLabels[value as TeamRole]}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="vendedor">Vendedor</SelectItem>
@@ -272,7 +266,9 @@ export function TeamManager({
         <Card>
           <CardHeader>
             <CardTitle>Convites pendentes</CardTitle>
-            <CardDescription>Ainda não aceitos — o colaborador não tem acesso até aceitar.</CardDescription>
+            <CardDescription>
+              Ainda não aceitos — o colaborador não tem acesso até aceitar.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -294,10 +290,14 @@ export function TeamManager({
                     <TableCell>
                       <Select
                         value={invite.role}
-                        onValueChange={(value) => value && changeInviteRole(invite, value as TeamRole)}
+                        onValueChange={(value) =>
+                          value && changeInviteRole(invite, value as TeamRole)
+                        }
                       >
                         <SelectTrigger size="sm" aria-label={`Papel do convite de ${invite.email}`}>
-                          <SelectValue>{(value: string) => roleLabels[value as TeamRole]}</SelectValue>
+                          <SelectValue>
+                            {(value: string) => roleLabels[value as TeamRole]}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="vendedor">Vendedor</SelectItem>

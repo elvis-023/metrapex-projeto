@@ -6,13 +6,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -58,9 +52,7 @@ function parseRate(value: string): number {
 
 type TaxTypeDialogState = { mode: "create" } | { mode: "edit"; taxType: TaxTypeSetting } | null;
 type OverrideDialogState =
-  | { mode: "create" }
-  | { mode: "edit"; override: TaxRateOverrideSetting }
-  | null;
+  { mode: "create" } | { mode: "edit"; override: TaxRateOverrideSetting } | null;
 
 export function TaxSettingsManager({
   initialTaxTypes,
@@ -81,9 +73,11 @@ export function TaxSettingsManager({
   const [label, setLabel] = useState("");
   const [mode, setMode] = useState<TaxMode>("exclusive");
   const [defaultRate, setDefaultRate] = useState("");
-  const [taxTypeErrors, setTaxTypeErrors] = useState<{ code?: string; label?: string; rate?: string }>(
-    {},
-  );
+  const [taxTypeErrors, setTaxTypeErrors] = useState<{
+    code?: string;
+    label?: string;
+    rate?: string;
+  }>({});
 
   const [overrideDialog, setOverrideDialog] = useState<OverrideDialogState>(null);
   const [overrideTaxTypeId, setOverrideTaxTypeId] = useState("");
@@ -129,7 +123,8 @@ export function TaxSettingsManager({
     }
     if (!trimmedLabel) nextErrors.label = "Rótulo obrigatório.";
     if (!defaultRate.trim()) nextErrors.rate = "Alíquota padrão obrigatória.";
-    else if (!isValidRate(defaultRate)) nextErrors.rate = "Use vírgula para casas decimais (ex.: 18,00).";
+    else if (!isValidRate(defaultRate))
+      nextErrors.rate = "Use vírgula para casas decimais (ex.: 18,00).";
     else if (parseRate(defaultRate) > 100) nextErrors.rate = "Alíquota não pode passar de 100%.";
 
     setTaxTypeErrors(nextErrors);
@@ -139,7 +134,13 @@ export function TaxSettingsManager({
       setTaxTypes((current) =>
         current.map((t) =>
           t.id === taxTypeDialog.taxType.id
-            ? { ...t, code: trimmedCode, label: trimmedLabel, mode, defaultRate: parseRate(defaultRate) }
+            ? {
+                ...t,
+                code: trimmedCode,
+                label: trimmedLabel,
+                mode,
+                defaultRate: parseRate(defaultRate),
+              }
             : t,
         ),
       );
@@ -212,7 +213,8 @@ export function TaxSettingsManager({
       }
     }
     if (!overrideRate.trim()) nextErrors.rate = "Alíquota obrigatória.";
-    else if (!isValidRate(overrideRate)) nextErrors.rate = "Use vírgula para casas decimais (ex.: 5,00).";
+    else if (!isValidRate(overrideRate))
+      nextErrors.rate = "Use vírgula para casas decimais (ex.: 5,00).";
     else if (parseRate(overrideRate) > 100) nextErrors.rate = "Alíquota não pode passar de 100%.";
 
     setOverrideErrors(nextErrors);
@@ -233,7 +235,10 @@ export function TaxSettingsManager({
       );
       toast.success("Override atualizado.");
     } else {
-      setOverrides((current) => [...current, { id: `override_${crypto.randomUUID()}`, ...payload }]);
+      setOverrides((current) => [
+        ...current,
+        { id: `override_${crypto.randomUUID()}`, ...payload },
+      ]);
       toast.success("Override criado.");
     }
     setOverrideDialog(null);
@@ -312,7 +317,10 @@ export function TaxSettingsManager({
                     <label htmlFor="tax-mode" className="text-sm font-medium">
                       Modo de cálculo
                     </label>
-                    <Select value={mode} onValueChange={(value) => value && setMode(value as TaxMode)}>
+                    <Select
+                      value={mode}
+                      onValueChange={(value) => value && setMode(value as TaxMode)}
+                    >
                       <SelectTrigger id="tax-mode" className="w-full">
                         <SelectValue>
                           {(value: string) =>
@@ -652,7 +660,8 @@ export function TaxSettingsManager({
                       <TableCell className="font-medium">{taxType?.code ?? "—"}</TableCell>
                       <TableCell>
                         <Badge variant={override.scope === "product" ? "outline" : "secondary"}>
-                          {override.scope === "category" ? "Categoria" : "Produto"}: {scopeName ?? "—"}
+                          {override.scope === "category" ? "Categoria" : "Produto"}:{" "}
+                          {scopeName ?? "—"}
                         </Badge>
                         {shadowedCategoryOverride ? (
                           <p className="text-muted-foreground mt-1 text-xs">

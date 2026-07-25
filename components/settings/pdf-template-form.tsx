@@ -74,7 +74,9 @@ export function PdfTemplateForm({ initialTemplate }: { initialTemplate: PdfTempl
                   <UploadIcon />
                   {values.logoUrl ? "Trocar logo" : "Selecionar logo"}
                 </Button>
-                <p className="text-muted-foreground text-xs">PNG com fundo transparente, até 2MB.</p>
+                <p className="text-muted-foreground text-xs">
+                  PNG com fundo transparente, até 2MB.
+                </p>
               </div>
             </div>
 

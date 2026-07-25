@@ -6,13 +6,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -58,9 +52,7 @@ function parseNumber(value: string): number {
 }
 
 type ConditionDialogState =
-  | { mode: "create" }
-  | { mode: "edit"; condition: PaymentCondition }
-  | null;
+  { mode: "create" } | { mode: "edit"; condition: PaymentCondition } | null;
 type BandDialogState = { mode: "create" } | { mode: "edit"; band: PaymentValueBand } | null;
 
 export function PaymentTermsManager({
@@ -91,9 +83,11 @@ export function PaymentTermsManager({
   const [minValue, setMinValue] = useState("");
   const [maxValue, setMaxValue] = useState("");
   const [selectedConditionIds, setSelectedConditionIds] = useState<string[]>([]);
-  const [bandErrors, setBandErrors] = useState<{ label?: string; range?: string; conditions?: string }>(
-    {},
-  );
+  const [bandErrors, setBandErrors] = useState<{
+    label?: string;
+    range?: string;
+    conditions?: string;
+  }>({});
 
   function openCreateCondition() {
     setConditionDialog({ mode: "create" });
@@ -109,7 +103,9 @@ export function PaymentTermsManager({
     setConditionDialog({ mode: "edit", condition });
     setLabel(condition.label);
     setKind(condition.kind);
-    setDiscountPercent(condition.discountPercent ? String(condition.discountPercent).replace(".", ",") : "");
+    setDiscountPercent(
+      condition.discountPercent ? String(condition.discountPercent).replace(".", ",") : "",
+    );
     setInstallments(String(condition.installments));
     setTermDays(String(condition.termDays));
     setConditionErrors({});
@@ -150,10 +146,7 @@ export function PaymentTermsManager({
       );
       toast.success("Condição de pagamento atualizada.");
     } else {
-      setConditions((current) => [
-        ...current,
-        { id: `cond_${crypto.randomUUID()}`, ...payload },
-      ]);
+      setConditions((current) => [...current, { id: `cond_${crypto.randomUUID()}`, ...payload }]);
       toast.success("Condição de pagamento criada.");
     }
     setConditionDialog(null);
@@ -202,7 +195,11 @@ export function PaymentTermsManager({
     if (!trimmedLabel) nextErrors.label = "Nome da faixa obrigatório.";
     if (!minValue.trim() || !isValidNumber(minValue)) {
       nextErrors.range = "Valor mínimo obrigatório e numérico.";
-    } else if (maxValue.trim() && isValidNumber(maxValue) && parseNumber(maxValue) <= parseNumber(minValue)) {
+    } else if (
+      maxValue.trim() &&
+      isValidNumber(maxValue) &&
+      parseNumber(maxValue) <= parseNumber(minValue)
+    ) {
       nextErrors.range = "Valor máximo deve ser maior que o mínimo.";
     } else if (maxValue.trim() && !isValidNumber(maxValue)) {
       nextErrors.range = "Valor máximo mal formatado.";
@@ -273,11 +270,13 @@ export function PaymentTermsManager({
                 <DialogTitle>
                   {conditionDialog?.mode === "edit" ? "Editar condição" : "Nova condição"}
                 </DialogTitle>
-                <DialogDescription>Forma de pagamento disponível para os vendedores.</DialogDescription>
+                <DialogDescription>
+                  Forma de pagamento disponível para os vendedores.
+                </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1.5 col-span-2">
+                  <div className="col-span-2 flex flex-col gap-1.5">
                     <label htmlFor="condition-label" className="text-sm font-medium">
                       Nome
                     </label>
@@ -292,13 +291,18 @@ export function PaymentTermsManager({
                       <p className="text-destructive text-sm">{conditionErrors.label}</p>
                     ) : null}
                   </div>
-                  <div className="flex flex-col gap-1.5 col-span-2">
+                  <div className="col-span-2 flex flex-col gap-1.5">
                     <label htmlFor="condition-kind" className="text-sm font-medium">
                       Tipo
                     </label>
-                    <Select value={kind} onValueChange={(value) => value && setKind(value as PaymentMethodKind)}>
+                    <Select
+                      value={kind}
+                      onValueChange={(value) => value && setKind(value as PaymentMethodKind)}
+                    >
                       <SelectTrigger id="condition-kind" className="w-full">
-                        <SelectValue>{(value: string) => kindLabels[value as PaymentMethodKind]}</SelectValue>
+                        <SelectValue>
+                          {(value: string) => kindLabels[value as PaymentMethodKind]}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="a_vista">À vista</SelectItem>
@@ -318,7 +322,10 @@ export function PaymentTermsManager({
                       value={discountPercent}
                       onChange={(event) => setDiscountPercent(event.target.value)}
                       aria-invalid={Boolean(conditionErrors.discount)}
-                      className={cn("tabular-nums", conditionErrors.discount && "border-destructive")}
+                      className={cn(
+                        "tabular-nums",
+                        conditionErrors.discount && "border-destructive",
+                      )}
                     />
                     {conditionErrors.discount ? (
                       <p className="text-destructive text-sm">{conditionErrors.discount}</p>
@@ -334,13 +341,16 @@ export function PaymentTermsManager({
                       value={installments}
                       onChange={(event) => setInstallments(event.target.value)}
                       aria-invalid={Boolean(conditionErrors.installments)}
-                      className={cn("tabular-nums", conditionErrors.installments && "border-destructive")}
+                      className={cn(
+                        "tabular-nums",
+                        conditionErrors.installments && "border-destructive",
+                      )}
                     />
                     {conditionErrors.installments ? (
                       <p className="text-destructive text-sm">{conditionErrors.installments}</p>
                     ) : null}
                   </div>
-                  <div className="flex flex-col gap-1.5 col-span-2">
+                  <div className="col-span-2 flex flex-col gap-1.5">
                     <label htmlFor="condition-term" className="text-sm font-medium">
                       Prazo de vencimento (dias, 0 = imediato)
                     </label>
@@ -453,14 +463,18 @@ export function PaymentTermsManager({
           </div>
           <Dialog open={bandDialog !== null} onOpenChange={(open) => !open && setBandDialog(null)}>
             <DialogTrigger
-              render={<Button size="sm" onClick={openCreateBand} disabled={conditions.length === 0} />}
+              render={
+                <Button size="sm" onClick={openCreateBand} disabled={conditions.length === 0} />
+              }
             >
               <PlusIcon />
               Nova faixa
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{bandDialog?.mode === "edit" ? "Editar faixa" : "Nova faixa"}</DialogTitle>
+                <DialogTitle>
+                  {bandDialog?.mode === "edit" ? "Editar faixa" : "Nova faixa"}
+                </DialogTitle>
                 <DialogDescription>
                   Faixa aplicada ao valor total do orçamento antes do desconto negociado.
                 </DialogDescription>
@@ -509,7 +523,9 @@ export function PaymentTermsManager({
                     />
                   </div>
                 </div>
-                {bandErrors.range ? <p className="text-destructive text-sm">{bandErrors.range}</p> : null}
+                {bandErrors.range ? (
+                  <p className="text-destructive text-sm">{bandErrors.range}</p>
+                ) : null}
 
                 <div className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium">Condições de pagamento aplicáveis</span>
@@ -568,7 +584,9 @@ export function PaymentTermsManager({
                     <TableCell className="font-medium">{band.label}</TableCell>
                     <TableCell className="font-mono text-xs tabular-nums">
                       {currencyFormatter.format(band.minValue)} —{" "}
-                      {band.maxValue === null ? "sem teto" : currencyFormatter.format(band.maxValue)}
+                      {band.maxValue === null
+                        ? "sem teto"
+                        : currencyFormatter.format(band.maxValue)}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

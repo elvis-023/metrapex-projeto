@@ -2,13 +2,7 @@ import { CheckIcon, CreditCardIcon, ConstructionIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { PlanTier } from "@/lib/settings/types";
 
@@ -26,12 +20,15 @@ export function BillingPlaceholder({
   return (
     <div className="flex flex-col gap-6">
       <div className="border-border bg-muted/30 flex items-start gap-2.5 rounded-lg border border-dashed p-3">
-        <ConstructionIcon className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <ConstructionIcon
+          className="text-muted-foreground mt-0.5 size-4 shrink-0"
+          aria-hidden="true"
+        />
         <div>
           <p className="text-sm font-medium">Placeholder — sem Stripe conectado</p>
           <p className="text-muted-foreground text-xs">
-            Esta tela ainda não faz checkout, troca de plano ou cobrança de verdade. O
-            fluxo real de assinatura entra no Milestone 21.
+            Esta tela ainda não faz checkout, troca de plano ou cobrança de verdade. O fluxo real de
+            assinatura entra no Milestone 21.
           </p>
         </div>
       </div>
@@ -83,7 +80,9 @@ export function BillingPlaceholder({
       <Card>
         <CardHeader>
           <CardTitle>Planos disponíveis</CardTitle>
-          <CardDescription>Por número de vendedores e volume de orçamentos mensais.</CardDescription>
+          <CardDescription>
+            Por número de vendedores e volume de orçamentos mensais.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-3">
