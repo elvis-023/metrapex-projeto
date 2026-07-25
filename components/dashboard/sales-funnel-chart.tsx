@@ -35,9 +35,7 @@ export function SalesFunnelChart({ funnel }: { funnel: FunnelStage[] }) {
                   className={`h-full ${stageColor[stage.status]} flex items-center justify-end rounded-sm px-2 transition-[width]`}
                   style={{ width: `${(stage.count / maxCount) * 100}%` }}
                 >
-                  <span className="text-xs font-medium tabular-nums text-white">
-                    {stage.count}
-                  </span>
+                  <span className="text-xs font-medium text-white tabular-nums">{stage.count}</span>
                 </div>
               </div>
             </div>
