@@ -68,12 +68,12 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/04-onboarding-ui`
 **Objetivo:** Wizard autosserviço de criação de organização, navegável ponta a ponta com dados mockados.
 
-- [ ] Passo 1: criar organização (nome, dados básicos)
-- [ ] Passo 2: escolher template fiscal (Simples Nacional sem destaque, Isento, ICMS + IPI padrão) e tela de ajuste
-- [ ] Passo 3: popular catálogo (importar planilha ou cadastro manual) — UI de upload e tabela de preview
-- [ ] Passo 4: confirmar condições de pagamento (sugestão-padrão pré-preenchida)
-- [ ] Passo 5: instalar snippet do formulário público (tela de código para copiar)
-- [ ] Barra de progresso e navegação entre passos (voltar/avançar/pular)
+- [x] Passo 1: criar organização (nome, dados básicos)
+- [x] Passo 2: escolher template fiscal (Simples Nacional sem destaque, Isento, ICMS + IPI padrão) e tela de ajuste
+- [x] Passo 3: popular catálogo (importar planilha ou cadastro manual) — UI de upload e tabela de preview
+- [x] Passo 4: confirmar condições de pagamento (sugestão-padrão pré-preenchida)
+- [x] Passo 5: instalar snippet do formulário público (tela de código para copiar)
+- [x] Barra de progresso e navegação entre passos (voltar/avançar/pular)
 
 **Commit final:** `feat(onboarding): self-service onboarding wizard UI`
 
