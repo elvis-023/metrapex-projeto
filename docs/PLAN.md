@@ -45,10 +45,10 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/02-landing-page`
 **Objetivo:** Página pública de apresentação do produto e páginas legais, primeiro contato do visitante.
 
-- [ ] Landing page: hero, funcionalidades, planos e preços, chamada para ação
-- [ ] Página de Termos de Uso
-- [ ] Página de Política de Privacidade
-- [ ] SEO básico (metadata, OpenGraph)
+- [x] Landing page: hero, funcionalidades, planos e preços, chamada para ação
+- [x] Página de Termos de Uso
+- [x] Página de Política de Privacidade
+- [x] SEO básico (metadata, OpenGraph)
 
 **Commit final:** `feat(marketing): landing page and legal pages`
 
