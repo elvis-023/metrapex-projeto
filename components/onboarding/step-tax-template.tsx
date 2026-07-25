@@ -87,7 +87,9 @@ export function StepTaxTemplate({ state, dispatch }: StepTaxTemplateProps) {
                 className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 h-8 w-full rounded-lg border bg-transparent px-2.5 py-1 text-sm tabular-nums outline-none focus-visible:ring-3"
               />
               <p className="text-muted-foreground text-xs">
-                Embutido no preço; 0% nas demais categorias por padrão.
+                Valor de referência — o IPI é criado com 0% e sem categoria vinculada, porque o
+                catálogo ainda não existe neste passo. Aplique esta alíquota na categoria de
+                produtos industrializados depois, em Configurações &gt; Impostos.
               </p>
             </div>
           </div>

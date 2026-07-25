@@ -6,6 +6,7 @@
  */
 export type OrgRole = "admin" | "vendedor";
 export type OrgPlan = "entrada" | "profissional" | "escala";
+export type TaxMode = "inclusive" | "exclusive";
 
 export type Database = {
   public: {
@@ -118,6 +119,144 @@ export type Database = {
             foreignKeyName: "organization_invites_org_id_fkey";
             columns: ["org_id"];
             isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      product_categories: {
+        Row: {
+          id: string;
+          org_id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: Partial<{
+          name: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tax_types: {
+        Row: {
+          id: string;
+          org_id: string;
+          code: string;
+          label: string;
+          mode: TaxMode;
+          default_rate: number;
+          active: boolean;
+          display_order: number;
+          footer_note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          code: string;
+          label: string;
+          mode: TaxMode;
+          default_rate?: number;
+          active?: boolean;
+          display_order?: number;
+          footer_note?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<{
+          code: string;
+          label: string;
+          mode: TaxMode;
+          default_rate: number;
+          active: boolean;
+          display_order: number;
+          footer_note: string | null;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "tax_types_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tax_rates: {
+        Row: {
+          id: string;
+          tax_type_id: string;
+          category_id: string | null;
+          product_id: string | null;
+          rate: number;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          tax_type_id: string;
+          category_id?: string | null;
+          product_id?: string | null;
+          rate: number;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<{
+          rate: number;
+          note: string | null;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "tax_rates_tax_type_id_fkey";
+            columns: ["tax_type_id"];
+            isOneToOne: false;
+            referencedRelation: "tax_types";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tax_rates_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "product_categories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tax_settings: {
+        Row: {
+          org_id: string;
+          document_footer: string | null;
+          show_tax_lines: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          org_id: string;
+          document_footer?: string | null;
+          show_tax_lines?: boolean;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          document_footer: string | null;
+          show_tax_lines: boolean;
+          updated_at: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "tax_settings_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: true;
             referencedRelation: "organizations";
             referencedColumns: ["id"];
           },

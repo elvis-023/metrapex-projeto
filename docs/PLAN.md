@@ -173,11 +173,11 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 **Branch:** `milestone/12-tax-engine`
 **Objetivo:** Implementar o motor de impostos configurável conforme especificação já existente no repo — **não redesenhar, seguir [briefing-motor-impostos.md](../briefing-motor-impostos.md)**.
 
-- [ ] DDL de `tax_types`, `tax_rates`, `product_categories`, `tax_settings` (ver briefing §3)
-- [ ] `resolveRate` (hierarquia produto > categoria > padrão) — usar skill `calculo-tributario` e agent `auditor-resolve-rate` na revisão
-- [ ] `calcTax` (`inclusive`/`exclusive`) com precisão decimal (ver convenção de dinheiro no CLAUDE.md)
-- [ ] Templates de onboarding fiscal (Simples Nacional sem destaque, Isento, ICMS + IPI padrão) — Milestone 4 passa a gravar de verdade
-- [ ] Testes conforme skill `casos-teste-fiscais` (incluindo caso de override com alíquota 0)
+- [x] DDL de `tax_types`, `tax_rates`, `product_categories`, `tax_settings` (ver briefing §3)
+- [x] `resolveRate` (hierarquia produto > categoria > padrão) — usar skill `calculo-tributario` e agent `auditor-resolve-rate` na revisão
+- [x] `calcTax` (`inclusive`/`exclusive`) com precisão decimal (ver convenção de dinheiro no CLAUDE.md)
+- [x] Templates de onboarding fiscal (Simples Nacional sem destaque, Isento, ICMS + IPI padrão) — Milestone 4 passa a gravar de verdade
+- [x] Testes conforme skill `casos-teste-fiscais` (incluindo caso de override com alíquota 0)
 
 **Commit final:** `feat(tax-engine): configurable tax rules, rate resolution and calculation`
 

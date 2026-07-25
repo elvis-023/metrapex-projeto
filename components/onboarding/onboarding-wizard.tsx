@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { createOrganizationAction } from "@/lib/organizations/actions";
+import { applyTaxTemplateAction } from "@/lib/tax-engine/actions";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -45,7 +46,12 @@ export function OnboardingWizard() {
   async function handleFinish() {
     setIsFinishing(true);
     try {
-      await createOrganizationAction(state.organization.name);
+      const { orgId } = await createOrganizationAction(state.organization.name);
+      await applyTaxTemplateAction(orgId, {
+        templateId: state.taxTemplate.templateId,
+        icmsRate: state.taxTemplate.icmsRate,
+        footerText: state.taxTemplate.footerText,
+      });
       window.sessionStorage.removeItem(STORAGE_KEY);
       toast.success("Organização configurada. Bem-vindo ao painel!");
       router.push("/dashboard");
