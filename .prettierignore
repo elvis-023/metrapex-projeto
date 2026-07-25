@@ -4,5 +4,6 @@ package-lock.json
 
 # documentos de especificação do motor de impostos e skills — formatação própria, não tocar
 .claude/
+.agents/
 docs/
 briefing-motor-impostos.md
