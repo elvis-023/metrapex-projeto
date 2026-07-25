@@ -131,11 +131,11 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/09-public-form-ui`
 **Objetivo:** Formulário incorporável que o cliente final preenche, sem autenticação.
 
-- [ ] Identificação por CPF/CNPJ (campos de preenchimento automático de endereço/razão social, mockados)
-- [ ] Seleção de produtos (com opção de pré-carregar um produto específico via parâmetro)
-- [ ] Tela de confirmação/recebimento do orçamento
-- [ ] Layout embutível (iframe/snippet) e responsivo
-- [ ] Honeypot e placeholder de captcha na UI
+- [x] Identificação por CPF/CNPJ (campos de preenchimento automático de endereço/razão social, mockados)
+- [x] Seleção de produtos (com opção de pré-carregar um produto específico via parâmetro)
+- [x] Tela de confirmação/recebimento do orçamento
+- [x] Layout embutível (iframe/snippet) e responsivo
+- [x] Honeypot e placeholder de captcha na UI
 
 **Commit final:** `feat(public-form): embeddable public quote request form UI`
 
