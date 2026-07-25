@@ -92,10 +92,10 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/06-catalog-ui`
 **Objetivo:** Telas de listagem, cadastro, edição e importação de produtos.
 
-- [ ] Listagem de produtos com busca e filtro por categoria
-- [ ] Tela de cadastro/edição manual de produto (todos os campos do PRD: código externo, nome, preço, estoque, categoria, foto, campos complementares)
-- [ ] Fluxo de importação de planilha: upload, preview, exibição de erros de validação (linha a linha)
-- [ ] Gerenciamento de categorias
+- [x] Listagem de produtos com busca e filtro por categoria
+- [x] Tela de cadastro/edição manual de produto (todos os campos do PRD: código externo, nome, preço, estoque, categoria, foto, campos complementares)
+- [x] Fluxo de importação de planilha: upload, preview, exibição de erros de validação (linha a linha)
+- [x] Gerenciamento de categorias
 
 **Commit final:** `feat(catalog): product catalog CRUD and import UI`
 
