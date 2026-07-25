@@ -59,14 +59,18 @@ docs/
 briefing-motor-impostos.md
 ```
 
-## Identidade visual (proposta inicial — ajustar quando houver definição de marca)
+## Identidade visual
 
 Tom: SaaS B2B enxuto e denso, sem elementos decorativos — prioriza legibilidade de dados (tabelas, cards de Kanban, dashboards) sobre estética vistosa. Referências de UX: Pipedrive (fluidez do pipeline) e HubSpot (organização), simplificados.
 
-- **Paleta**: base neutra (grafite/cinza em vez de preto puro, fundo quase-branco), com **uma** accent color de marca para CTAs, estados ativos e o pipeline. Cores semânticas separadas da accent color (verde=convertido, âmbar=expirando, vermelho=expirado) para não colidir com a marca.
-- **Tipografia**: uma família sans-serif (ex.: Inter, já comum em shadcn/ui), pesos limitados (regular/medium/semibold). Números (preços, totais) em tabular figures para alinhar em tabelas e cards.
+A direção visual é ancorada no próprio artefato que o produto emite: o orçamento é um documento numerado sequencialmente por organização (ver PRD > Motor de orçamento), então o vocabulário vem do talão de orçamento/nota — numeração de protocolo, algarismos tabulares, carimbo de aprovação — em vez de um look genérico de SaaS.
+
+- **Paleta**: base "papel" (fundo quase-branco com um fio de calor, não branco clínico) e grafite (nunca preto puro), com **uma** accent color de marca — um azul-cobalto dessaturado ("tinta de carimbo"), deliberadamente mais opaco que o índigo brilhante padrão de SaaS — para CTAs, estados ativos e o pipeline. Cores semânticas separadas da accent color (verde=convertido, âmbar=expirando, vermelho=expirado) para não colidir com a marca.
+- **Tipografia**: uma família sans-serif (Geist, ver `app/layout.tsx`), pesos limitados (regular/medium/semibold). Números (preços, totais, número do orçamento) em **Geist Mono** com tabular figures — a mesma família de design da sans, usada como voz utilitária para dado tabular, não uma fonte de exibição pareada à parte.
+- **Cantos**: radius reduzido (`--radius: 0.35rem`) — um formulário oficial não tem a curva macia de SaaS consumer genérico.
 - **Densidade**: espaçamento compacto nas telas de dados (Kanban, tabelas de orçamento, catálogo); espaçamento mais aberto só na landing page e no onboarding.
-- **Componentização**: shadcn/ui como base; variações de marca via tokens do Tailwind (`tailwind.config`), não componentes duplicados.
+- **Componentização**: shadcn/ui como base; variações de marca via tokens do Tailwind (`app/globals.css`), não componentes duplicados.
+- **Motivo de assinatura**: o hero da landing page (`components/marketing/quote-receipt.tsx`) renderiza um orçamento real — borda perfurada de talão, numeração sequencial, linhas em mono, selo de carimbo que "prensa" uma vez ao carregar (respeita `prefers-reduced-motion`). Reservar esse tipo de gesto para um único lugar por tela — não replicar o carimbo/perfuração em todo componente.
 
 ## Personas (para orientar decisões de UX)
 
