@@ -143,11 +143,11 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/10-settings-ui`
 **Objetivo:** Telas administrativas de configuração usadas pelo admin.
 
-- [ ] Configuração de impostos (tipos de tributo, modo, alíquota padrão, overrides por categoria/produto)
-- [ ] Configuração de condições de pagamento e faixas de valor
-- [ ] Template de PDF (logo, dados da emissora, textos de garantia/termos/frete)
-- [ ] Gerenciamento de colaboradores (convite, papéis admin/vendedor)
-- [ ] Tela de plano/assinatura (placeholder, sem Stripe ainda)
+- [x] Configuração de impostos (tipos de tributo, modo, alíquota padrão, overrides por categoria/produto)
+- [x] Configuração de condições de pagamento e faixas de valor
+- [x] Template de PDF (logo, dados da emissora, textos de garantia/termos/frete)
+- [x] Gerenciamento de colaboradores (convite, papéis admin/vendedor)
+- [x] Tela de plano/assinatura (placeholder, sem Stripe ainda)
 
 **Commit final:** `feat(settings): organization settings screens UI`
 
