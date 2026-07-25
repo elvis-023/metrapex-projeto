@@ -43,6 +43,19 @@ export default function DashboardLoading() {
           </CardContent>
         </Card>
       </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="bg-muted h-5 w-40 animate-pulse rounded-md" />
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="h-6 w-full" />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

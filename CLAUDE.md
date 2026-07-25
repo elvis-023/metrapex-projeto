@@ -79,6 +79,10 @@ A direção visual é ancorada no próprio artefato que o produto emite: o orça
 - **Cliente final**: sem login, preenche o formulário público — metade do valor do produto está na experiência dele.
 - **Freelancer/consultor solo**: admin sozinho, workspace por cliente/projeto, começa no plano de entrada.
 
+## Origem de clientes
+
+Cada orçamento carrega a origem do cliente que o gerou — `Site` ou `CRM` por enquanto, mas a lista é gerenciável (não um enum fixo em código) na tela dedicada em `/customers` (`lib/customers/`). Aparece ao lado do nome do cliente no Kanban, no detalhe do orçamento e na tabela "Vencendo em breve" do dashboard, e alimenta o gráfico "Origem dos clientes" e, futuramente, a dimensão de origem nos relatórios (ver PRD > Relatórios).
+
 ## Processo
 
 Construir em milestones incrementais, cada um um entregável testável — priorizar o núcleo (formulário público → cálculo → PDF → envio, e o Kanban básico) antes de relatórios, automações e integrações avançadas. Testar cada milestone antes de avançar para o próximo.

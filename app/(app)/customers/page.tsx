@@ -1,13 +1,18 @@
-import { Users } from "lucide-react";
+import type { Metadata } from "next";
 
-import { EmptyState } from "@/components/states/empty-state";
+import { CustomerSourceManager } from "@/components/customers/customer-source-manager";
+import { getCustomerSources } from "@/lib/customers/mock-data";
+import { fakePipelineQuotes } from "@/lib/pipeline/mock-data";
 
-export default function CustomersPage() {
-  return (
-    <EmptyState
-      icon={Users}
-      title="Clientes ainda não têm tela própria"
-      description="O cadastro de clientes com deduplicação será construído no Milestone 17."
-    />
-  );
+export const metadata: Metadata = { title: "Clientes" };
+
+export default async function CustomersPage() {
+  const sources = await getCustomerSources();
+
+  const sourcesWithCount = sources.map((source) => ({
+    ...source,
+    quoteCount: fakePipelineQuotes.filter((quote) => quote.sourceId === source.id).length,
+  }));
+
+  return <CustomerSourceManager initialSources={sourcesWithCount} />;
 }
