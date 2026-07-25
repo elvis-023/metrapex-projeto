@@ -50,11 +50,16 @@ export function ProductFilters({
           onChange={(event) => updateParam("q", event.target.value)}
         />
       </div>
-      <Select value={categoryId || ALL_CATEGORIES} onValueChange={(value) => updateParam("category", value)}>
+      <Select
+        value={categoryId || ALL_CATEGORIES}
+        onValueChange={(value) => updateParam("category", value)}
+      >
         <SelectTrigger aria-label="Filtrar por categoria" className="sm:w-48">
           <SelectValue>
             {(value: string) =>
-              value === ALL_CATEGORIES ? "Todas as categorias" : (categoryNameById.get(value) ?? "—")
+              value === ALL_CATEGORIES
+                ? "Todas as categorias"
+                : (categoryNameById.get(value) ?? "—")
             }
           </SelectValue>
         </SelectTrigger>

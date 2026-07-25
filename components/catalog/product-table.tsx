@@ -76,9 +76,7 @@ export function ProductTable({
             </TableCell>
             <TableCell>
               {product.categoryId ? (
-                <Badge variant="outline">
-                  {categoryNameById.get(product.categoryId) ?? "—"}
-                </Badge>
+                <Badge variant="outline">{categoryNameById.get(product.categoryId) ?? "—"}</Badge>
               ) : (
                 <span className="text-muted-foreground">Sem categoria</span>
               )}

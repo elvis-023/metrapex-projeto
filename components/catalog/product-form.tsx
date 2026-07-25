@@ -79,7 +79,8 @@ export function ProductForm({
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setField("photoUrl", typeof reader.result === "string" ? reader.result : null);
+    reader.onload = () =>
+      setField("photoUrl", typeof reader.result === "string" ? reader.result : null);
     reader.readAsDataURL(file);
     event.target.value = "";
   }

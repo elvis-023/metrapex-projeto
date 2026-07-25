@@ -32,11 +32,7 @@ export type CategoryWithCount = {
   productCount: number;
 };
 
-export function CategoryManager({
-  initialCategories,
-}: {
-  initialCategories: CategoryWithCount[];
-}) {
+export function CategoryManager({ initialCategories }: { initialCategories: CategoryWithCount[] }) {
   const [categories, setCategories] = useState(initialCategories);
   const [dialogState, setDialogState] = useState<
     { mode: "create" } | { mode: "edit"; category: CategoryWithCount } | null
@@ -91,7 +87,9 @@ export function CategoryManager({
 
   function handleDelete(category: CategoryWithCount) {
     if (category.productCount > 0) {
-      toast.error(`Remova ou realoque os ${category.productCount} produto(s) desta categoria antes de excluí-la.`);
+      toast.error(
+        `Remova ou realoque os ${category.productCount} produto(s) desta categoria antes de excluí-la.`,
+      );
       return;
     }
     setCategories((current) => current.filter((c) => c.id !== category.id));
@@ -123,7 +121,9 @@ export function CategoryManager({
               <DialogTitle>
                 {dialogState?.mode === "edit" ? "Editar categoria" : "Nova categoria"}
               </DialogTitle>
-              <DialogDescription>Nome exibido no catálogo e no motor de impostos.</DialogDescription>
+              <DialogDescription>
+                Nome exibido no catálogo e no motor de impostos.
+              </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="category-name" className="text-sm font-medium">

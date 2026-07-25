@@ -91,7 +91,9 @@ export function ProductImportWizard() {
             <CardTitle>Pré-visualização ({rows.length} linhas)</CardTitle>
             <div className="flex items-center gap-1.5">
               {ignoredEmptyRowCount > 0 ? (
-                <Badge variant="outline">{ignoredEmptyRowCount} linha(s) vazia(s) ignorada(s)</Badge>
+                <Badge variant="outline">
+                  {ignoredEmptyRowCount} linha(s) vazia(s) ignorada(s)
+                </Badge>
               ) : null}
               {errorCount > 0 ? (
                 <Badge variant="danger">{errorCount} com erro</Badge>

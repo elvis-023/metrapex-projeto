@@ -101,7 +101,7 @@ export const fakeProducts: Product[] = [
   {
     id: "prd_7",
     externalCode: "PRD-020",
-    name: "Registro de gaveta 3/4\"",
+    name: 'Registro de gaveta 3/4"',
     price: 39.9,
     stock: 55,
     categoryId: "cat_hidraulica",

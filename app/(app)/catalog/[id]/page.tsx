@@ -6,11 +6,7 @@ import { getCategories, getProductById } from "@/lib/catalog/mock-data";
 
 export const metadata: Metadata = { title: "Editar produto" };
 
-export default async function EditProductPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [product, categories] = await Promise.all([getProductById(id), getCategories()]);
 
