@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/layout/app-shell";
+import {
+  getCurrentOrganization,
+  getCurrentUserProfile,
+  getUserOrganizations,
+} from "@/lib/auth/session";
 import { getPipelineQuotes } from "@/lib/pipeline/mock-data";
 import { PipelineProvider } from "@/lib/pipeline/pipeline-context";
 
@@ -11,11 +17,31 @@ import { PipelineProvider } from "@/lib/pipeline/pipeline-context";
  * persistência real ainda) para o orçamento aparecer no board.
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const quotes = await getPipelineQuotes();
+  const [user, organizations, currentOrganization, quotes] = await Promise.all([
+    getCurrentUserProfile(),
+    getUserOrganizations(),
+    getCurrentOrganization(),
+    getPipelineQuotes(),
+  ]);
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Usuário autenticado sem nenhuma organização — ainda não passou pelo onboarding.
+  if (organizations.length === 0) {
+    redirect("/onboarding");
+  }
 
   return (
     <PipelineProvider initialQuotes={quotes}>
-      <AppShell>{children}</AppShell>
+      <AppShell
+        user={user}
+        organizations={organizations}
+        currentOrganization={currentOrganization!}
+      >
+        {children}
+      </AppShell>
     </PipelineProvider>
   );
 }

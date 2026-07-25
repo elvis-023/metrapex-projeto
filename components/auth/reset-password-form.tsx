@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { resetPasswordAction } from "@/lib/auth/actions";
 
-export function ResetPasswordForm({ token }: { token: string }) {
+export function ResetPasswordForm({ code }: { code: string }) {
   const [state, formAction, isPending] = useActionState(resetPasswordAction, undefined);
 
   if (state?.success) {
@@ -36,9 +36,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
         <CardDescription>Escolha uma nova senha para sua conta.</CardDescription>
       </CardHeader>
       <CardContent>
-        {token ? (
+        {code ? (
           <form action={formAction} noValidate className="flex flex-col gap-4">
-            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="code" value={code} />
             <FormField
               label="Nova senha"
               name="password"

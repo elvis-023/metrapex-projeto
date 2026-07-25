@@ -11,6 +11,17 @@ import { signupAction } from "@/lib/auth/actions";
 export function SignupForm() {
   const [state, formAction, isPending] = useActionState(signupAction, undefined);
 
+  if (state?.success && state.info) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Confirme seu e-mail</CardTitle>
+          <CardDescription>{state.info}</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>

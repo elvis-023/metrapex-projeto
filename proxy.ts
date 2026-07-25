@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { AUTH_ONLY_PATHS, MOCK_SESSION_COOKIE, PROTECTED_PATHS } from "@/lib/auth/session";
+import { AUTH_ONLY_PATHS, PROTECTED_PATHS } from "@/lib/auth/session";
+import { updateSession } from "@/lib/supabase/middleware";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isAuthenticated = Boolean(request.cookies.get(MOCK_SESSION_COOKIE)?.value);
+  const { response, user } = await updateSession(request);
+  const isAuthenticated = Boolean(user);
 
   const isProtected = PROTECTED_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`),
@@ -20,7 +22,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
@@ -30,6 +32,8 @@ export const config = {
     "/customers/:path*",
     "/pipeline/:path*",
     "/settings/:path*",
+    "/quotes/:path*",
+    "/onboarding/:path*",
     "/login",
     "/signup",
   ],

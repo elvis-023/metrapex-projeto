@@ -14,16 +14,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { logoutAction } from "@/lib/auth/actions";
-import { fakeCurrentUser } from "@/lib/mock-data";
+import type { SessionUser } from "@/lib/auth/session";
 
-export function UserMenu() {
+export function UserMenu({ user }: { user: SessionUser }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
           <Button variant="ghost" size="icon" aria-label="Menu do usuário" className="rounded-full">
             <Avatar size="sm">
-              <AvatarFallback>{fakeCurrentUser.initials}</AvatarFallback>
+              <AvatarFallback>{user.initials}</AvatarFallback>
             </Avatar>
           </Button>
         }
@@ -31,10 +31,8 @@ export function UserMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="flex flex-col gap-0.5 py-1.5">
-            <span className="text-foreground text-sm font-medium">{fakeCurrentUser.name}</span>
-            <span className="text-muted-foreground truncate text-xs font-normal">
-              {fakeCurrentUser.email}
-            </span>
+            <span className="text-foreground text-sm font-medium">{user.name}</span>
+            <span className="text-muted-foreground truncate text-xs font-normal">{user.email}</span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>

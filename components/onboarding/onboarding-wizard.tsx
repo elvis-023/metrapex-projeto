@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+
+import { createOrganizationAction } from "@/lib/organizations/actions";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -31,6 +33,7 @@ function loadInitialState(): OnboardingState {
 export function OnboardingWizard() {
   const router = useRouter();
   const [state, dispatch] = useReducer(onboardingReducer, undefined, loadInitialState);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   useEffect(() => {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -39,10 +42,17 @@ export function OnboardingWizard() {
   const currentStepValid = isStepValid(state, state.step);
   const isLastStep = state.step === 5;
 
-  function handleFinish() {
-    window.sessionStorage.removeItem(STORAGE_KEY);
-    toast.success("Organização configurada. Bem-vindo ao painel!");
-    router.push("/dashboard");
+  async function handleFinish() {
+    setIsFinishing(true);
+    try {
+      await createOrganizationAction(state.organization.name);
+      window.sessionStorage.removeItem(STORAGE_KEY);
+      toast.success("Organização configurada. Bem-vindo ao painel!");
+      router.push("/dashboard");
+    } catch {
+      setIsFinishing(false);
+      toast.error("Não foi possível criar a organização. Tente novamente.");
+    }
   }
 
   return (
@@ -77,8 +87,8 @@ export function OnboardingWizard() {
             </Button>
           ) : null}
           {isLastStep ? (
-            <Button type="button" onClick={handleFinish}>
-              Concluir e ir para o painel
+            <Button type="button" onClick={handleFinish} disabled={isFinishing}>
+              {isFinishing ? "Criando organização..." : "Concluir e ir para o painel"}
             </Button>
           ) : (
             <Button
