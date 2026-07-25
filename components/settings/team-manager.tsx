@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { MailIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { toast } from "sonner";
+
+import {
+  cancelInviteAction,
+  changeInviteRoleAction,
+  changeMemberRoleAction,
+  inviteCollaboratorAction,
+  removeMemberAction,
+} from "@/lib/organizations/actions";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -62,11 +70,13 @@ export function TeamManager({
 }) {
   const [members, setMembers] = useState(initialMembers);
   const [invites, setInvites] = useState(initialInvites);
+  const [, startTransition] = useTransition();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<TeamRole>("vendedor");
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
 
   const adminCount = members.filter((m) => m.role === "admin").length;
 
@@ -75,8 +85,17 @@ export function TeamManager({
       toast.error("A organização precisa de ao menos um admin.");
       return;
     }
+    const previous = members;
     setMembers((current) => current.map((m) => (m.id === member.id ? { ...m, role } : m)));
-    toast.success(`Papel de ${member.name} atualizado para ${roleLabels[role]}.`);
+    startTransition(async () => {
+      try {
+        await changeMemberRoleAction(member.id, role);
+        toast.success(`Papel de ${member.name} atualizado para ${roleLabels[role]}.`);
+      } catch {
+        setMembers(previous);
+        toast.error("A organização precisa de ao menos um admin.");
+      }
+    });
   }
 
   function removeMember(member: TeamMember) {
@@ -88,8 +107,17 @@ export function TeamManager({
       toast.error("A organização precisa de ao menos um admin.");
       return;
     }
+    const previous = members;
     setMembers((current) => current.filter((m) => m.id !== member.id));
-    toast.success(`${member.name} removido da organização.`);
+    startTransition(async () => {
+      try {
+        await removeMemberAction(member.id);
+        toast.success(`${member.name} removido da organização.`);
+      } catch {
+        setMembers(previous);
+        toast.error("Não foi possível remover o colaborador.");
+      }
+    });
   }
 
   function openInviteDialog() {
@@ -99,7 +127,7 @@ export function TeamManager({
     setInviteOpen(true);
   }
 
-  function handleSendInvite() {
+  async function handleSendInvite() {
     const trimmed = inviteEmail.trim();
     if (!isValidEmail(trimmed)) {
       setInviteError("E-mail inválido.");
@@ -112,10 +140,19 @@ export function TeamManager({
       return;
     }
 
+    setIsSendingInvite(true);
+    const result = await inviteCollaboratorAction(trimmed, inviteRole);
+    setIsSendingInvite(false);
+
+    if (result.error) {
+      setInviteError(result.error);
+      return;
+    }
+
     setInvites((current) => [
       ...current,
       {
-        id: `invite_${crypto.randomUUID()}`,
+        id: `pending_${crypto.randomUUID()}`,
         email: trimmed,
         role: inviteRole,
         invitedAt: new Date().toISOString().slice(0, 10),
@@ -126,13 +163,31 @@ export function TeamManager({
   }
 
   function changeInviteRole(invite: TeamInvite, role: TeamRole) {
+    const previous = invites;
     setInvites((current) => current.map((i) => (i.id === invite.id ? { ...i, role } : i)));
-    toast.success(`Convite de ${invite.email} atualizado para ${roleLabels[role]}.`);
+    startTransition(async () => {
+      try {
+        await changeInviteRoleAction(invite.id, role);
+        toast.success(`Convite de ${invite.email} atualizado para ${roleLabels[role]}.`);
+      } catch {
+        setInvites(previous);
+        toast.error("Não foi possível atualizar o convite.");
+      }
+    });
   }
 
   function cancelInvite(invite: TeamInvite) {
+    const previous = invites;
     setInvites((current) => current.filter((i) => i.id !== invite.id));
-    toast.success("Convite cancelado.");
+    startTransition(async () => {
+      try {
+        await cancelInviteAction(invite.id);
+        toast.success("Convite cancelado.");
+      } catch {
+        setInvites(previous);
+        toast.error("Não foi possível cancelar o convite.");
+      }
+    });
   }
 
   return (
@@ -195,7 +250,9 @@ export function TeamManager({
                 <Button variant="outline" onClick={() => setInviteOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleSendInvite}>Enviar convite</Button>
+                <Button onClick={handleSendInvite} disabled={isSendingInvite}>
+                  {isSendingInvite ? "Enviando..." : "Enviar convite"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

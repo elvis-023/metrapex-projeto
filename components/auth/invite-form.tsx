@@ -5,10 +5,18 @@ import { useActionState } from "react";
 import { FormField } from "@/components/auth/form-field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { FakeInvite } from "@/lib/mock-data";
 import { acceptInviteAction } from "@/lib/auth/actions";
+import type { OrgRole } from "@/lib/supabase/types";
 
-export function InviteForm({ invite }: { invite: FakeInvite }) {
+export type InvitePreview = {
+  token: string;
+  email: string;
+  role: OrgRole;
+  organizationName: string;
+  invitedBy: string;
+};
+
+export function InviteForm({ invite }: { invite: InvitePreview }) {
   const [state, formAction, isPending] = useActionState(acceptInviteAction, undefined);
 
   return (

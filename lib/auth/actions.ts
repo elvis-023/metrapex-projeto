@@ -1,14 +1,14 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { MOCK_SESSION_COOKIE } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
 
 export type ActionState = {
   error?: string;
   fieldErrors?: Record<string, string>;
   success?: boolean;
+  info?: string;
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -16,16 +16,6 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function readString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
-}
-
-async function setSessionCookie(email: string) {
-  const jar = await cookies();
-  jar.set(MOCK_SESSION_COOKIE, email, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
 }
 
 export async function loginAction(
@@ -45,7 +35,13 @@ export async function loginAction(
     return { fieldErrors };
   }
 
-  await setSessionCookie(email);
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    return { error: "E-mail ou senha inválidos." };
+  }
+
   redirect(next && next.startsWith("/") ? next : "/dashboard");
 }
 
@@ -72,8 +68,30 @@ export async function signupAction(
     return { fieldErrors };
   }
 
-  await setSessionCookie(email);
-  redirect("/dashboard");
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: name } },
+  });
+
+  if (error) {
+    return {
+      error:
+        error.message === "User already registered"
+          ? "Este e-mail já tem conta."
+          : "Não foi possível criar a conta.",
+    };
+  }
+
+  if (!data.session) {
+    return {
+      success: true,
+      info: "Enviamos um e-mail de confirmação. Confirme para poder entrar.",
+    };
+  }
+
+  redirect("/onboarding");
 }
 
 export async function forgotPasswordAction(
@@ -90,6 +108,12 @@ export async function forgotPasswordAction(
     return { fieldErrors };
   }
 
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
+  });
+
+  // Sempre "sucesso" para o usuário, exista ou não a conta — não vazar quais e-mails têm cadastro.
   return { success: true };
 }
 
@@ -97,11 +121,11 @@ export async function resetPasswordAction(
   _prevState: ActionState | undefined,
   formData: FormData,
 ): Promise<ActionState> {
-  const token = readString(formData, "token");
+  const code = readString(formData, "code");
   const password = readString(formData, "password");
   const confirmPassword = readString(formData, "confirmPassword");
 
-  if (!token) {
+  if (!code) {
     return { error: "Link de redefinição inválido ou expirado." };
   }
 
@@ -114,6 +138,17 @@ export async function resetPasswordAction(
 
   if (Object.keys(fieldErrors).length > 0) {
     return { fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  if (exchangeError) {
+    return { error: "Link de redefinição inválido ou expirado." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: "Não foi possível redefinir a senha." };
   }
 
   return { success: true };
@@ -129,7 +164,7 @@ export async function acceptInviteAction(
   const confirmPassword = readString(formData, "confirmPassword");
   const email = readString(formData, "email");
 
-  if (!token) {
+  if (!token || !email) {
     return { error: "Convite inválido ou expirado." };
   }
 
@@ -145,12 +180,40 @@ export async function acceptInviteAction(
     return { fieldErrors };
   }
 
-  await setSessionCookie(email || `convidado+${token}@metrapex.com.br`);
+  const supabase = await createClient();
+
+  // O e-mail vem travado do convite (campo hidden), nunca do que o usuário digitaria —
+  // accept_invite() confere de novo no banco, contra o e-mail gravado no convite.
+  const { error: signUpError } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: name } },
+  });
+
+  if (signUpError && signUpError.message !== "User already registered") {
+    return { error: "Não foi possível criar sua conta." };
+  }
+
+  if (signUpError) {
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      return {
+        error:
+          "Já existe conta com este e-mail — entre com a senha existente para aceitar o convite.",
+      };
+    }
+  }
+
+  const { error: acceptError } = await supabase.rpc("accept_invite", { invite_token: token });
+  if (acceptError) {
+    return { error: acceptError.message || "Convite inválido ou expirado." };
+  }
+
   redirect("/dashboard");
 }
 
 export async function logoutAction() {
-  const jar = await cookies();
-  jar.delete(MOCK_SESSION_COOKIE);
+  const supabase = await createClient();
+  await supabase.auth.signOut();
   redirect("/login");
 }

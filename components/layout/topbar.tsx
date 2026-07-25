@@ -9,8 +9,17 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { OrgSwitcher } from "@/components/layout/org-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
+import type { SessionOrganization, SessionUser } from "@/lib/auth/session";
 
-export function Topbar() {
+export function Topbar({
+  user,
+  organizations,
+  currentOrganization,
+}: {
+  user: SessionUser;
+  organizations: SessionOrganization[];
+  currentOrganization: SessionOrganization;
+}) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
@@ -33,11 +42,11 @@ export function Topbar() {
         </SheetContent>
       </Sheet>
 
-      <OrgSwitcher />
+      <OrgSwitcher organizations={organizations} currentOrganization={currentOrganization} />
 
       <div className="ml-auto flex items-center gap-1.5">
         <ThemeToggle />
-        <UserMenu />
+        <UserMenu user={user} />
       </div>
     </header>
   );

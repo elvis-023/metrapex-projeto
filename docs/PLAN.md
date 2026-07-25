@@ -161,11 +161,11 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 **Branch:** `milestone/11-backend-foundation`
 **Objetivo:** Fundação de dados: organizações, usuários, papéis e isolamento por RLS, com autenticação real.
 
-- [ ] Schema: `organizations`, `organization_members` (papéis admin/vendedor), `profiles`
-- [ ] Row Level Security em todas as tabelas multiempresa
-- [ ] Integração com Supabase Auth (login, cadastro, recuperação de senha reais) — telas do Milestone 3 passam a funcionar
-- [ ] Resolução de organização por request (sessão) e dropdown de troca de organização funcional
-- [ ] Convite de colaborador por e-mail (Resend) funcional
+- [x] Schema: `organizations`, `organization_members` (papéis admin/vendedor), `profiles`
+- [x] Row Level Security em todas as tabelas multiempresa
+- [x] Integração com Supabase Auth (login, cadastro, recuperação de senha reais) — telas do Milestone 3 passam a funcionar
+- [x] Resolução de organização por request (sessão) e dropdown de troca de organização funcional
+- [x] Convite de colaborador por e-mail (Resend) funcional
 
 **Commit final:** `feat(backend): organizations, auth and multi-tenant RLS foundation`
 
