@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { logoutAction } from "@/lib/auth/actions";
 import { fakeCurrentUser } from "@/lib/mock-data";
 
 export function UserMenu() {
@@ -45,7 +46,7 @@ export function UserMenu() {
             Configurações
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">
+          <DropdownMenuItem variant="destructive" onClick={() => logoutAction()}>
             <LogOut />
             Sair
           </DropdownMenuItem>

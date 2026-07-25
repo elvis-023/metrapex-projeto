@@ -56,11 +56,11 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Branch:** `milestone/03-auth-ui`
 **Objetivo:** Telas de login, cadastro e recuperação de senha, sem integração real (mock de sessão).
 
-- [ ] Tela de login
-- [ ] Tela de cadastro
-- [ ] Tela de recuperação/redefinição de senha
-- [ ] Tela de aceite de convite de colaborador
-- [ ] Rotas protegidas com mock de sessão (redirect se "não autenticado")
+- [x] Tela de login
+- [x] Tela de cadastro
+- [x] Tela de recuperação/redefinição de senha
+- [x] Tela de aceite de convite de colaborador
+- [x] Rotas protegidas com mock de sessão (redirect se "não autenticado")
 
 **Commit final:** `feat(auth): authentication screens with mocked session`
 

@@ -85,3 +85,25 @@ export const fakeRecentQuotes: FakeQuote[] = [
     expiresAt: "2026-07-18",
   },
 ];
+
+export type FakeInvite = {
+  token: string;
+  email: string;
+  organizationName: string;
+  role: "admin" | "vendedor";
+  invitedBy: string;
+};
+
+const fakeInvites: FakeInvite[] = [
+  {
+    token: "convite-demo",
+    email: "novo.vendedor@metrapex-distribuidora.com.br",
+    organizationName: fakeCurrentOrganization.name,
+    role: "vendedor",
+    invitedBy: fakeCurrentUser.name,
+  },
+];
+
+export function getFakeInvite(token: string): FakeInvite | null {
+  return fakeInvites.find((invite) => invite.token === token) ?? null;
+}
