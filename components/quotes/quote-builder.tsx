@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CheckIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -13,16 +13,16 @@ import { QuoteLineItems } from "@/components/quotes/quote-line-items";
 import { QuoteTotalsCard } from "@/components/quotes/quote-totals-card";
 import { QuotePdfPreview } from "@/components/quotes/quote-pdf-preview";
 import { cn } from "@/lib/utils";
-import type { Product, ProductCategory } from "@/lib/catalog/types";
+import type { ProductCategory } from "@/lib/catalog/types";
 import type { Customer, CustomerSource } from "@/lib/customers/types";
-import { fakeSalespeople } from "@/lib/pipeline/mock-data";
-import { usePipelineQuotes } from "@/lib/pipeline/pipeline-context";
-import { buildLineItem, computeQuoteTotal, nextQuoteNumber } from "@/lib/quotes/mock-data";
-import type { QuoteDiscount, QuoteLineItem } from "@/lib/quotes/types";
-
-function toDateOnly(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
+import { saveQuoteAction } from "@/lib/quotes/actions";
+import {
+  availablePaymentConditions,
+  calculateQuote,
+  type QuoteBuilderData,
+} from "@/lib/quotes/engine";
+import { toQuoteView } from "@/lib/quotes/view-model";
+import type { QuoteDiscount } from "@/lib/quotes/types";
 
 const steps = [
   { step: 1, label: "Cliente" },
@@ -32,53 +32,95 @@ const steps = [
 
 type BuilderStep = (typeof steps)[number]["step"];
 
+export type QuoteBuilderItem = { productId: string; quantity: number };
+
 export function QuoteBuilder({
-  number: providedNumber,
-  revision,
-  sourceQuoteId,
-  products,
+  data,
   categories,
   customers,
   sources,
+  revisionOf = null,
   initialCustomer = null,
   initialItems = [],
+  initialDiscount = { type: "fixed", value: 0 },
+  omittedProductNames = [],
 }: {
-  /** Omitido para orçamento novo — o número é derivado do pipeline ao vivo (evita colisão entre criações na mesma sessão). Obrigatório para revisão, onde é o número do orçamento existente. */
-  number?: string;
-  revision: number;
-  sourceQuoteId?: string;
-  products: Product[];
+  data: QuoteBuilderData;
   categories: ProductCategory[];
   customers: Customer[];
   sources: CustomerSource[];
+  /** Preenchido na tela de nova revisão: número e revisão do orçamento de origem. */
+  revisionOf?: { id: string; number: string; revision: number } | null;
   initialCustomer?: Customer | null;
-  initialItems?: QuoteLineItem[];
+  initialItems?: QuoteBuilderItem[];
+  initialDiscount?: QuoteDiscount;
+  /** Produtos da versão anterior que já saíram do catálogo — avisados, não silenciados. */
+  omittedProductNames?: string[];
 }) {
   const router = useRouter();
-  const { quotes: pipelineQuotes, addQuote, updateQuote } = usePipelineQuotes();
-  const [number] = useState(() => providedNumber ?? nextQuoteNumber(pipelineQuotes));
+  const [isSaving, startSaving] = useTransition();
   const [step, setStep] = useState<BuilderStep>(1);
   const [customer, setCustomer] = useState<Customer | null>(initialCustomer);
   const [createdCustomers, setCreatedCustomers] = useState<Customer[]>([]);
-  const [items, setItems] = useState<QuoteLineItem[]>(initialItems);
-  const [discount, setDiscount] = useState<QuoteDiscount>({ type: "fixed", value: 0 });
-  const [paymentConditionId, setPaymentConditionId] = useState("a-vista");
+  const [items, setItems] = useState<QuoteBuilderItem[]>(initialItems);
+  const [discount, setDiscount] = useState<QuoteDiscount>(initialDiscount);
+  const [paymentConditionId, setPaymentConditionId] = useState<string | null>(
+    data.paymentConditions.find((condition) => condition.active)?.id ?? null,
+  );
+
+  const revision = revisionOf ? revisionOf.revision + 1 : 1;
+  const categoryNamesById = useMemo(() => new Map(data.categoryNames), [data.categoryNames]);
+
+  /**
+   * MESMA função que o servidor roda ao salvar (`lib/quotes/engine.ts`). Aqui
+   * ela existe só para o recálculo instantâneo enquanto o vendedor digita —
+   * nada calculado nesta tela é persistido: `saveQuoteAction` recebe apenas
+   * produto, quantidade, desconto e condição, e refaz a conta no backend.
+   */
+  const calculation = useMemo(
+    () =>
+      calculateQuote({
+        items,
+        products: data.products,
+        categoryNamesById,
+        taxTypes: data.taxTypes,
+        overrides: data.overrides,
+        discount,
+        paymentConditionId,
+        paymentConditions: data.paymentConditions,
+        paymentValueBands: data.paymentValueBands,
+      }),
+    [items, data, categoryNamesById, discount, paymentConditionId],
+  );
+
+  const view = useMemo(() => toQuoteView(calculation), [calculation]);
+
+  const conditionOptions = useMemo(
+    () =>
+      availablePaymentConditions(
+        data.paymentConditions,
+        data.paymentValueBands,
+        calculation.bandBaseAmount,
+      ),
+    [data.paymentConditions, data.paymentValueBands, calculation.bandBaseAmount],
+  );
 
   const allCustomers = useMemo(
     () => [...customers, ...createdCustomers],
     [customers, createdCustomers],
   );
   const furthestStepReached = customer ? (items.length > 0 ? 3 : 2) : 1;
+  const conditionBlocked = paymentConditionId !== null && !calculation.paymentConditionAllowed;
 
-  function handleAddProduct(product: Product) {
+  function handleAddProduct(productId: string) {
     setItems((current) => {
-      const existing = current.find((item) => item.productId === product.id);
+      const existing = current.find((item) => item.productId === productId);
       if (existing) {
         return current.map((item) =>
-          item.productId === product.id ? buildLineItem(product, item.quantity + 1) : item,
+          item.productId === productId ? { ...item, quantity: item.quantity + 1 } : item,
         );
       }
-      return [...current, buildLineItem(product, 1)];
+      return [...current, { productId, quantity: 1 }];
     });
   }
 
@@ -87,12 +129,8 @@ export function QuoteBuilder({
       handleRemoveItem(productId);
       return;
     }
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
     setItems((current) =>
-      current.map((item) =>
-        item.productId === productId ? buildLineItem(product, quantity) : item,
-      ),
+      current.map((item) => (item.productId === productId ? { ...item, quantity } : item)),
     );
   }
 
@@ -106,46 +144,31 @@ export function QuoteBuilder({
   }
 
   function handleSave() {
-    const total = computeQuoteTotal(items, discount);
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+    if (!customer) return;
 
-    if (sourceQuoteId) {
-      // A revisão vira um registro novo — a versão anterior fica congelada e
-      // marcada como substituída, em vez de ser sobrescrita (ela precisa
-      // continuar acessível pelo link antigo, ver `/pipeline/[id]/page.tsx`).
-      const newId = `q_${Date.now()}`;
-      updateQuote(sourceQuoteId, { supersededByRevisionId: newId });
-      addQuote({
-        id: newId,
-        number,
-        customerName: customer?.name ?? "",
-        sourceId: customer?.sourceId ?? "site",
-        total,
-        status: "gerado",
-        expiresAt: toDateOnly(expiresAt),
-        assigneeId: fakeSalespeople[0].id,
-        revision,
-        previousRevisionId: sourceQuoteId,
-      });
-      toast.success(`Revisão ${revision} de ${number} salva.`);
-      router.push(`/pipeline/${newId}`);
-      return;
-    }
+    startSaving(async () => {
+      try {
+        const { id } = await saveQuoteAction({
+          customerId: null,
+          customerName: customer.name,
+          customerDocument: customer.document,
+          customerSourceId: customer.sourceId,
+          items,
+          discount,
+          paymentConditionId,
+          previousRevisionId: revisionOf?.id ?? null,
+        });
 
-    addQuote({
-      id: `q_${Date.now()}`,
-      number,
-      customerName: customer?.name ?? "",
-      sourceId: customer?.sourceId ?? "site",
-      total,
-      status: "gerado",
-      expiresAt: toDateOnly(expiresAt),
-      assigneeId: fakeSalespeople[0].id,
-      revision: 1,
+        toast.success(
+          revisionOf
+            ? `Revisão ${revision} de ${revisionOf.number} salva.`
+            : "Orçamento salvo como rascunho.",
+        );
+        router.push(`/pipeline/${id}`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Não foi possível salvar.");
+      }
     });
-    toast.success(`Orçamento ${number} salvo como rascunho.`);
-    router.push("/pipeline");
   }
 
   return (
@@ -154,13 +177,19 @@ export function QuoteBuilder({
         <div className="flex items-center justify-between">
           <div>
             <p className="font-mono text-sm font-medium tabular-nums">
-              {number}
-              {revision > 1 ? ` · revisão ${revision}` : ""}
+              {revisionOf
+                ? `${revisionOf.number} · revisão ${revision}`
+                : "Número definido ao salvar"}
             </p>
-            {sourceQuoteId ? (
+            {revisionOf ? (
               <p className="text-muted-foreground text-xs">
                 Itens recalculados com a configuração de imposto atual — não herdam o snapshot da
                 versão anterior.
+              </p>
+            ) : null}
+            {omittedProductNames.length > 0 ? (
+              <p className="text-warning-foreground text-xs">
+                Fora do catálogo e não incluído nesta revisão: {omittedProductNames.join(", ")}.
               </p>
             ) : null}
           </div>
@@ -244,7 +273,13 @@ export function QuoteBuilder({
                   Foto, preço e imposto resolvido por produto.
                 </p>
               </div>
-              <ProductPicker products={products} categories={categories} onAdd={handleAddProduct} />
+              <ProductPicker
+                products={data.products}
+                categories={categories}
+                taxTypes={data.taxTypes}
+                overrides={data.overrides}
+                onAdd={handleAddProduct}
+              />
             </div>
             <div className="flex flex-col gap-3">
               <div>
@@ -254,7 +289,7 @@ export function QuoteBuilder({
                 </p>
               </div>
               <QuoteLineItems
-                items={items}
+                items={view.items}
                 onChangeQuantity={handleChangeQuantity}
                 onRemove={handleRemoveItem}
               />
@@ -265,19 +300,27 @@ export function QuoteBuilder({
         {step === 3 ? (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <QuoteTotalsCard
-              items={items}
+              view={view}
               discount={discount}
               onDiscountChange={setDiscount}
               paymentConditionId={paymentConditionId}
               onPaymentConditionChange={setPaymentConditionId}
+              conditions={conditionOptions}
+              conditionBlocked={conditionBlocked}
             />
             <QuotePdfPreview
-              number={number}
+              number={revisionOf?.number ?? null}
               revision={revision}
-              customer={customer}
-              items={items}
+              customerName={customer?.name ?? null}
+              customerDocument={customer?.document ?? null}
+              view={view}
               discount={discount}
-              paymentConditionId={paymentConditionId}
+              paymentConditionLabel={
+                conditionOptions.find((condition) => condition.id === paymentConditionId)?.label ??
+                null
+              }
+              footerNote={data.documentFooter}
+              showTaxLines={data.showTaxLines}
             />
           </div>
         ) : null}
@@ -301,8 +344,8 @@ export function QuoteBuilder({
             Avançar
           </Button>
         ) : (
-          <Button type="button" onClick={handleSave}>
-            Salvar orçamento
+          <Button type="button" onClick={handleSave} disabled={isSaving || conditionBlocked}>
+            {isSaving ? "Salvando…" : "Salvar orçamento"}
           </Button>
         )}
       </CardFooter>

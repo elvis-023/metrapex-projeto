@@ -7,21 +7,22 @@ import {
   getCurrentUserProfile,
   getUserOrganizations,
 } from "@/lib/auth/session";
-import { getPipelineQuotes } from "@/lib/pipeline/mock-data";
+import { getBoardQuotes } from "@/lib/pipeline/board";
 import { PipelineProvider } from "@/lib/pipeline/pipeline-context";
 
 /**
- * `PipelineProvider` vive aqui, no layout de todo o painel autenticado
- * — não só em `/pipeline` — porque a criação de orçamento em `/quotes/new`
- * também precisa gravar no estado local do pipeline (mock, sem
- * persistência real ainda) para o orçamento aparecer no board.
+ * `PipelineProvider` vive aqui, no layout de todo o painel autenticado — não
+ * só em `/pipeline` — porque o board e a página de detalhe compartilham a
+ * etapa movida por arrastar-e-soltar na sessão. Os orçamentos em si já vêm do
+ * banco (Milestone 14); só a etapa arrastada ainda é estado local
+ * (Milestone 16).
  */
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const [user, organizations, currentOrganization, quotes] = await Promise.all([
     getCurrentUserProfile(),
     getUserOrganizations(),
     getCurrentOrganization(),
-    getPipelineQuotes(),
+    getBoardQuotes(),
   ]);
 
   if (!user) {

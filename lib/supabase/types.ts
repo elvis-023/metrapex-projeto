@@ -7,6 +7,74 @@
 export type OrgRole = "admin" | "vendedor";
 export type OrgPlan = "entrada" | "profissional" | "escala";
 export type TaxMode = "inclusive" | "exclusive";
+export type RateSource = "org_default" | "category" | "product";
+export type PaymentConditionKind = "a_vista" | "cartao" | "boleto";
+export type QuoteStatus = "gerado" | "enviado" | "negociacao" | "convertido" | "expirado";
+export type QuoteDiscountType = "fixed" | "percent";
+
+/**
+ * Payloads jsonb das funções `save_quote_draft` / `issue_quote`. Todo valor
+ * monetário viaja como STRING de 6 casas (`Decimal.toFixed(6)`), nunca como
+ * `number` — o driver serializaria o número via float64 antes de a coluna
+ * `numeric(18,6)` recebê-lo (convenção de dinheiro do briefing §3).
+ */
+export type QuoteDraftPayload = {
+  status?: QuoteStatus;
+  owner_id: string | null;
+  customer_id: string | null;
+  customer_name: string;
+  customer_document: string;
+  customer_source_id: string | null;
+  discount_type: QuoteDiscountType;
+  discount_value: string;
+  payment_condition_id: string | null;
+  expires_at: string | null;
+};
+
+export type QuoteDraftItemPayload = {
+  product_id: string;
+  product_external_code: string;
+  product_name: string;
+  category_id_snapshot: string | null;
+  category_name: string | null;
+  quantity: string;
+};
+
+export type QuoteIssueTaxPayload = {
+  tax_type_id: string;
+  tax_code: string;
+  tax_label: string;
+  mode: TaxMode;
+  rate_applied: string;
+  rate_source: RateSource;
+  note: string | null;
+  base_amount: string;
+  tax_amount: string;
+  display_order: number;
+};
+
+export type QuoteIssueItemPayload = {
+  position: number;
+  unit_price_charged: string;
+  unit_base_display: string;
+  line_total: string;
+  taxes: QuoteIssueTaxPayload[];
+};
+
+export type QuoteIssueSnapshotPayload = {
+  subtotal: string;
+  total: string;
+  discount_amount: string;
+  payment_discount_amount: string;
+  payment_condition_label: string | null;
+  payment_condition_kind: PaymentConditionKind | null;
+  payment_condition_discount_percent: string | null;
+  payment_condition_installments: number | null;
+  payment_condition_term_days: number | null;
+  payment_band_label: string | null;
+  tax_footer_note: string | null;
+  show_tax_lines: boolean;
+};
 
 export type Database = {
   public: {
@@ -341,6 +409,297 @@ export type Database = {
           },
         ];
       };
+      payment_conditions: {
+        Row: {
+          id: string;
+          org_id: string;
+          label: string;
+          kind: PaymentConditionKind;
+          discount_percent: number;
+          installments: number;
+          term_days: number;
+          active: boolean;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          label: string;
+          kind: PaymentConditionKind;
+          discount_percent?: number | string;
+          installments?: number;
+          term_days?: number;
+          active?: boolean;
+          display_order?: number;
+        };
+        Update: Partial<{
+          label: string;
+          kind: PaymentConditionKind;
+          discount_percent: number | string;
+          installments: number;
+          term_days: number;
+          active: boolean;
+          display_order: number;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "payment_conditions_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      payment_value_bands: {
+        Row: {
+          id: string;
+          org_id: string;
+          label: string;
+          min_value: number;
+          max_value: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          label: string;
+          min_value?: number | string;
+          max_value?: number | string | null;
+        };
+        Update: Partial<{
+          label: string;
+          min_value: number | string;
+          max_value: number | string | null;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "payment_value_bands_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      payment_band_conditions: {
+        Row: {
+          band_id: string;
+          payment_condition_id: string;
+        };
+        Insert: {
+          band_id: string;
+          payment_condition_id: string;
+        };
+        Update: Partial<{
+          band_id: string;
+          payment_condition_id: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "payment_band_conditions_band_id_fkey";
+            columns: ["band_id"];
+            isOneToOne: false;
+            referencedRelation: "payment_value_bands";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "payment_band_conditions_payment_condition_id_fkey";
+            columns: ["payment_condition_id"];
+            isOneToOne: false;
+            referencedRelation: "payment_conditions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      quote_sequences: {
+        Row: {
+          org_id: string;
+          last_sequence: number;
+        };
+        Insert: {
+          org_id: string;
+          last_sequence?: number;
+        };
+        Update: Partial<{
+          last_sequence: number;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "quote_sequences_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: true;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      quotes: {
+        Row: {
+          id: string;
+          org_id: string;
+          sequence: number;
+          revision: number;
+          previous_revision_id: string | null;
+          superseded_by_revision_id: string | null;
+          status: QuoteStatus;
+          owner_id: string | null;
+          customer_id: string | null;
+          customer_name: string;
+          customer_document: string;
+          customer_source_id: string | null;
+          discount_type: QuoteDiscountType;
+          discount_value: number;
+          discount_amount: number | null;
+          payment_condition_id: string | null;
+          payment_condition_label: string | null;
+          payment_condition_kind: PaymentConditionKind | null;
+          payment_condition_discount_percent: number | null;
+          payment_condition_installments: number | null;
+          payment_condition_term_days: number | null;
+          payment_band_label: string | null;
+          payment_discount_amount: number | null;
+          subtotal: number | null;
+          total: number | null;
+          tax_snapshot_at: string | null;
+          tax_footer_note: string | null;
+          show_tax_lines: boolean;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          sequence: number;
+          revision?: number;
+          previous_revision_id?: string | null;
+          status?: QuoteStatus;
+          owner_id?: string | null;
+          customer_id?: string | null;
+          customer_name: string;
+          customer_document?: string;
+          customer_source_id?: string | null;
+          discount_type?: QuoteDiscountType;
+          discount_value?: number | string;
+          payment_condition_id?: string | null;
+          expires_at?: string | null;
+        };
+        /**
+         * Só o que a trigger `quotes_guard_issued_immutable` deixa mudar num
+         * documento já emitido: metadados de pipeline. Conteúdo do documento
+         * (preço, imposto, desconto, condição, totais) é escrito uma única vez,
+         * por `issue_quote`.
+         */
+        Update: Partial<{
+          status: QuoteStatus;
+          expires_at: string | null;
+          superseded_by_revision_id: string | null;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "quotes_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quotes_owner_id_fkey";
+            columns: ["owner_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      quote_items: {
+        Row: {
+          id: string;
+          quote_id: string;
+          position: number;
+          product_id: string | null;
+          product_external_code: string;
+          product_name: string;
+          category_id_snapshot: string | null;
+          category_name: string | null;
+          quantity: number;
+          unit_price_charged: number | null;
+          unit_base_display: number | null;
+          line_total: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          quote_id: string;
+          position: number;
+          product_id?: string | null;
+          product_external_code: string;
+          product_name: string;
+          category_id_snapshot?: string | null;
+          category_name?: string | null;
+          quantity: number | string;
+        };
+        Update: Partial<{
+          quantity: number | string;
+          unit_price_charged: number | string | null;
+          unit_base_display: number | string | null;
+          line_total: number | string | null;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_quote_id_fkey";
+            columns: ["quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      quote_item_taxes: {
+        Row: {
+          id: string;
+          quote_item_id: string;
+          /** Sem FK — snapshot, não referência viva. Nunca faça join com `tax_types`. */
+          tax_type_id: string | null;
+          tax_code: string;
+          tax_label: string;
+          mode: TaxMode;
+          rate_applied: number;
+          rate_source: RateSource;
+          note: string | null;
+          base_amount: number;
+          tax_amount: number;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          quote_item_id: string;
+          tax_type_id?: string | null;
+          tax_code: string;
+          tax_label: string;
+          mode: TaxMode;
+          rate_applied: number | string;
+          rate_source: RateSource;
+          note?: string | null;
+          base_amount: number | string;
+          tax_amount: number | string;
+          display_order?: number;
+        };
+        Update: Partial<never>;
+        Relationships: [
+          {
+            foreignKeyName: "quote_item_taxes_quote_item_id_fkey";
+            columns: ["quote_item_id"];
+            isOneToOne: false;
+            referencedRelation: "quote_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -370,6 +729,27 @@ export type Database = {
           p_category_id: string | null;
         };
         Returns: Database["public"]["Tables"]["products"]["Row"];
+      };
+      next_quote_sequence: {
+        Args: { p_org_id: string };
+        Returns: number;
+      };
+      save_quote_draft: {
+        Args: {
+          p_org_id: string;
+          p_quote: QuoteDraftPayload;
+          p_items: QuoteDraftItemPayload[];
+          p_previous_revision_id?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["quotes"]["Row"];
+      };
+      issue_quote: {
+        Args: {
+          p_quote_id: string;
+          p_items: QuoteIssueItemPayload[];
+          p_snapshot: QuoteIssueSnapshotPayload;
+        };
+        Returns: Database["public"]["Tables"]["quotes"]["Row"];
       };
       get_invite_preview: {
         Args: { invite_token: string };

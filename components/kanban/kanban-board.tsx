@@ -8,14 +8,30 @@ import { Button } from "@/components/ui/button";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
 import { ALL_SALESPEOPLE, PipelineFilters } from "@/components/kanban/pipeline-filters";
 import type { FakeQuoteStatus } from "@/lib/mock-data";
-import { pipelineStages, type Salesperson } from "@/lib/pipeline/mock-data";
+import { pipelineStages, resolveAssignee, type Salesperson } from "@/lib/pipeline/mock-data";
 import { usePipelineQuotes } from "@/lib/pipeline/pipeline-context";
 
-export function KanbanBoard({ salespeople }: { salespeople: Salesperson[] }) {
+export function KanbanBoard() {
   const { quotes, moveQuote } = usePipelineQuotes();
   const [assigneeId, setAssigneeId] = useState(ALL_SALESPEOPLE);
   const [dropTarget, setDropTarget] = useState<FakeQuoteStatus | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  /**
+   * As opções do filtro saem dos próprios orçamentos do board, não de uma
+   * lista fixa: desde a Milestone 14 o responsável é um `profiles.id` real, e
+   * uma lista à parte voltaria a filtrar por id que não existe em orçamento
+   * nenhum. Efeito colateral desejável: só aparece quem tem orçamento.
+   */
+  const salespeople = useMemo<Salesperson[]>(() => {
+    const byId = new Map<string, Salesperson>();
+    for (const quote of quotes) {
+      if (!quote.assigneeId || byId.has(quote.assigneeId)) continue;
+      const assignee = resolveAssignee(quote);
+      byId.set(quote.assigneeId, { id: quote.assigneeId, ...assignee });
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [quotes]);
 
   const visibleQuotes = useMemo(() => {
     // Revisões antigas ficam de fora do board — só a versão atual de cada

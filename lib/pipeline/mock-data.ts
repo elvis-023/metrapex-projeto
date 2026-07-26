@@ -27,6 +27,11 @@ export const fakeSalespeople: Salesperson[] = [
 
 export type PipelineQuote = FakeQuote & {
   assigneeId: string;
+  /**
+   * Nome real do responsável quando o orçamento vem do banco (Milestone 14).
+   * Os cards mockados não têm — caem no `fakeSalespeople` por `assigneeId`.
+   */
+  assigneeName?: string | null;
   revision: number;
   /** Id da revisão anterior deste mesmo orçamento (mesmo `number`), quando existir. */
   previousRevisionId?: string;
@@ -36,8 +41,28 @@ export type PipelineQuote = FakeQuote & {
 
 const salespersonById = new Map(fakeSalespeople.map((person) => [person.id, person]));
 
-export function getSalesperson(assigneeId: string): Salesperson {
-  return salespersonById.get(assigneeId) ?? fakeSalespeople[0];
+export function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return (
+    `${parts[0]?.[0] ?? ""}${parts.length > 1 ? parts[parts.length - 1][0] : ""}`.toUpperCase() ||
+    "?"
+  );
+}
+
+/**
+ * Responsável exibido no card. A PRESENÇA da chave `assigneeName` distingue as
+ * duas origens: orçamento vindo do banco sempre a define (nome do perfil ou
+ * `null`), card mockado nunca. Sem essa distinção, um orçamento real sem dono
+ * resolvível cairia no primeiro vendedor mockado e exibiria o nome errado.
+ */
+export function resolveAssignee(quote: PipelineQuote): { name: string; initials: string } {
+  if (quote.assigneeName !== undefined) {
+    return quote.assigneeName
+      ? { name: quote.assigneeName, initials: initialsOf(quote.assigneeName) }
+      : { name: "Não atribuído", initials: "—" };
+  }
+  const salesperson = salespersonById.get(quote.assigneeId) ?? fakeSalespeople[0];
+  return { name: salesperson.name, initials: salesperson.initials };
 }
 
 export const fakePipelineQuotes: PipelineQuote[] = [
@@ -234,24 +259,9 @@ const defaultActivities = (quote: PipelineQuote): PipelineActivity[] => [
     type: "criacao",
     label: "Orçamento gerado",
     timestamp: `${quote.expiresAt}T08:00:00-03:00`,
-    author: getSalesperson(quote.assigneeId).name,
+    author: resolveAssignee(quote).name,
   },
 ];
-
-export async function getPipelineQuotes(): Promise<PipelineQuote[]> {
-  await new Promise((resolve) => setTimeout(resolve, 400));
-  return fakePipelineQuotes;
-}
-
-export async function getPipelineQuoteById(id: string): Promise<PipelineQuote | null> {
-  await new Promise((resolve) => setTimeout(resolve, 300));
-  return fakePipelineQuotes.find((quote) => quote.id === id) ?? null;
-}
-
-export async function getQuoteActivities(quote: PipelineQuote): Promise<PipelineActivity[]> {
-  await new Promise((resolve) => setTimeout(resolve, 300));
-  return getQuoteActivitiesSync(quote);
-}
 
 /** Variante síncrona para uso em Client Components que já leem o orçamento do `PipelineProvider` (sem o delay artificial do mock). */
 export function getQuoteActivitiesSync(quote: PipelineQuote): PipelineActivity[] {

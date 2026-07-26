@@ -83,13 +83,15 @@ A direção visual é ancorada no próprio artefato que o produto emite: o orça
 
 Cada orçamento carrega a origem do cliente que o gerou — `Site` ou `CRM` por enquanto, mas a lista é gerenciável (não um enum fixo em código) na tela dedicada em `/customers` (`lib/customers/`). Aparece ao lado do nome do cliente no Kanban, no detalhe do orçamento e na tabela "Vencendo em breve" do dashboard, e alimenta o gráfico "Origem dos clientes" e, futuramente, a dimensão de origem nos relatórios (ver PRD > Relatórios).
 
-## Orçamento manual (Milestone 8, UI com dados mockados)
+## Orçamento manual (Milestone 14, persistido)
 
 O construtor de orçamento do vendedor (`components/quotes/`) tem entrada própria na navegação — **Criar Orçamento** → `/quotes/new` — e não fica restrito ao segmento `/pipeline`; a tela de nova revisão é que continua em `/pipeline/[id]/revise`, por ser uma ação sobre um orçamento existente do board.
 
-- **Desconto negociado** aceita percentual ou valor fixo (toggle R$/%), resolvido para R$ por `resolveDiscountAmount` (`lib/quotes/mock-data.ts`) — a mesma função alimenta a tela de revisão e o preview do PDF, para as duas nunca divergirem.
-- **Revisão é um registro novo**, não uma sobrescrita: `PipelineQuote` rastreia `revision`, `previousRevisionId` e `supersededByRevisionId`. A versão anterior fica congelada, continua acessível pelo link antigo e aparece marcada como "Versão antiga"; o board do Kanban mostra só a revisão atual de cada orçamento.
-- **`PipelineProvider` vive no layout do painel inteiro** (`app/(app)/layout.tsx`), não só em `/pipeline` — é o que permite `/quotes/new` gravar no mesmo estado mockado que o board lê. Ainda é só estado em memória da sessão (sem Supabase); um reload de página perde tudo, isso é esperado até o backend do motor de orçamento (Milestone 14) e do pipeline (Milestone 16) existir. Páginas de detalhe (`/pipeline/[id]`, `/pipeline/[id]/revise`) por isso leem do contexto ao vivo, não de fetch de servidor sobre o mock estático — senão um orçamento criado na sessão dá 404 ao abrir.
+- **`lib/quotes/engine.ts` é a única fonte de cálculo do documento** — `calculateQuote` cruza os itens com o catálogo, chama `calcItemTaxes` do motor de impostos, e resolve desconto negociado, faixa de valor e desconto da condição de pagamento. É função pura (`Decimal`, 6 casas): o construtor a roda no cliente para recálculo instantâneo, e o servidor a roda de novo ao salvar sobre `{ productId, quantity }` — nenhum preço, imposto ou total vindo do client é gravado. `lib/quotes/view-model.ts` é a fronteira única onde o valor vira `number` de 2 casas para a tela.
+- **Rascunho guarda entrada; emitido guarda resultado.** Enquanto `quotes.tax_snapshot_at` é nulo, só produto/quantidade/desconto/condição estão no banco e os valores são recalculados a cada abertura (§11.3). A emissão (`issueQuoteAction` → `issue_quote`) congela preço, imposto por linha, condição de pagamento e rodapé, e as triggers do banco passam a recusar qualquer reescrita — alterar exige revisão nova.
+- **Revisão é um registro novo**, não uma sobrescrita: `quotes` rastreia `revision`, `previous_revision_id` e `superseded_by_revision_id`, e a revisão herda o produto e a quantidade — não os valores, que são recalculados com a configuração vigente (§11.4). A versão anterior fica congelada, continua acessível pelo link antigo e aparece marcada como "Versão antiga"; o board mostra só a revisão atual.
+- **Numeração** é um inteiro por organização (`quotes.sequence`, alocado por `next_quote_sequence`); o rótulo `ORC-0128` é formatado por `formatQuoteNumber` e não é persistido.
+- **`PipelineProvider`** (`app/(app)/layout.tsx`) guarda apenas a etapa movida por arrastar-e-soltar como sobreposição sobre os dados do servidor. Os orçamentos vêm do banco; a persistência da etapa e a timeline de atividades são Milestone 16.
 
 ## Processo
 

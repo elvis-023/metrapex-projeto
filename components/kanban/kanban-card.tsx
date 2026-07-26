@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { CustomerSourceBadge } from "@/components/customers/customer-source-badge";
 import { cn } from "@/lib/utils";
 import { currencyFormatter, dateFormatter, parseDateOnly } from "@/lib/dashboard/format";
-import { getSalesperson, type PipelineQuote } from "@/lib/pipeline/mock-data";
+import { resolveAssignee, type PipelineQuote } from "@/lib/pipeline/mock-data";
 
 function expiryTone(expiresAt: string, status: PipelineQuote["status"]): string {
   if (status === "expirado") return "text-danger";
@@ -25,7 +25,7 @@ export function KanbanCard({
   quote: PipelineQuote;
   onDragStart: (event: DragEvent<HTMLAnchorElement>, quoteId: string) => void;
 }) {
-  const assignee = getSalesperson(quote.assigneeId);
+  const assignee = resolveAssignee(quote);
 
   return (
     <Link

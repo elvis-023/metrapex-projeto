@@ -15,17 +15,33 @@ import {
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/states/empty-state";
 import { currencyFormatter } from "@/lib/catalog/format";
-import type { Product, ProductCategory } from "@/lib/catalog/types";
-import { fakeTaxRateOverrides, fakeTaxTypes } from "@/lib/quotes/mock-data";
-import { resolveMockRate } from "@/lib/quotes/tax-engine";
+import type { ProductCategory } from "@/lib/catalog/types";
+import type { CatalogProduct } from "@/lib/quotes/engine";
+import { resolveRate } from "@/lib/tax-engine/resolve-rate";
+import type { TaxRateOverride, TaxType } from "@/lib/tax-engine/types";
 
 const ALL_CATEGORIES = "all";
 
-function TaxBadges({ product }: { product: Product }) {
-  const resolved = fakeTaxTypes
+/**
+ * Alíquota resolvida pela hierarquia real (produto > categoria > padrão da
+ * organização). Só mostra a linha do tributo que incide, ou o override
+ * explícito de produto — que pode ser 0% por ST e precisa aparecer com a nota
+ * (briefing §7.3), senão a badge zerada parece erro.
+ */
+function TaxBadges({
+  product,
+  taxTypes,
+  overrides,
+}: {
+  product: CatalogProduct;
+  taxTypes: TaxType[];
+  overrides: TaxRateOverride[];
+}) {
+  const resolved = taxTypes
+    .filter((taxType) => taxType.active)
     .map((taxType) => ({
       taxType,
-      resolved: resolveMockRate(taxType, product.id, product.categoryId, fakeTaxRateOverrides),
+      resolved: resolveRate(taxType, { id: product.id, categoryId: product.categoryId }, overrides),
     }))
     .filter(({ resolved: r }) => r.rate > 0 || r.source === "product");
 
@@ -51,11 +67,15 @@ function TaxBadges({ product }: { product: Product }) {
 export function ProductPicker({
   products,
   categories,
+  taxTypes,
+  overrides,
   onAdd,
 }: {
-  products: Product[];
+  products: CatalogProduct[];
   categories: ProductCategory[];
-  onAdd: (product: Product) => void;
+  taxTypes: TaxType[];
+  overrides: TaxRateOverride[];
+  onAdd: (productId: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [categoryId, setCategoryId] = useState(ALL_CATEGORIES);
@@ -126,17 +146,17 @@ export function ProductPicker({
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="truncate text-sm font-medium">{product.name}</span>
                   <span className="font-mono text-sm font-semibold tabular-nums">
-                    {currencyFormatter.format(product.price)}
+                    {currencyFormatter.format(Number(product.price))}
                   </span>
                 </div>
-                <TaxBadges product={product} />
+                <TaxBadges product={product} taxTypes={taxTypes} overrides={overrides} />
               </div>
               <Button
                 type="button"
                 variant="outline"
                 size="icon-sm"
                 aria-label={`Adicionar ${product.name}`}
-                onClick={() => onAdd(product)}
+                onClick={() => onAdd(product.id)}
               >
                 <PlusIcon />
               </Button>

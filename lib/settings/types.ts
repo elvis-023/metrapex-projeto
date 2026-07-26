@@ -1,4 +1,4 @@
-import type { RateSource, TaxMode } from "@/lib/quotes/tax-engine";
+import type { RateSource, TaxMode } from "@/lib/supabase/types";
 
 export type { TaxMode, RateSource };
 

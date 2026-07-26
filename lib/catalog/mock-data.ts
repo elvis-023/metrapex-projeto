@@ -1,11 +1,11 @@
 import type { Product, ProductCategory } from "@/lib/catalog/types";
 
 /**
- * Dado mockado que sobrevive à Milestone 13: o construtor de orçamento manual
- * (Milestone 8, `lib/quotes/mock-data.ts`) ainda roda em memória até o motor
- * de orçamento (Milestone 14) existir, então continua lendo catálogo daqui em
- * vez do Supabase. As telas do próprio catálogo (Milestone 6) já usam dado
- * real — ver `lib/catalog/queries.ts`.
+ * Dado mockado que sobrevive à Milestone 14: só o formulário público
+ * (`app/(public-form)/`) ainda lê catálogo daqui, até a Milestone 15 resolver a
+ * organização pela chave do snippet. As telas do catálogo (Milestone 6) e o
+ * construtor de orçamento (Milestone 14) já usam dado real — ver
+ * `lib/catalog/queries.ts` e `lib/quotes/queries.ts`.
  */
 
 export const fakeCategories: ProductCategory[] = [
