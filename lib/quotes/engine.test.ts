@@ -316,11 +316,17 @@ describe("calculateQuote — casos fiscais no documento", () => {
     ];
 
     const before = calculate({
-      taxTypes: [{ ...ipiInclusive, displayOrder: 1 }, { ...ipiZerado, displayOrder: 2 }],
+      taxTypes: [
+        { ...ipiInclusive, displayOrder: 1 },
+        { ...ipiZerado, displayOrder: 2 },
+      ],
       overrides,
     });
     const after = calculate({
-      taxTypes: [{ ...ipiZerado, displayOrder: 1 }, { ...ipiInclusive, displayOrder: 2 }],
+      taxTypes: [
+        { ...ipiZerado, displayOrder: 1 },
+        { ...ipiInclusive, displayOrder: 2 },
+      ],
       overrides,
     });
 
