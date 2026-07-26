@@ -12,7 +12,9 @@ export async function generateMetadata({
   const { publicFormKey } = await params;
   const resolved = await resolvePublicForm(publicFormKey);
   return {
-    title: resolved ? `Pedir orçamento — ${resolved.organization.name}` : "Formulário não encontrado",
+    title: resolved
+      ? `Pedir orçamento — ${resolved.organization.name}`
+      : "Formulário não encontrado",
   };
 }
 

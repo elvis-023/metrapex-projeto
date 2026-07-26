@@ -149,7 +149,11 @@ async function main() {
   const stamp = Date.now();
   console.log("\n== setup ==");
   const client = await signUpUser(`vendedor.${stamp}@metrapex.test`);
-  const setup = await setupOrganization(client, `Metrapex Público ${stamp}`, `metrapex-pub-${stamp}`);
+  const setup = await setupOrganization(
+    client,
+    `Metrapex Público ${stamp}`,
+    `metrapex-pub-${stamp}`,
+  );
   console.log(`  organização ${setup.orgId}, public_form_key ${setup.publicFormKey}`);
 
   console.log("\n== EXECUTE revogado de anon (achado da revisão de segurança) ==");
@@ -164,11 +168,36 @@ async function main() {
 
   const anonCreate = await anon.rpc("create_public_quote", {
     p_org_id: setup.orgId,
-    p_quote: { customer_name: "x", customer_document: "x", customer_source_id: "site", discount_type: "fixed", discount_value: "0", payment_condition_id: null, expires_at: null },
+    p_quote: {
+      customer_name: "x",
+      customer_document: "x",
+      customer_source_id: "site",
+      discount_type: "fixed",
+      discount_value: "0",
+      payment_condition_id: null,
+      expires_at: null,
+    },
     p_items: [],
-    p_snapshot: { subtotal: "0", total: "0", discount_amount: "0", payment_discount_amount: "0", payment_condition_label: null, payment_condition_kind: null, payment_condition_discount_percent: null, payment_condition_installments: null, payment_condition_term_days: null, payment_band_label: null, tax_footer_note: null, show_tax_lines: true },
+    p_snapshot: {
+      subtotal: "0",
+      total: "0",
+      discount_amount: "0",
+      payment_discount_amount: "0",
+      payment_condition_label: null,
+      payment_condition_kind: null,
+      payment_condition_discount_percent: null,
+      payment_condition_installments: null,
+      payment_condition_term_days: null,
+      payment_band_label: null,
+      tax_footer_note: null,
+      show_tax_lines: true,
+    },
   });
-  check("anon NÃO consegue chamar create_public_quote direto", anonCreate.error !== null, anonCreate);
+  check(
+    "anon NÃO consegue chamar create_public_quote direto",
+    anonCreate.error !== null,
+    anonCreate,
+  );
 
   const anonRateLimit = await anon.rpc("public_form_check_rate_limit", {
     p_scope: "ip",
@@ -182,8 +211,15 @@ async function main() {
     anonRateLimit,
   );
 
-  const { data: anonRateLimitTable } = await anon.from("public_form_rate_limits").select("*").limit(1);
-  eq("anon não enxerga nenhuma linha de public_form_rate_limits (RLS)", anonRateLimitTable?.length ?? 0, 0);
+  const { data: anonRateLimitTable } = await anon
+    .from("public_form_rate_limits")
+    .select("*")
+    .limit(1);
+  eq(
+    "anon não enxerga nenhuma linha de public_form_rate_limits (RLS)",
+    anonRateLimitTable?.length ?? 0,
+    0,
+  );
 
   console.log("\n== formulário não encontrado (chave inválida) ==");
   const notFound = await postPublicQuote(
@@ -230,7 +266,11 @@ async function main() {
     }),
     "203.0.113.13",
   );
-  check("caminho feliz → 200 com número do orçamento", happy.status === 200 && Boolean(happy.quoteNumber), happy);
+  check(
+    "caminho feliz → 200 com número do orçamento",
+    happy.status === 200 && Boolean(happy.quoteNumber),
+    happy,
+  );
 
   if (happy.quoteNumber) {
     const { data: issuedQuote } = await admin
@@ -241,7 +281,10 @@ async function main() {
       .limit(1)
       .single();
 
-    check("orçamento já nasce emitido (tax_snapshot_at preenchido)", issuedQuote?.tax_snapshot_at !== null);
+    check(
+      "orçamento já nasce emitido (tax_snapshot_at preenchido)",
+      issuedQuote?.tax_snapshot_at !== null,
+    );
     eq("origem do cliente marcada como site", issuedQuote?.customer_source_id, "site");
     eq("total = 2×100 + 1×200 + 18% ICMS por fora = 472,00", Number(issuedQuote?.total), 472);
     eq("documento do cliente gravado sem máscara", issuedQuote?.customer_document, happyDocument);
@@ -266,7 +309,11 @@ async function main() {
     .from("quotes")
     .select("id", { count: "exact", head: true })
     .eq("org_id", setup.orgId);
-  eq("só uma linha nova criada para as duas submissões idênticas", (after.count ?? 0) - (before.count ?? 0), 1);
+  eq(
+    "só uma linha nova criada para as duas submissões idênticas",
+    (after.count ?? 0) - (before.count ?? 0),
+    1,
+  );
 
   console.log("\n== dedupe de cliente por (organização, documento) ==");
   const dedupeDocument = buildTestCnpj("445556660001");
@@ -328,7 +375,11 @@ async function main() {
     );
     results.push(result.status);
   }
-  check("5 primeiras dentro do limite (200)", results.slice(0, 5).every((s) => s === 200), results);
+  check(
+    "5 primeiras dentro do limite (200)",
+    results.slice(0, 5).every((s) => s === 200),
+    results,
+  );
   eq("6ª solicitação do mesmo documento", results[5], 429);
 
   console.log("\n== canal WhatsApp condicionado ao plano ==");

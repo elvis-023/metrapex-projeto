@@ -4,7 +4,10 @@
  * devolve um token opaco — a validação real, que não pode ser forjada pelo
  * client, é este `siteverify` contra o segredo.
  */
-export async function verifyTurnstileToken(token: string, remoteIp: string | null): Promise<boolean> {
+export async function verifyTurnstileToken(
+  token: string,
+  remoteIp: string | null,
+): Promise<boolean> {
   const secretKey = process.env.TURNSTILE_SECRET_KEY;
   if (!secretKey) {
     throw new Error("TURNSTILE_SECRET_KEY não configurada.");

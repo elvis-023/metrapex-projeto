@@ -51,7 +51,10 @@ export async function GET(request: NextRequest) {
     p_limit: RATE_LIMIT.limit,
   });
   if (withinLimit === false) {
-    return NextResponse.json({ error: "Muitas consultas. Tente novamente em instantes." }, { status: 429 });
+    return NextResponse.json(
+      { error: "Muitas consultas. Tente novamente em instantes." },
+      { status: 429 },
+    );
   }
 
   const response = await fetch(`https://viacep.com.br/ws/${cepDigits}/json/`, {

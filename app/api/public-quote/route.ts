@@ -80,7 +80,8 @@ function expiryDate(): string {
 
 function validateBody(body: Partial<PublicQuoteRequestBody>): string | null {
   if (!body.publicFormKey) return "Formulário não identificado.";
-  if (body.documentType !== "cpf" && body.documentType !== "cnpj") return "Tipo de documento inválido.";
+  if (body.documentType !== "cpf" && body.documentType !== "cnpj")
+    return "Tipo de documento inválido.";
 
   // Não só o formato: o dígito verificador é checado de verdade — achado da
   // revisão adversarial (14 dígitos não repetidos passava como CNPJ válido).
@@ -176,7 +177,8 @@ export async function POST(request: NextRequest) {
     }),
   ]);
 
-  if (ipOk.data === false) return badRequest("Muitas solicitações. Tente novamente mais tarde.", 429);
+  if (ipOk.data === false)
+    return badRequest("Muitas solicitações. Tente novamente mais tarde.", 429);
   if (documentOk.data === false) {
     return badRequest("Limite de solicitações para este documento atingido hoje.", 429);
   }
@@ -374,11 +376,14 @@ export async function POST(request: NextRequest) {
   try {
     const { data: pdfSettings } = await supabase
       .from("pdf_settings")
-      .select("logo_url, issuer_name, issuer_document, issuer_address, warranty_text, terms_text, shipping_text, pdfmonkey_template_id")
+      .select(
+        "logo_url, issuer_name, issuer_document, issuer_address, warranty_text, terms_text, shipping_text, pdfmonkey_template_id",
+      )
       .eq("org_id", org.id)
       .maybeSingle();
 
-    const templateId = pdfSettings?.pdfmonkey_template_id ?? process.env.PDFMONKEY_DEFAULT_TEMPLATE_ID;
+    const templateId =
+      pdfSettings?.pdfmonkey_template_id ?? process.env.PDFMONKEY_DEFAULT_TEMPLATE_ID;
     if (!templateId) throw new Error("Nenhum template do PDFMonkey configurado.");
 
     pdfUrl = await generateQuotePdf({
@@ -412,7 +417,12 @@ export async function POST(request: NextRequest) {
 
     if (isWhatsAppEligiblePlan(org.plan)) {
       try {
-        await triggerWhatsAppQuoteDelivery({ phone, organizationName: org.name, quoteNumber, pdfUrl });
+        await triggerWhatsAppQuoteDelivery({
+          phone,
+          organizationName: org.name,
+          quoteNumber,
+          pdfUrl,
+        });
       } catch (error) {
         console.error("[public-quote] falha ao acionar entrega por WhatsApp", quote.id, error);
       }

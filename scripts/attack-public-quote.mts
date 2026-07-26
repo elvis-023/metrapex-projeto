@@ -41,7 +41,12 @@ async function setupOrganization(client: SupabaseClient, name: string, slug: str
 
   const { data: product } = await client
     .from("products")
-    .insert({ org_id: orgId, external_code: "PRD-001", name: `Produto ${name}`, price: "100.000000" })
+    .insert({
+      org_id: orgId,
+      external_code: "PRD-001",
+      name: `Produto ${name}`,
+      price: "100.000000",
+    })
     .select("id")
     .single();
 
@@ -138,7 +143,9 @@ async function main() {
     }),
     "198.51.100.3",
   );
-  console.log(`  tamanho errado (3 dígitos): ${badLengthCnpj.status} — ${JSON.stringify(badLengthCnpj)}`);
+  console.log(
+    `  tamanho errado (3 dígitos): ${badLengthCnpj.status} — ${JSON.stringify(badLengthCnpj)}`,
+  );
 
   const checksumInvalidCnpj = await post(
     baseBody({

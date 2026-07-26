@@ -20,7 +20,9 @@ const TURNSTILE_SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api
 function loadTurnstileScript(): Promise<void> {
   if (window.turnstile) return Promise.resolve();
 
-  const existing = document.querySelector<HTMLScriptElement>(`script[src="${TURNSTILE_SCRIPT_SRC}"]`);
+  const existing = document.querySelector<HTMLScriptElement>(
+    `script[src="${TURNSTILE_SCRIPT_SRC}"]`,
+  );
   if (existing) {
     return new Promise((resolve) => existing.addEventListener("load", () => resolve()));
   }

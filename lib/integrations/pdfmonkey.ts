@@ -53,7 +53,9 @@ export async function generateQuotePdf(params: {
     });
 
     if (!statusResponse.ok) {
-      throw new Error(`Falha ao consultar status do documento no PDFMonkey (${statusResponse.status}).`);
+      throw new Error(
+        `Falha ao consultar status do documento no PDFMonkey (${statusResponse.status}).`,
+      );
     }
 
     const current = (await statusResponse.json()) as { document: PdfMonkeyDocument };
@@ -62,7 +64,9 @@ export async function generateQuotePdf(params: {
       return current.document.download_url;
     }
     if (current.document.status === "failure") {
-      throw new Error(`Geração do PDF falhou no PDFMonkey: ${current.document.failure_cause ?? "motivo desconhecido"}.`);
+      throw new Error(
+        `Geração do PDF falhou no PDFMonkey: ${current.document.failure_cause ?? "motivo desconhecido"}.`,
+      );
     }
 
     await new Promise((resolve) => setTimeout(resolve, delayMs));

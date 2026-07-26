@@ -5,7 +5,13 @@ import { Loader2Icon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/auth/form-field";
 import { cn } from "@/lib/utils";
-import { formatCep, formatCnpj, formatCpf, formatPhone, onlyDigits } from "@/lib/public-form/mock-data";
+import {
+  formatCep,
+  formatCnpj,
+  formatCpf,
+  formatPhone,
+  onlyDigits,
+} from "@/lib/public-form/mock-data";
 import { isValidCnpj, isValidCpf } from "@/lib/public-form/cpf-cnpj";
 import { lookupCep, lookupCnpj } from "@/lib/public-form/lookup";
 import type { PublicFormAction } from "@/lib/public-form/reducer";
