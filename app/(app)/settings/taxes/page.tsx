@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { TaxSettingsManager } from "@/components/settings/tax-settings-manager";
-import { getCategories, getProducts } from "@/lib/catalog/mock-data";
+import { getCategories, getProducts } from "@/lib/catalog/queries";
 import { initialTaxRateOverrides, initialTaxTypes } from "@/lib/settings/mock-data";
 
 export const metadata: Metadata = { title: "Impostos" };

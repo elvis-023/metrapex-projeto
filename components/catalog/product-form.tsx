@@ -16,6 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  createProductAction,
+  updateProductAction,
+  uploadProductPhotoAction,
+} from "@/lib/catalog/actions";
+import { parseBrPrice } from "@/lib/catalog/money";
 import { cn } from "@/lib/utils";
 import type { Product, ProductCategory } from "@/lib/catalog/types";
 
@@ -55,7 +61,7 @@ function toFormValues(product?: Product): ProductFormValues {
 
 /** Aceita "34,90", "34.90" ou "34" — mesma tolerância da importação de planilha. */
 function isValidPrice(value: string): boolean {
-  return /^\d+([.,]\d{1,2})?$/.test(value.trim());
+  return parseBrPrice(value) !== null;
 }
 
 export function ProductForm({
@@ -69,23 +75,33 @@ export function ProductForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [values, setValues] = useState<ProductFormValues>(() => toFormValues(product));
   const [errors, setErrors] = useState<Partial<Record<keyof ProductFormValues, string>>>({});
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = Boolean(product);
 
   function setField<K extends keyof ProductFormValues>(field: K, value: ProductFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
   }
 
-  function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () =>
-      setField("photoUrl", typeof reader.result === "string" ? reader.result : null);
-    reader.readAsDataURL(file);
     event.target.value = "";
+    if (!file) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const { url } = await uploadProductPhotoAction(formData);
+      setField("photoUrl", url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível enviar a foto.");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const nextErrors: Partial<Record<keyof ProductFormValues, string>> = {};
@@ -103,8 +119,36 @@ export function ProductForm({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    toast.success(isEditing ? "Produto atualizado." : "Produto cadastrado.");
-    router.push("/catalog");
+    const input = {
+      externalCode: values.externalCode,
+      name: values.name,
+      price: values.price,
+      stock: values.stock,
+      categoryId: values.categoryId === NO_CATEGORY ? null : values.categoryId,
+      photoUrl: values.photoUrl,
+      alternativeTitle: values.alternativeTitle,
+      catalogUrl: values.catalogUrl,
+      manualUrl: values.manualUrl,
+      videoUrl: values.videoUrl,
+      certificateEligible: values.certificateEligible,
+      leadTime: values.leadTime,
+    };
+
+    setIsSubmitting(true);
+    try {
+      if (isEditing && product) {
+        await updateProductAction(product.id, input);
+        toast.success("Produto atualizado.");
+      } else {
+        await createProductAction(input);
+        toast.success("Produto cadastrado.");
+      }
+      router.push("/catalog");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o produto.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -135,10 +179,15 @@ export function ProductForm({
                 type="button"
                 variant="outline"
                 size="sm"
+                disabled={isUploadingPhoto}
                 onClick={() => fileInputRef.current?.click()}
               >
                 <UploadIcon />
-                {values.photoUrl ? "Trocar foto" : "Selecionar foto"}
+                {isUploadingPhoto
+                  ? "Enviando..."
+                  : values.photoUrl
+                    ? "Trocar foto"
+                    : "Selecionar foto"}
               </Button>
               <p className="text-muted-foreground text-xs">JPG ou PNG, até 5MB.</p>
             </div>
@@ -330,7 +379,9 @@ export function ProductForm({
         <Button type="button" variant="outline" onClick={() => router.push("/catalog")}>
           Cancelar
         </Button>
-        <Button type="submit">{isEditing ? "Salvar alterações" : "Cadastrar produto"}</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Salvando..." : isEditing ? "Salvar alterações" : "Cadastrar produto"}
+        </Button>
       </div>
     </form>
   );

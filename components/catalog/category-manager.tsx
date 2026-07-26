@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +25,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/states/empty-state";
+import {
+  createCategoryAction,
+  deleteCategoryAction,
+  updateCategoryAction,
+} from "@/lib/catalog/actions";
 import { cn } from "@/lib/utils";
 
 export type CategoryWithCount = {
@@ -33,12 +39,14 @@ export type CategoryWithCount = {
 };
 
 export function CategoryManager({ initialCategories }: { initialCategories: CategoryWithCount[] }) {
+  const router = useRouter();
   const [categories, setCategories] = useState(initialCategories);
   const [dialogState, setDialogState] = useState<
     { mode: "create" } | { mode: "edit"; category: CategoryWithCount } | null
   >(null);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   function openCreate() {
     setDialogState({ mode: "create" });
@@ -52,48 +60,52 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     setError(null);
   }
 
-  function handleSave() {
+  async function handleSave() {
     const trimmed = name.trim();
     if (!trimmed) {
       setError("Nome da categoria obrigatório.");
       return;
     }
-    const isDuplicate = categories.some(
-      (category) =>
-        category.name.toLowerCase() === trimmed.toLowerCase() &&
-        !(dialogState?.mode === "edit" && category.id === dialogState.category.id),
-    );
-    if (isDuplicate) {
-      setError("Já existe uma categoria com esse nome.");
-      return;
-    }
 
-    if (dialogState?.mode === "edit") {
-      setCategories((current) =>
-        current.map((category) =>
-          category.id === dialogState.category.id ? { ...category, name: trimmed } : category,
-        ),
+    setIsSaving(true);
+    try {
+      if (dialogState?.mode === "edit") {
+        await updateCategoryAction(dialogState.category.id, trimmed);
+        setCategories((current) =>
+          current.map((category) =>
+            category.id === dialogState.category.id ? { ...category, name: trimmed } : category,
+          ),
+        );
+        toast.success("Categoria atualizada.");
+      } else {
+        const created = await createCategoryAction(trimmed);
+        setCategories((current) => [...current, { ...created, productCount: 0 }]);
+        toast.success("Categoria criada.");
+      }
+      setDialogState(null);
+      router.refresh();
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error ? saveError.message : "Não foi possível salvar a categoria.",
       );
-      toast.success("Categoria atualizada.");
-    } else {
-      setCategories((current) => [
-        ...current,
-        { id: `cat_${crypto.randomUUID()}`, name: trimmed, productCount: 0 },
-      ]);
-      toast.success("Categoria criada.");
+    } finally {
+      setIsSaving(false);
     }
-    setDialogState(null);
   }
 
-  function handleDelete(category: CategoryWithCount) {
-    if (category.productCount > 0) {
+  async function handleDelete(category: CategoryWithCount) {
+    try {
+      await deleteCategoryAction(category.id);
+      setCategories((current) => current.filter((c) => c.id !== category.id));
+      toast.success("Categoria removida.");
+      router.refresh();
+    } catch (deleteError) {
       toast.error(
-        `Remova ou realoque os ${category.productCount} produto(s) desta categoria antes de excluí-la.`,
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Não foi possível excluir a categoria.",
       );
-      return;
     }
-    setCategories((current) => current.filter((c) => c.id !== category.id));
-    toast.success("Categoria removida.");
   }
 
   return (
@@ -142,7 +154,9 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
               <Button variant="outline" onClick={() => setDialogState(null)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSave}>Salvar</Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? "Salvando..." : "Salvar"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ProductForm } from "@/components/catalog/product-form";
-import { getCategories, getProductById } from "@/lib/catalog/mock-data";
+import { getCategories, getProductById } from "@/lib/catalog/queries";
 
 export const metadata: Metadata = { title: "Editar produto" };
 

@@ -4,9 +4,14 @@ export type ProductCategory = {
 };
 
 /**
- * `price` é `number` só porque este milestone é UI com dados mockados —
- * o motor de orçamento (Milestone 14) é quem define o tipo de precisão real
- * usado em cálculo, conforme convenção de dinheiro no CLAUDE.md.
+ * `price` é `number` aqui só para exibição/formulário (a Milestone 13 já
+ * persiste de verdade em `products.price numeric(18,6)` — ver
+ * lib/catalog/queries.ts, lib/catalog/actions.ts). Este tipo é a forma que a
+ * UI do Milestone 6 consome, NÃO a forma de cálculo: o motor de orçamento
+ * (Milestone 14) não deve reaproveitar `Product`/`getProductById` para
+ * calcular imposto — precisa ler o preço direto da coluna e reconverter para
+ * Decimal, conforme a convenção de dinheiro do briefing §3 (nunca number de
+ * ponto flutuante puro, nem de passagem).
  */
 export type Product = {
   id: string;

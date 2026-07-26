@@ -185,10 +185,10 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 **Branch:** `milestone/13-catalog-backend`
 **Objetivo:** Persistência real do catálogo, ligando às telas do Milestone 6.
 
-- [ ] CRUD de produtos e categorias no Supabase
-- [ ] Import de planilha: parsing, validação (código duplicado, preço mal formatado, campo obrigatório, normalização de preço BR, linhas vazias ignoradas), upsert por código externo
-- [ ] Upload de foto de produto (Supabase Storage)
-- [ ] Vínculo de `category_id` ao produto (usado pelo motor de impostos)
+- [x] CRUD de produtos e categorias no Supabase
+- [x] Import de planilha: parsing, validação (código duplicado, preço mal formatado, campo obrigatório, normalização de preço BR, linhas vazias ignoradas), upsert por código externo
+- [x] Upload de foto de produto (Supabase Storage)
+- [x] Vínculo de `category_id` ao produto (usado pelo motor de impostos)
 
 **Commit final:** `feat(catalog): catalog persistence, spreadsheet import and validation`
 
