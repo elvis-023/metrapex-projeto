@@ -209,12 +209,13 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 **Branch:** `milestone/15-public-form-backend`
 **Objetivo:** Endpoint público que resolve organização, deduplica cliente, calcula, gera PDF e envia — sem escrita direta do client no banco.
 
-- [ ] Endpoint de validação (BrasilAPI para CNPJ, ViaCEP para CEP)
-- [ ] Antispam: Cloudflare Turnstile, honeypot, limite de requisições por IP e por documento
-- [ ] Resolução de organização pela chave pública do snippet
-- [ ] Geração de PDF via PDFMonkey com template da organização
-- [ ] Envio por e-mail (Resend) — canal WhatsApp condicionado ao plano
-- [ ] Snippet de incorporação real (script + parâmetro de produto pré-carregado)
+- [x] Endpoint de validação (BrasilAPI para CNPJ, ViaCEP para CEP)
+- [x] Antispam: Cloudflare Turnstile, honeypot, limite de requisições por IP e por documento
+- [x] Resolução de organização pela chave pública do snippet
+- [x] Deduplicação de cliente por (organização, documento) — fatia mínima; CRUD completo e múltiplos contatos continuam na Milestone 17
+- [x] Geração de PDF via PDFMonkey com template da organização
+- [x] Envio por e-mail (Resend) — canal WhatsApp condicionado ao plano (via webhook do n8n; sem enforcement de pagamento até a Milestone 21)
+- [x] Snippet de incorporação real (script + parâmetro de produto pré-carregado)
 
 **Commit final:** `feat(public-form): public quote endpoint with antispam, PDF and delivery`
 
@@ -274,6 +275,7 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 **Branch:** `milestone/21-billing`
 **Objetivo:** Monetização por assinatura, ligando à tela placeholder do Milestone 10.
 
+- [ ] **Pendência aberta desde o Milestone 15**: `organizations` não tem coluna de status (`active`/`trial`/`suspenso`) — só `plan`. O endpoint público (`/api/public-quote`) hoje trata toda organização como ativa porque não existe outro sinal para checar. Ao implementar o webhook de desativação de plano, adicionar esse campo e usá-lo para bloquear submissões do formulário público de organizações inadimplentes/canceladas.
 - [ ] Planos por número de vendedores e volume de orçamentos mensais
 - [ ] Checkout Stripe
 - [ ] Webhook de ativação/desativação de plano

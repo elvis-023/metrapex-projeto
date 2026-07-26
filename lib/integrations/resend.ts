@@ -50,3 +50,47 @@ export async function sendInviteEmail({
     throw new Error(`Falha ao enviar e-mail de convite (${response.status}).`);
   }
 }
+
+/**
+ * E-mail de entrega do orçamento gerado pelo formulário público — canal
+ * WhatsApp fica de fora por enquanto: condicionado ao plano (Milestone 15),
+ * e billing/plano ainda não existe (Milestone 21).
+ */
+export async function sendQuoteEmail({
+  to,
+  organizationName,
+  quoteNumber,
+  pdfUrl,
+}: {
+  to: string;
+  organizationName: string;
+  quoteNumber: string;
+  pdfUrl: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY não configurada.");
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      // TODO: mesmo domínio sandbox de sendInviteEmail — trocar quando houver domínio verificado.
+      from: `${organizationName} via Metrapex <onboarding@resend.dev>`,
+      to,
+      subject: `Seu orçamento ${quoteNumber} — ${organizationName}`,
+      html: `
+        <p>Olá! Segue o orçamento <strong>${quoteNumber}</strong> solicitado a <strong>${organizationName}</strong>.</p>
+        <p><a href="${pdfUrl}">Baixar orçamento em PDF</a></p>
+      `,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao enviar e-mail do orçamento (${response.status}).`);
+  }
+}

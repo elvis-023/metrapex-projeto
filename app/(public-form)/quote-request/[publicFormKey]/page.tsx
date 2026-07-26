@@ -1,39 +1,42 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 import { PublicQuoteForm } from "@/components/public-form/public-quote-form";
-import { getProducts } from "@/lib/catalog/mock-data";
-import { getPublicOrganization } from "@/lib/public-form/mock-data";
+import { resolvePublicForm } from "./resolve-public-organization";
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ orgSlug: string }>;
+  params: Promise<{ publicFormKey: string }>;
 }): Promise<Metadata> {
-  const { orgSlug } = await params;
-  const organization = await getPublicOrganization(orgSlug);
-  return { title: `Pedir orçamento — ${organization.name}` };
+  const { publicFormKey } = await params;
+  const resolved = await resolvePublicForm(publicFormKey);
+  return {
+    title: resolved ? `Pedir orçamento — ${resolved.organization.name}` : "Formulário não encontrado",
+  };
 }
 
 export default async function PublicQuoteRequestPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ orgSlug: string }>;
+  params: Promise<{ publicFormKey: string }>;
   searchParams: Promise<{ produto?: string }>;
 }) {
-  const { orgSlug } = await params;
+  const { publicFormKey } = await params;
   const { produto } = await searchParams;
 
-  const [organization, products] = await Promise.all([
-    getPublicOrganization(orgSlug),
-    getProducts(),
-  ]);
+  const resolved = await resolvePublicForm(publicFormKey);
+  if (!resolved) notFound();
+
+  const { organization, products } = resolved;
 
   const preloadedProductId =
     produto && products.some((product) => product.id === produto) ? produto : null;
 
   return (
     <PublicQuoteForm
+      publicFormKey={publicFormKey}
       organizationName={organization.name}
       products={products}
       preloadedProductId={preloadedProductId}

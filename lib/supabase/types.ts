@@ -76,6 +76,46 @@ export type QuoteIssueSnapshotPayload = {
   show_tax_lines: boolean;
 };
 
+/**
+ * Payload de `create_public_quote` (Milestone 15) — o formulário público
+ * nasce direto emitido, então junta em um único jsonb o que `save_quote_draft`
+ * e `issue_quote` fazem em duas chamadas separadas no fluxo autenticado.
+ */
+export type CreatePublicQuotePayload = {
+  customer_id?: string | null;
+  customer_name: string;
+  customer_document: string;
+  customer_source_id: string | null;
+  discount_type: QuoteDiscountType;
+  discount_value: string;
+  payment_condition_id: string | null;
+  expires_at: string | null;
+};
+
+export type CreatePublicQuoteItemPayload = {
+  product_id: string;
+  product_external_code: string;
+  product_name: string;
+  category_id_snapshot: string | null;
+  category_name: string | null;
+  quantity: string;
+  unit_price_charged: string;
+  unit_base_display: string;
+  line_total: string;
+  taxes: QuoteIssueTaxPayload[];
+};
+
+/** Payload jsonb de `upsert_public_customer` (Milestone 15, dedupe por documento). */
+export type PublicCustomerAddressPayload = {
+  zip: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -104,6 +144,13 @@ export type Database = {
           name: string;
           slug: string;
           plan: OrgPlan;
+          /**
+           * Chave pública do snippet do formulário (Milestone 15) — distinta
+           * do `slug`: não é segredo, mas é rotacionável sem quebrar o embed
+           * já instalado no site do cliente. Ver migration
+           * 20260726000010_public_form_backend.sql.
+           */
+          public_form_key: string;
           created_at: string;
         };
         Insert: {
@@ -111,12 +158,14 @@ export type Database = {
           name: string;
           slug: string;
           plan?: OrgPlan;
+          public_form_key?: string;
           created_at?: string;
         };
         Update: Partial<{
           name: string;
           slug: string;
           plan: OrgPlan;
+          public_form_key: string;
         }>;
         Relationships: [];
       };
@@ -700,6 +749,156 @@ export type Database = {
           },
         ];
       };
+      /** Uso interno do endpoint público — nunca lida por sessão de dashboard (RLS sem policy + GRANT revogado). */
+      public_form_rate_limits: {
+        Row: {
+          scope: string;
+          key: string;
+          window_start: string;
+          count: number;
+        };
+        Insert: {
+          scope: string;
+          key: string;
+          window_start: string;
+          count?: number;
+        };
+        Update: Partial<{
+          count: number;
+        }>;
+        Relationships: [];
+      };
+      /** Idempotência best-effort do endpoint público — ver public_form_claim_submission. */
+      public_form_submissions: {
+        Row: {
+          id: string;
+          org_id: string;
+          document: string;
+          cart_hash: string;
+          window_bucket: number;
+          status: string;
+          quote_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          document: string;
+          cart_hash: string;
+          window_bucket: number;
+          status?: string;
+          quote_id?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<{
+          status: string;
+          quote_id: string | null;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "public_form_submissions_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "public_form_submissions_quote_id_fkey";
+            columns: ["quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      pdf_settings: {
+        Row: {
+          org_id: string;
+          logo_url: string | null;
+          issuer_name: string | null;
+          issuer_document: string | null;
+          issuer_address: string | null;
+          warranty_text: string | null;
+          terms_text: string | null;
+          shipping_text: string | null;
+          pdfmonkey_template_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          org_id: string;
+          logo_url?: string | null;
+          issuer_name?: string | null;
+          issuer_document?: string | null;
+          issuer_address?: string | null;
+          warranty_text?: string | null;
+          terms_text?: string | null;
+          shipping_text?: string | null;
+          pdfmonkey_template_id?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          logo_url: string | null;
+          issuer_name: string | null;
+          issuer_document: string | null;
+          issuer_address: string | null;
+          warranty_text: string | null;
+          terms_text: string | null;
+          shipping_text: string | null;
+          pdfmonkey_template_id: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "pdf_settings_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: true;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      /** Fatia mínima de cliente (Milestone 15) — CRUD completo é Milestone 17. */
+      customers: {
+        Row: {
+          id: string;
+          org_id: string;
+          document: string;
+          name: string;
+          email: string | null;
+          phone: string | null;
+          address: PublicCustomerAddressPayload | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          document: string;
+          name: string;
+          email?: string | null;
+          phone?: string | null;
+          address?: PublicCustomerAddressPayload | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          document: string;
+          name: string;
+          email: string | null;
+          phone: string | null;
+          address: PublicCustomerAddressPayload | null;
+          updated_at: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "customers_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -760,6 +959,61 @@ export type Database = {
           invited_by_name: string | null;
           is_valid: boolean;
         }[];
+      };
+      // --- Milestone 15 (formulário público) --------------------------------
+      // Todas as funções abaixo têm EXECUTE revogado de `public` na migration
+      // (20260726000010) — só service_role/postgres podem chamá-las. Nunca
+      // usar com o client anon/authenticated.
+      resolve_public_organization: {
+        Args: { p_public_form_key: string };
+        Returns: { id: string; name: string; slug: string; plan: OrgPlan }[];
+      };
+      public_form_check_rate_limit: {
+        Args: {
+          p_scope: string;
+          p_key: string;
+          p_window_seconds: number;
+          p_limit: number;
+        };
+        Returns: boolean;
+      };
+      public_form_claim_submission: {
+        Args: {
+          p_org_id: string;
+          p_document: string;
+          p_cart_hash: string;
+          p_window_seconds: number;
+        };
+        Returns: {
+          id: string;
+          status: string;
+          quote_id: string | null;
+          claimed: boolean;
+        }[];
+      };
+      public_form_complete_submission: {
+        Args: { p_id: string; p_quote_id: string };
+        Returns: undefined;
+      };
+      upsert_public_customer: {
+        Args: {
+          p_org_id: string;
+          p_document: string;
+          p_name: string;
+          p_email: string | null;
+          p_phone: string | null;
+          p_address: PublicCustomerAddressPayload | null;
+        };
+        Returns: string;
+      };
+      create_public_quote: {
+        Args: {
+          p_org_id: string;
+          p_quote: CreatePublicQuotePayload;
+          p_items: CreatePublicQuoteItemPayload[];
+          p_snapshot: QuoteIssueSnapshotPayload;
+        };
+        Returns: Database["public"]["Tables"]["quotes"]["Row"];
       };
     };
   };

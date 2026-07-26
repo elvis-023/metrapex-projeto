@@ -42,7 +42,9 @@ export async function switchOrganizationAction(orgId: string) {
 }
 
 /** Cria a organização do onboarding (Passo 1) e a torna a organização atual. */
-export async function createOrganizationAction(name: string): Promise<{ orgId: string }> {
+export async function createOrganizationAction(
+  name: string,
+): Promise<{ orgId: string; slug: string; publicFormKey: string }> {
   const supabase = await createClient();
   const { data: org, error } = await supabase.rpc("create_organization", {
     org_name: name,
@@ -62,7 +64,7 @@ export async function createOrganizationAction(name: string): Promise<{ orgId: s
   });
 
   revalidatePath("/", "layout");
-  return { orgId: org.id };
+  return { orgId: org.id, slug: org.slug, publicFormKey: org.public_form_key };
 }
 
 export type InviteActionState = { error?: string; success?: boolean };

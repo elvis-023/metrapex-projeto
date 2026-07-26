@@ -42,24 +42,47 @@ export function OnboardingWizard() {
 
   const currentStepValid = isStepValid(state, state.step);
   const isLastStep = state.step === 5;
+  const [isCreatingOrg, setIsCreatingOrg] = useState(false);
 
-  async function handleFinish() {
-    setIsFinishing(true);
+  /**
+   * A organização (com template fiscal e condições de pagamento) é criada
+   * aqui — na saída do passo 4, não na conclusão do wizard — porque o passo
+   * 5 mostra o snippet real de incorporação, e o snippet precisa da
+   * `public_form_key` de uma organização que já existe (Milestone 15). Se o
+   * usuário voltar e avançar de novo, `state.createdOrg` já está preenchido
+   * e a criação não roda duas vezes.
+   */
+  async function advancePastPaymentStep(nextAction: "NEXT" | "SKIP") {
+    if (state.createdOrg) {
+      dispatch({ type: nextAction });
+      return;
+    }
+
+    setIsCreatingOrg(true);
     try {
-      const { orgId } = await createOrganizationAction(state.organization.name);
+      const { orgId, slug, publicFormKey } = await createOrganizationAction(
+        state.organization.name,
+      );
       await applyTaxTemplateAction(orgId, {
         templateId: state.taxTemplate.templateId,
         icmsRate: state.taxTemplate.icmsRate,
         footerText: state.taxTemplate.footerText,
       });
       await applyPaymentDefaultsAction(orgId);
-      window.sessionStorage.removeItem(STORAGE_KEY);
-      toast.success("Organização configurada. Bem-vindo ao painel!");
-      router.push("/dashboard");
+      dispatch({ type: "SET_CREATED_ORG", org: { orgId, slug, publicFormKey } });
+      dispatch({ type: nextAction });
     } catch {
-      setIsFinishing(false);
       toast.error("Não foi possível criar a organização. Tente novamente.");
+    } finally {
+      setIsCreatingOrg(false);
     }
+  }
+
+  function handleFinish() {
+    setIsFinishing(true);
+    window.sessionStorage.removeItem(STORAGE_KEY);
+    toast.success("Organização configurada. Bem-vindo ao painel!");
+    router.push("/dashboard");
   }
 
   return (
@@ -89,21 +112,30 @@ export function OnboardingWizard() {
         </Button>
         <div className="flex gap-1.5">
           {!isLastStep ? (
-            <Button type="button" variant="ghost" onClick={() => dispatch({ type: "SKIP" })}>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={isCreatingOrg}
+              onClick={() =>
+                state.step === 4 ? advancePastPaymentStep("SKIP") : dispatch({ type: "SKIP" })
+              }
+            >
               Pular
             </Button>
           ) : null}
           {isLastStep ? (
             <Button type="button" onClick={handleFinish} disabled={isFinishing}>
-              {isFinishing ? "Criando organização..." : "Concluir e ir para o painel"}
+              Concluir e ir para o painel
             </Button>
           ) : (
             <Button
               type="button"
-              disabled={!currentStepValid}
-              onClick={() => dispatch({ type: "NEXT" })}
+              disabled={!currentStepValid || isCreatingOrg}
+              onClick={() =>
+                state.step === 4 ? advancePastPaymentStep("NEXT") : dispatch({ type: "NEXT" })
+              }
             >
-              Avançar
+              {state.step === 4 && isCreatingOrg ? "Criando organização..." : "Avançar"}
             </Button>
           )}
         </div>

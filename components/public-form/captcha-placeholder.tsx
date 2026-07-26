@@ -1,22 +1,72 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ShieldCheckIcon } from "lucide-react";
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: string | HTMLElement,
+        options: { sitekey: string; callback: (token: string) => void },
+      ) => string;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
+
+const TURNSTILE_SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+
+function loadTurnstileScript(): Promise<void> {
+  if (window.turnstile) return Promise.resolve();
+
+  const existing = document.querySelector<HTMLScriptElement>(`script[src="${TURNSTILE_SCRIPT_SRC}"]`);
+  if (existing) {
+    return new Promise((resolve) => existing.addEventListener("load", () => resolve()));
+  }
+
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = TURNSTILE_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    document.head.appendChild(script);
+  });
+}
+
 /**
- * Espaço reservado visual do Cloudflare Turnstile (captcha invisível) — a
- * verificação real acontece no Milestone 15. Aqui só simula o widget
- * "resolvendo" logo após montar, para a tela não parecer incompleta.
+ * Widget real do Cloudflare Turnstile — o token que ele devolve só tem
+ * validade quando verificado no servidor via `siteverify`
+ * (lib/integrations/turnstile.ts), dentro do route handler do formulário
+ * público. Este componente não decide nada sozinho, só coleta o token.
  */
-export function CaptchaPlaceholder({ onVerified }: { onVerified: () => void }) {
+export function CaptchaPlaceholder({ onVerified }: { onVerified: (token: string) => void }) {
   const [verified, setVerified] = useState(false);
+  const containerId = useId().replace(/:/g, "");
+  const widgetId = useRef<string | null>(null);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setVerified(true);
-      onVerified();
-    }, 600);
-    return () => clearTimeout(timeout);
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    if (!siteKey) return;
+
+    let cancelled = false;
+
+    loadTurnstileScript().then(() => {
+      if (cancelled || !window.turnstile) return;
+      widgetId.current = window.turnstile.render(`#${containerId}`, {
+        sitekey: siteKey,
+        callback: (token) => {
+          setVerified(true);
+          onVerified(token);
+        },
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      if (widgetId.current && window.turnstile) window.turnstile.remove(widgetId.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -34,6 +84,7 @@ export function CaptchaPlaceholder({ onVerified }: { onVerified: () => void }) {
           Protegido por Cloudflare Turnstile
         </span>
       </div>
+      <div id={containerId} />
     </div>
   );
 }

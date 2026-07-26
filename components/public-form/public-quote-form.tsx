@@ -9,7 +9,6 @@ import { StepDocument } from "@/components/public-form/step-document";
 import { StepProducts } from "@/components/public-form/step-products";
 import { StepConfirmation } from "@/components/public-form/step-confirmation";
 import { cn } from "@/lib/utils";
-import { generateProtocolNumber } from "@/lib/public-form/mock-data";
 import { initialPublicFormState, isStepValid, publicFormReducer } from "@/lib/public-form/reducer";
 import type { Product } from "@/lib/catalog/types";
 import type { PublicFormStep } from "@/lib/public-form/types";
@@ -61,10 +60,12 @@ function StepProgress({ currentStep }: { currentStep: PublicFormStep }) {
 }
 
 export function PublicQuoteForm({
+  publicFormKey,
   organizationName,
   products,
   preloadedProductId,
 }: {
+  publicFormKey: string;
   organizationName: string;
   products: Product[];
   preloadedProductId: string | null;
@@ -77,11 +78,40 @@ export function PublicQuoteForm({
 
   const currentStepValid = isStepValid(state, state.step);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     dispatch({ type: "SUBMIT_START" });
-    setTimeout(() => {
-      dispatch({ type: "SUBMIT_SUCCESS", protocolNumber: generateProtocolNumber() });
-    }, 900);
+    try {
+      const response = await fetch("/api/public-quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          publicFormKey,
+          documentType: state.documentType,
+          document: state.document,
+          legalName: state.legalName,
+          contactName: state.contactName,
+          email: state.email,
+          phone: state.phone,
+          address: state.address,
+          cart: state.cart,
+          honeypot: state.honeypot,
+          captchaToken: state.captchaToken,
+        }),
+      });
+
+      const body = (await response.json()) as { quoteNumber?: string; error?: string };
+
+      if (!response.ok || !body.quoteNumber) {
+        throw new Error(body.error ?? "Não foi possível gerar o orçamento. Tente novamente.");
+      }
+
+      dispatch({ type: "SUBMIT_SUCCESS", protocolNumber: body.quoteNumber });
+    } catch (error) {
+      dispatch({
+        type: "SUBMIT_ERROR",
+        message: error instanceof Error ? error.message : "Não foi possível gerar o orçamento.",
+      });
+    }
   }
 
   if (state.submitted) {
@@ -120,6 +150,11 @@ export function PublicQuoteForm({
           />
         ) : null}
       </CardContent>
+      {state.submitError ? (
+        <p className="text-destructive px-6 text-sm" role="alert">
+          {state.submitError}
+        </p>
+      ) : null}
       <CardFooter className="justify-between">
         <Button
           type="button"

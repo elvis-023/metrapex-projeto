@@ -5,16 +5,9 @@ import { Loader2Icon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/auth/form-field";
 import { cn } from "@/lib/utils";
-import {
-  formatCep,
-  formatCnpj,
-  formatCpf,
-  formatPhone,
-  isValidCpfFormat,
-  lookupCep,
-  lookupCnpj,
-  onlyDigits,
-} from "@/lib/public-form/mock-data";
+import { formatCep, formatCnpj, formatCpf, formatPhone, onlyDigits } from "@/lib/public-form/mock-data";
+import { isValidCnpj, isValidCpf } from "@/lib/public-form/cpf-cnpj";
+import { lookupCep, lookupCnpj } from "@/lib/public-form/lookup";
 import type { PublicFormAction } from "@/lib/public-form/reducer";
 import type { DocumentType, PublicFormState } from "@/lib/public-form/types";
 
@@ -85,6 +78,11 @@ export function StepDocument({
                 name="document-cnpj"
                 placeholder="00.000.000/0000-00"
                 value={formatCnpj(state.document)}
+                error={
+                  state.document.length === 14 && !isValidCnpj(state.document)
+                    ? "CNPJ inválido."
+                    : undefined
+                }
                 onChange={(event) =>
                   dispatch({
                     type: "SET_DOCUMENT",
@@ -152,7 +150,7 @@ export function StepDocument({
             placeholder="000.000.000-00"
             value={formatCpf(state.document)}
             error={
-              state.document.length === 11 && !isValidCpfFormat(state.document)
+              state.document.length === 11 && !isValidCpf(state.document)
                 ? "CPF inválido."
                 : undefined
             }
