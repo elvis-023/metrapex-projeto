@@ -1,5 +1,4 @@
 import { fakeCurrentOrganization } from "@/lib/mock-data";
-import { fakeTaxRateOverrides, fakeTaxTypes } from "@/lib/quotes/mock-data";
 import type {
   PaymentCondition,
   PaymentValueBand,
@@ -12,24 +11,37 @@ import type {
 } from "@/lib/settings/types";
 
 /**
- * Ponto de partida igual ao usado pelo motor de orçamento
- * (`lib/quotes/mock-data.ts`) — cenário "ICMS + IPI padrão" do briefing §6 —
- * para a tela de configuração editar exatamente o que já resolve as
- * alíquotas mostradas no orçamento manual e no formulário público.
+ * Fixture da TELA de configuração (Milestone 10, ainda sem persistência) —
+ * cenário "ICMS + IPI padrão" do briefing §6. O motor de orçamento não lê
+ * daqui desde a Milestone 14: ele resolve alíquota contra `tax_types` /
+ * `tax_rates` no banco. Estes valores só existem para a tela ter o que
+ * mostrar até o backend de configuração fiscal ser ligado.
  */
-export const initialTaxTypes: TaxTypeSetting[] = fakeTaxTypes.map((taxType) => ({ ...taxType }));
+export const initialTaxTypes: TaxTypeSetting[] = [
+  { id: "tax_icms", code: "ICMS", label: "ICMS", mode: "exclusive", defaultRate: 18 },
+  { id: "tax_ipi", code: "IPI", label: "IPI", mode: "inclusive", defaultRate: 0 },
+];
 
-export const initialTaxRateOverrides: TaxRateOverrideSetting[] = fakeTaxRateOverrides.map(
-  (override, index) => ({
-    id: `tax_override_${index}`,
-    taxTypeId: override.taxTypeId,
-    scope: override.categoryId ? "category" : "product",
-    categoryId: override.categoryId,
-    productId: override.productId,
-    rate: override.rate,
-    note: override.note,
-  }),
-);
+export const initialTaxRateOverrides: TaxRateOverrideSetting[] = [
+  {
+    id: "tax_override_0",
+    taxTypeId: "tax_ipi",
+    scope: "category",
+    categoryId: "cat_ferramentas",
+    productId: null,
+    rate: 5,
+    note: null,
+  },
+  {
+    id: "tax_override_1",
+    taxTypeId: "tax_icms",
+    scope: "product",
+    categoryId: null,
+    productId: "prd_4",
+    rate: 0,
+    note: "ICMS-ST recolhido pelo fabricante",
+  },
+];
 
 export const initialPaymentConditions: PaymentCondition[] = [
   {

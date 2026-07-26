@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { createOrganizationAction } from "@/lib/organizations/actions";
-import { applyTaxTemplateAction } from "@/lib/tax-engine/actions";
+import { applyPaymentDefaultsAction, applyTaxTemplateAction } from "@/lib/tax-engine/actions";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -52,6 +52,7 @@ export function OnboardingWizard() {
         icmsRate: state.taxTemplate.icmsRate,
         footerText: state.taxTemplate.footerText,
       });
+      await applyPaymentDefaultsAction(orgId);
       window.sessionStorage.removeItem(STORAGE_KEY);
       toast.success("Organização configurada. Bem-vindo ao painel!");
       router.push("/dashboard");

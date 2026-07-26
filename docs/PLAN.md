@@ -196,12 +196,12 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 **Branch:** `milestone/14-quote-engine`
 **Objetivo:** Cálculo real de orçamento com snapshot e versionamento, ligando ao Milestone 8.
 
-- [ ] Schema de `quotes`, `quote_items`, `quote_item_taxes`, `payment_conditions` (ver briefing §3 para os campos de snapshot)
-- [ ] Cálculo: cruzar itens com catálogo, aplicar motor de impostos, montar subtotal/total de impostos/total
-- [ ] Snapshot no momento da emissão (`tax_snapshot_at`) — congelar preço, imposto e condição de pagamento
-- [ ] Versionamento: nova revisão ao aplicar desconto negociado, revisão mais recente marcada como atual
-- [ ] Numeração sequencial de orçamento, independente por organização
-- [ ] Condições de pagamento configuráveis e faixas de valor aplicadas no cálculo
+- [x] Schema de `quotes`, `quote_items`, `quote_item_taxes`, `payment_conditions` (ver briefing §3 para os campos de snapshot)
+- [x] Cálculo: cruzar itens com catálogo, aplicar motor de impostos, montar subtotal/total de impostos/total
+- [x] Snapshot no momento da emissão (`tax_snapshot_at`) — congelar preço, imposto e condição de pagamento
+- [x] Versionamento: nova revisão ao aplicar desconto negociado, revisão mais recente marcada como atual
+- [x] Numeração sequencial de orçamento, independente por organização
+- [x] Condições de pagamento configuráveis e faixas de valor aplicadas no cálculo
 
 **Commit final:** `feat(quotes): quote calculation engine with snapshot and versioning`
 

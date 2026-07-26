@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,57 +12,26 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { currencyFormatter } from "@/lib/catalog/format";
-import {
-  computeQuoteSubtotals,
-  paymentConditionOptions,
-  resolveDiscountAmount,
-} from "@/lib/quotes/mock-data";
-import type { QuoteDiscount, QuoteLineItem } from "@/lib/quotes/types";
+import type { PaymentCondition } from "@/lib/quotes/engine";
+import type { QuoteDiscount, QuoteView } from "@/lib/quotes/types";
 
 export function QuoteTotalsCard({
-  items,
+  view,
   discount,
   onDiscountChange,
   paymentConditionId,
   onPaymentConditionChange,
+  conditions,
+  conditionBlocked,
 }: {
-  items: QuoteLineItem[];
+  view: QuoteView;
   discount: QuoteDiscount;
   onDiscountChange: (value: QuoteDiscount) => void;
-  paymentConditionId: string;
+  paymentConditionId: string | null;
   onPaymentConditionChange: (value: string) => void;
+  conditions: PaymentCondition[];
+  conditionBlocked: boolean;
 }) {
-  const { subtotal, taxTotalsByCode, discountAmount, total } = useMemo(() => {
-    const { subtotal, exclusiveAddOn } = computeQuoteSubtotals(items);
-
-    const taxTotals = new Map<
-      string,
-      { label: string; mode: QuoteLineItem["taxes"][number]["mode"]; amount: number }
-    >();
-    for (const item of items) {
-      for (const tax of item.taxes) {
-        const existing = taxTotals.get(tax.code);
-        if (existing) {
-          existing.amount += tax.amount;
-        } else {
-          taxTotals.set(tax.code, { label: tax.label, mode: tax.mode, amount: tax.amount });
-        }
-      }
-    }
-
-    const discountAmount = resolveDiscountAmount(items, discount);
-
-    return {
-      subtotal,
-      taxTotalsByCode: Array.from(taxTotals.entries()).map(([code, value]) => ({
-        code,
-        ...value,
-      })),
-      discountAmount,
-      total: Math.max(0, subtotal + exclusiveAddOn - discountAmount),
-    };
-  }, [items, discount]);
-
   return (
     <Card>
       <CardHeader>
@@ -73,12 +40,12 @@ export function QuoteTotalsCard({
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between text-sm">
           <span className="text-muted-foreground">Subtotal</span>
-          <span className="font-mono tabular-nums">{currencyFormatter.format(subtotal)}</span>
+          <span className="font-mono tabular-nums">{currencyFormatter.format(view.subtotal)}</span>
         </div>
 
-        {taxTotalsByCode.length > 0 ? (
+        {view.taxTotals.length > 0 ? (
           <div className="flex flex-col gap-1">
-            {taxTotalsByCode.map((tax) => (
+            {view.taxTotals.map((tax) => (
               <div key={tax.code} className="flex items-baseline justify-between text-sm">
                 <span className="text-muted-foreground">
                   {tax.label} {tax.mode === "inclusive" ? "(embutido no preço)" : "(por fora)"}
@@ -164,19 +131,28 @@ export function QuoteTotalsCard({
               </div>
             </div>
           </div>
-          {discount.type === "percent" && discountAmount > 0 ? (
+          {discount.type === "percent" && view.discountAmount > 0 ? (
             <p className="text-muted-foreground self-end text-xs">
-              Equivale a {currencyFormatter.format(discountAmount)}
+              Equivale a {currencyFormatter.format(view.discountAmount)}
             </p>
           ) : null}
         </div>
+
+        {view.paymentDiscountAmount > 0 ? (
+          <div className="flex items-baseline justify-between text-sm">
+            <span className="text-muted-foreground">Desconto da condição de pagamento</span>
+            <span className="font-mono tabular-nums">
+              −{currencyFormatter.format(view.paymentDiscountAmount)}
+            </span>
+          </div>
+        ) : null}
 
         <Separator />
 
         <div className="flex items-baseline justify-between">
           <span className="text-sm font-medium">Total</span>
           <span className="font-mono text-xl font-semibold tabular-nums">
-            {currencyFormatter.format(total)}
+            {currencyFormatter.format(view.total)}
           </span>
         </div>
 
@@ -185,24 +161,36 @@ export function QuoteTotalsCard({
             Condição de pagamento
           </label>
           <Select
-            value={paymentConditionId}
+            value={paymentConditionId ?? ""}
             onValueChange={(value) => value && onPaymentConditionChange(value)}
           >
             <SelectTrigger id="payment-condition" className="w-full">
               <SelectValue>
                 {(value: string) =>
-                  paymentConditionOptions.find((option) => option.id === value)?.label ?? "—"
+                  conditions.find((condition) => condition.id === value)?.label ?? "—"
                 }
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {paymentConditionOptions.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.label}
+              {conditions.map((condition) => (
+                <SelectItem key={condition.id} value={condition.id}>
+                  {condition.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {view.bandLabel ? (
+            <p className="text-muted-foreground text-xs">
+              Faixa de valor: {view.bandLabel} — só as condições liberadas para ela aparecem na
+              lista.
+            </p>
+          ) : null}
+          {conditionBlocked ? (
+            <p className="text-danger text-xs">
+              A condição escolhida não é liberada para a faixa deste valor. Escolha outra para
+              salvar.
+            </p>
+          ) : null}
         </div>
       </CardContent>
     </Card>

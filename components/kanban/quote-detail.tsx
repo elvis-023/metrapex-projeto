@@ -1,7 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ArrowLeftIcon, GitBranchPlusIcon, HistoryIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -11,28 +8,41 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LiveQuoteStatus } from "@/components/kanban/live-quote-status";
 import { QuoteTimeline } from "@/components/kanban/quote-timeline";
 import { CustomerSourceBadge } from "@/components/customers/customer-source-badge";
+import { IssueQuoteButton } from "@/components/quotes/issue-quote-button";
+import { QuotePdfPreview } from "@/components/quotes/quote-pdf-preview";
 import { currencyFormatter, dateFormatter, parseDateOnly } from "@/lib/dashboard/format";
-import { getQuoteActivitiesSync, getSalesperson } from "@/lib/pipeline/mock-data";
-import { usePipelineQuotes } from "@/lib/pipeline/pipeline-context";
+import { getQuoteActivitiesSync, initialsOf } from "@/lib/pipeline/mock-data";
+import type { QuoteDocument } from "@/lib/quotes/types";
 
 /**
- * Client Component — o orçamento pode ter sido criado ou revisado nesta
- * mesma sessão (estado local do `PipelineProvider`, sem persistência
- * real ainda), então a busca precisa ler do contexto ao vivo em vez de
- * um fetch de servidor sobre o array mockado estático (que não sabe de
- * nada criado depois do primeiro load).
+ * Server Component: o documento vem do banco (Milestone 14). Quando emitido,
+ * cada número aqui é o snapshot congelado — nenhuma linha desta tela consulta
+ * `tax_types`, `tax_rates` ou `payment_conditions` (briefing §3, skill
+ * `snapshot-documento`).
+ *
+ * A timeline continua mockada: persistência de atividade é Milestone 16.
  */
-export function QuoteDetail({ id }: { id: string }) {
-  const { quotes } = usePipelineQuotes();
-  const quote = quotes.find((q) => q.id === id);
+export function QuoteDetail({
+  quote,
+  ownerName,
+}: {
+  quote: QuoteDocument;
+  ownerName: string | null;
+}) {
+  const activities = getQuoteActivitiesSync({
+    id: quote.id,
+    number: quote.number,
+    customerName: quote.customerName,
+    sourceId: quote.customerSourceId ?? "site",
+    total: quote.view.total,
+    status: quote.status,
+    expiresAt: quote.expiresAt ?? "",
+    assigneeId: quote.ownerId ?? "",
+    revision: quote.revision,
+  });
 
-  if (!quote) {
-    notFound();
-  }
-
-  const activities = getQuoteActivitiesSync(quote);
-  const assignee = getSalesperson(quote.assigneeId);
   const isSuperseded = Boolean(quote.supersededByRevisionId);
+  const isIssued = Boolean(quote.issuedAt);
 
   return (
     <div className="flex flex-col gap-4">
@@ -48,28 +58,31 @@ export function QuoteDetail({ id }: { id: string }) {
           }
           nativeButton={false}
         />
-        {isSuperseded ? (
-          <Button
-            variant="outline"
-            size="sm"
-            render={
-              <Link href={`/pipeline/${quote.supersededByRevisionId}`}>Ver revisão atual</Link>
-            }
-            nativeButton={false}
-          />
-        ) : (
-          <Button
-            variant="outline"
-            size="sm"
-            render={
-              <Link href={`/pipeline/${quote.id}/revise`}>
-                <GitBranchPlusIcon />
-                Nova revisão
-              </Link>
-            }
-            nativeButton={false}
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {!isIssued && !isSuperseded ? <IssueQuoteButton quoteId={quote.id} /> : null}
+          {isSuperseded ? (
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link href={`/pipeline/${quote.supersededByRevisionId}`}>Ver revisão atual</Link>
+              }
+              nativeButton={false}
+            />
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <Link href={`/pipeline/${quote.id}/revise`}>
+                  <GitBranchPlusIcon />
+                  Nova revisão
+                </Link>
+              }
+              nativeButton={false}
+            />
+          )}
+        </div>
       </div>
 
       {isSuperseded ? (
@@ -83,6 +96,13 @@ export function QuoteDetail({ id }: { id: string }) {
             Ver a revisão atual
           </Link>
           .
+        </div>
+      ) : null}
+
+      {!isIssued ? (
+        <div className="border-border bg-muted/40 text-muted-foreground rounded-lg border px-3 py-2 text-sm">
+          Rascunho — preço e imposto são recalculados com a configuração atual a cada abertura. A
+          emissão congela os valores no documento.
         </div>
       ) : null}
 
@@ -101,31 +121,48 @@ export function QuoteDetail({ id }: { id: string }) {
             </div>
             <CardDescription className="flex items-center gap-1.5">
               <span>{quote.customerName}</span>
-              <CustomerSourceBadge sourceId={quote.sourceId} />
+              {quote.customerSourceId ? (
+                <CustomerSourceBadge sourceId={quote.customerSourceId} />
+              ) : null}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <span className="text-muted-foreground text-xs">Total</span>
               <span className="font-mono text-2xl font-semibold tabular-nums">
-                {currencyFormatter.format(quote.total)}
+                {currencyFormatter.format(quote.view.total)}
               </span>
             </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-muted-foreground text-xs">Validade</span>
-              <span className="text-sm tabular-nums">
-                {dateFormatter.format(parseDateOnly(quote.expiresAt))}
-              </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-muted-foreground text-xs">Responsável</span>
-              <div className="flex items-center gap-2">
-                <Avatar size="sm">
-                  <AvatarFallback>{assignee.initials}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm">{assignee.name}</span>
+            {quote.expiresAt ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-muted-foreground text-xs">Validade</span>
+                <span className="text-sm tabular-nums">
+                  {dateFormatter.format(parseDateOnly(quote.expiresAt))}
+                </span>
               </div>
-            </div>
+            ) : null}
+            {quote.paymentConditionLabel || quote.paymentBandLabel ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-muted-foreground text-xs">Condição de pagamento</span>
+                <span className="text-sm">{quote.paymentConditionLabel ?? "—"}</span>
+                {quote.paymentBandLabel ? (
+                  <span className="text-muted-foreground text-xs">
+                    Faixa: {quote.paymentBandLabel}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+            {ownerName ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-muted-foreground text-xs">Responsável</span>
+                <div className="flex items-center gap-2">
+                  <Avatar size="sm">
+                    <AvatarFallback>{initialsOf(ownerName)}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm">{ownerName}</span>
+                </div>
+              </div>
+            ) : null}
             {quote.previousRevisionId ? (
               <Link
                 href={`/pipeline/${quote.previousRevisionId}`}
@@ -138,16 +175,31 @@ export function QuoteDetail({ id }: { id: string }) {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Timeline de atividades</CardTitle>
-            <CardDescription>Histórico do orçamento desde a geração</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <QuoteTimeline activities={activities} />
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-2">
+          <QuotePdfPreview
+            number={quote.number}
+            revision={quote.revision}
+            customerName={quote.customerName}
+            customerDocument={quote.customerDocument || null}
+            view={quote.view}
+            discount={quote.discount}
+            paymentConditionLabel={quote.paymentConditionLabel}
+            footerNote={quote.taxFooterNote}
+            showTaxLines={quote.showTaxLines}
+            issued={isIssued}
+          />
+        </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Timeline de atividades</CardTitle>
+          <CardDescription>Histórico do orçamento desde a geração</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <QuoteTimeline activities={activities} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

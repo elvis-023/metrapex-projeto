@@ -10,6 +10,16 @@ import type {
 } from "@/lib/tax-engine/types";
 
 /**
+ * Fixa o modo de arredondamento do singleton `decimal.js` usado pelo projeto
+ * inteiro. Sem isto, qualquer módulo (deste repo ou de uma dependência que
+ * compartilhe a mesma instância) que chame `Decimal.set({ rounding: ... })`
+ * muda silenciosamente o arredondamento de toda soma monetária do sistema —
+ * inclusive `round2`, que já passa o modo explicitamente, mas depende deste
+ * padrão em todo `toDecimalPlaces` sem segundo argumento.
+ */
+Decimal.set({ rounding: Decimal.ROUND_HALF_UP });
+
+/**
  * Convenção de precisão (CLAUDE.md / briefing §3): tudo internamente em
  * `numeric(18,6)` via decimal.js, nunca `number` de ponto flutuante puro.
  * Arredondar para 2 casas (half-up) é responsabilidade só da renderização
@@ -56,6 +66,12 @@ export type TaxLineResult = {
   note: string | null;
   baseAmount: Decimal;
   taxAmount: Decimal;
+  /**
+   * Ordem de impressão, copiada para o snapshot na emissão. Não participa do
+   * cálculo (não cumulativo — ver comentário de `calcItemTaxes`): serve para o
+   * documento emitido reproduzir a ordem vigente sem reler `tax_types`.
+   */
+  displayOrder: number;
 };
 
 export type ItemTaxCalculation = {
@@ -108,6 +124,23 @@ export function calcItemTaxes(params: {
     const resolved = resolveRate(taxType, product, overrides);
     const { base, tax } = calcTax(linePrice, resolved.rate, taxType.mode);
 
+    /**
+     * Só entra no documento (linha impressa E base exibida) o tributo que
+     * realmente incide, OU o override explícito — de categoria ou de produto,
+     * não só de produto — que pode ser 0% (isenção por ST) e precisa da nota
+     * junto (briefing §7.3, ponto 2). Um tributo com alíquota 0 vinda do
+     * PADRÃO da organização (sem override nenhum) não é registrado: não
+     * incide e ninguém configurou nada para explicar.
+     *
+     * Decidir isso ANTES de tocar `baseForDisplay` é o que impede um tributo
+     * que nem vai ser impresso de ainda assim redefinir o unitário exibido —
+     * bug encontrado na revisão do Milestone 14: um segundo `inclusive` com
+     * `default_rate = 0` e sem override sobrescrevia `unitBaseDisplay` com o
+     * preço cheio, mesmo não aparecendo em `quote_item_taxes`.
+     */
+    const recorded = resolved.rate > 0 || resolved.source !== "org_default";
+    if (!recorded) continue;
+
     if (taxType.mode === "inclusive") {
       baseForDisplay = base;
     } else {
@@ -124,6 +157,7 @@ export function calcItemTaxes(params: {
       note: resolved.note,
       baseAmount: base,
       taxAmount: tax,
+      displayOrder: taxType.displayOrder,
     });
   }
 

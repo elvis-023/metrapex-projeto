@@ -42,7 +42,7 @@ export function QuoteLineItems({
             <div className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm font-medium">{item.name}</span>
               <span className="text-muted-foreground font-mono text-xs tabular-nums">
-                {item.externalCode} · {currencyFormatter.format(item.unitPrice)}/un.
+                {item.externalCode} · {currencyFormatter.format(item.unitBaseDisplay)}/un.
               </span>
             </div>
 
@@ -88,7 +88,7 @@ export function QuoteLineItems({
           {item.taxes.length > 0 ? (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-13 text-xs">
               {item.taxes.map((tax) => (
-                <div key={tax.taxTypeId} className="flex items-center gap-1">
+                <div key={tax.code} className="flex items-center gap-1">
                   <Badge variant={tax.source === "product" ? "outline" : "secondary"}>
                     {tax.label} {tax.rate}%
                   </Badge>
