@@ -199,7 +199,7 @@ export function StepProducts({
         onChange={(value) => dispatch({ type: "SET_HONEYPOT", value })}
       />
 
-      <CaptchaPlaceholder onVerified={() => dispatch({ type: "CAPTCHA_VERIFIED" })} />
+      <CaptchaPlaceholder onVerified={(token) => dispatch({ type: "CAPTCHA_VERIFIED", token })} />
     </div>
   );
 }

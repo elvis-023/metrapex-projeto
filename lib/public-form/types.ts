@@ -41,8 +41,9 @@ export type PublicFormState = {
   cepLookupStatus: LookupStatus;
   cart: PublicFormCartItem[];
   honeypot: string;
-  captchaVerified: boolean;
+  captchaToken: string | null;
   submitting: boolean;
+  submitError: string | null;
 };
 
 export const emptyAddress: PublicFormAddress = {

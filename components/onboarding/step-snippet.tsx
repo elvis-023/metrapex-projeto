@@ -4,7 +4,6 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { embedSnippet } from "@/lib/onboarding/mock-data";
 import type { OnboardingAction } from "@/lib/onboarding/reducer";
 import type { OnboardingState } from "@/lib/onboarding/types";
 
@@ -14,14 +13,34 @@ type StepSnippetProps = {
 };
 
 export function StepSnippet({ state, dispatch }: StepSnippetProps) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const publicFormKey = state.createdOrg?.publicFormKey;
+
+  const embedSnippet = publicFormKey
+    ? `<script
+  src="${appUrl}/embed.js"
+  data-org-key="${publicFormKey}"
+  async
+></script>
+<div id="metrapex-orcamento"></div>`
+    : "";
+
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(embedSnippet);
     } catch {
-      // clipboard indisponível (ex.: contexto não seguro) — segue sem bloquear o fluxo mockado
+      // clipboard indisponível (ex.: contexto não seguro) — segue sem bloquear o fluxo
     }
     dispatch({ type: "MARK_SNIPPET_COPIED" });
     toast.success("Snippet copiado para a área de transferência.");
+  }
+
+  if (!publicFormKey) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        Volte ao passo anterior para gerar o snippet — a organização ainda não foi criada.
+      </p>
+    );
   }
 
   return (
@@ -51,8 +70,13 @@ export function StepSnippet({ state, dispatch }: StepSnippetProps) {
       </div>
 
       <p className="text-muted-foreground text-xs">
-        Precisa de outro produto específico pré-carregado? Adicione{" "}
-        <code className="text-xs">?produto=CODIGO</code> à URL do formulário.
+        Precisa de um produto específico pré-carregado? Adicione{" "}
+        <code className="text-xs">data-produto=&quot;CODIGO&quot;</code> ao script acima, ou{" "}
+        <code className="text-xs">?produto=CODIGO</code> se preferir linkar direto para{" "}
+        <code className="text-xs break-all">
+          {appUrl}/quote-request/{publicFormKey}
+        </code>
+        .
       </p>
     </div>
   );

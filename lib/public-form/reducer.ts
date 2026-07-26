@@ -1,4 +1,4 @@
-import { isValidCpfFormat } from "@/lib/public-form/mock-data";
+import { isValidCnpj, isValidCpf } from "@/lib/public-form/cpf-cnpj";
 import type { PublicFormAddress, PublicFormState, PublicFormStep } from "@/lib/public-form/types";
 import { emptyAddress } from "@/lib/public-form/types";
 
@@ -18,8 +18,9 @@ export function initialPublicFormState(preloadedProductId: string | null): Publi
     cepLookupStatus: "idle",
     cart: preloadedProductId ? [{ productId: preloadedProductId, quantity: 1 }] : [],
     honeypot: "",
-    captchaVerified: false,
+    captchaToken: null,
     submitting: false,
+    submitError: null,
   };
 }
 
@@ -39,11 +40,12 @@ export type PublicFormAction =
   | { type: "REMOVE_PRODUCT"; productId: string }
   | { type: "SET_QUANTITY"; productId: string; quantity: number }
   | { type: "SET_HONEYPOT"; value: string }
-  | { type: "CAPTCHA_VERIFIED" }
+  | { type: "CAPTCHA_VERIFIED"; token: string }
   | { type: "NEXT" }
   | { type: "BACK" }
   | { type: "SUBMIT_START" }
   | { type: "SUBMIT_SUCCESS"; protocolNumber: string }
+  | { type: "SUBMIT_ERROR"; message: string }
   | { type: "RESET"; preloadedProductId: string | null };
 
 export function isStepValid(state: PublicFormState, step: PublicFormStep): boolean {
@@ -60,16 +62,16 @@ export function isStepValid(state: PublicFormState, step: PublicFormStep): boole
 
       if (state.documentType === "cnpj") {
         return (
-          state.document.length === 14 &&
+          isValidCnpj(state.document) &&
           state.legalName.trim().length > 1 &&
           state.contactName.trim().length > 1 &&
           commonValid
         );
       }
-      return isValidCpfFormat(state.document) && state.legalName.trim().length > 1 && commonValid;
+      return isValidCpf(state.document) && state.legalName.trim().length > 1 && commonValid;
     }
     case 2:
-      return state.cart.length > 0 && state.honeypot === "" && state.captchaVerified;
+      return state.cart.length > 0 && state.honeypot === "" && state.captchaToken !== null;
     default:
       return true;
   }
@@ -166,7 +168,7 @@ export function publicFormReducer(
       return { ...state, honeypot: action.value };
 
     case "CAPTCHA_VERIFIED":
-      return { ...state, captchaVerified: true };
+      return { ...state, captchaToken: action.token };
 
     case "NEXT":
       return { ...state, step: clampStep(state.step + 1) };
@@ -175,7 +177,7 @@ export function publicFormReducer(
       return { ...state, step: clampStep(state.step - 1) };
 
     case "SUBMIT_START":
-      return { ...state, submitting: true };
+      return { ...state, submitting: true, submitError: null };
 
     case "SUBMIT_SUCCESS":
       return {
@@ -184,6 +186,9 @@ export function publicFormReducer(
         submitted: true,
         protocolNumber: action.protocolNumber,
       };
+
+    case "SUBMIT_ERROR":
+      return { ...state, submitting: false, submitError: action.message };
 
     case "RESET":
       return initialPublicFormState(action.preloadedProductId);

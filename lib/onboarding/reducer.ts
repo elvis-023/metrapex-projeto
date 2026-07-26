@@ -20,6 +20,7 @@ export type OnboardingAction =
   | { type: "SET_PAYMENT_CONDITION"; conditionId: string }
   | { type: "SET_PAYMENT_NOTE"; value: string }
   | { type: "MARK_SNIPPET_COPIED" }
+  | { type: "SET_CREATED_ORG"; org: { orgId: string; slug: string; publicFormKey: string } }
   | { type: "NEXT" }
   | { type: "BACK" }
   | { type: "SKIP" }
@@ -137,6 +138,9 @@ export function onboardingReducer(
 
     case "MARK_SNIPPET_COPIED":
       return { ...state, snippet: { copied: true } };
+
+    case "SET_CREATED_ORG":
+      return { ...state, createdOrg: action.org };
 
     case "NEXT": {
       const next = clampStep(state.step + 1);

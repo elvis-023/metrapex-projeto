@@ -94,13 +94,6 @@ export const sampleUploadRows: CatalogPreviewRow[] = [
   },
 ];
 
-export const embedSnippet = `<script
-  src="https://embed.metrapex.com.br/orcamento.js"
-  data-org="metrapex-distribuidora"
-  async
-></script>
-<div id="metrapex-orcamento"></div>`;
-
 export const initialOnboardingState: OnboardingState = {
   step: 1,
   furthestStepReached: 1,
@@ -129,4 +122,5 @@ export const initialOnboardingState: OnboardingState = {
   snippet: {
     copied: false,
   },
+  createdOrg: null,
 };

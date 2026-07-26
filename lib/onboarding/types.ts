@@ -51,4 +51,11 @@ export type OnboardingState = {
   snippet: {
     copied: boolean;
   };
+  /**
+   * Preenchido quando o passo 4 é concluído — a organização (com tributo e
+   * pagamento padrão) já existe de verdade nesse ponto, não só na conclusão
+   * do wizard, porque o passo 5 precisa da `publicFormKey` real para montar
+   * o snippet. Ver components/onboarding/onboarding-wizard.tsx.
+   */
+  createdOrg: { orgId: string; slug: string; publicFormKey: string } | null;
 };
