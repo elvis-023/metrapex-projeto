@@ -17,8 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/states/empty-state";
+import { commitImportAction, parseImportFileAction } from "@/lib/catalog/actions";
 import { cn } from "@/lib/utils";
-import { ignoredEmptyRowCount, sampleImportRows } from "@/lib/catalog/mock-data";
 import type { ProductImportRow } from "@/lib/catalog/types";
 
 export function ProductImportWizard() {
@@ -26,26 +26,59 @@ export function ProductImportWizard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<ProductImportRow[]>([]);
+  const [ignoredEmptyRowCount, setIgnoredEmptyRowCount] = useState(0);
+  const [isParsing, setIsParsing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const errorCount = rows.filter((row) => row.status === "erro").length;
   const validCount = rows.length - errorCount;
 
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
-    setFileName(file.name);
-    setRows(sampleImportRows);
     event.target.value = "";
+    if (!file) return;
+
+    setFileName(file.name);
+    setIsParsing(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const preview = await parseImportFileAction(formData);
+      setRows(preview.rows);
+      setIgnoredEmptyRowCount(preview.ignoredEmptyRowCount);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível ler a planilha.");
+      setRows([]);
+      setIgnoredEmptyRowCount(0);
+    } finally {
+      setIsParsing(false);
+    }
   }
 
   function handleRemoveRow(row: number) {
     setRows((current) => current.filter((r) => r.row !== row));
   }
 
-  function handleImport() {
+  async function handleImport() {
     if (validCount === 0) return;
-    toast.success(`${validCount} produto(s) importado(s).`);
-    router.push("/catalog");
+
+    setIsImporting(true);
+    try {
+      const result = await commitImportAction(rows);
+      if (result.failed.length > 0) {
+        setRows(result.failed);
+        toast.error(
+          `${result.imported} produto(s) importado(s), ${result.failed.length} com erro ao salvar.`,
+        );
+        return;
+      }
+      toast.success(`${result.imported} produto(s) importado(s).`);
+      router.push("/catalog");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível importar a planilha.");
+    } finally {
+      setIsImporting(false);
+    }
   }
 
   return (
@@ -75,9 +108,14 @@ export function ProductImportWizard() {
               "Nenhum arquivo selecionado."
             )}
           </p>
-          <Button type="button" size="sm" onClick={() => fileInputRef.current?.click()}>
+          <Button
+            type="button"
+            size="sm"
+            disabled={isParsing}
+            onClick={() => fileInputRef.current?.click()}
+          >
             <UploadIcon />
-            Selecionar planilha
+            {isParsing ? "Lendo planilha..." : "Selecionar planilha"}
           </Button>
         </div>
         <p className="text-muted-foreground text-xs">
@@ -174,8 +212,10 @@ export function ProductImportWizard() {
         <Button type="button" variant="outline" onClick={() => router.push("/catalog")}>
           Cancelar
         </Button>
-        <Button type="button" disabled={validCount === 0} onClick={handleImport}>
-          Importar {validCount > 0 ? `${validCount} produto(s)` : ""}
+        <Button type="button" disabled={validCount === 0 || isImporting} onClick={handleImport}>
+          {isImporting
+            ? "Importando..."
+            : `Importar ${validCount > 0 ? `${validCount} produto(s)` : ""}`}
         </Button>
       </div>
     </div>

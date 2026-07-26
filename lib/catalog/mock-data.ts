@@ -1,4 +1,12 @@
-import type { Product, ProductCategory, ProductImportRow } from "@/lib/catalog/types";
+import type { Product, ProductCategory } from "@/lib/catalog/types";
+
+/**
+ * Dado mockado que sobrevive à Milestone 13: o construtor de orçamento manual
+ * (Milestone 8, `lib/quotes/mock-data.ts`) ainda roda em memória até o motor
+ * de orçamento (Milestone 14) existir, então continua lendo catálogo daqui em
+ * vez do Supabase. As telas do próprio catálogo (Milestone 6) já usam dado
+ * real — ver `lib/catalog/queries.ts`.
+ */
 
 export const fakeCategories: ProductCategory[] = [
   { id: "cat_ferramentas", name: "Ferramentas" },
@@ -145,80 +153,6 @@ export const fakeProducts: Product[] = [
   },
 ];
 
-export const sampleImportRows: ProductImportRow[] = [
-  {
-    row: 2,
-    externalCode: "PRD-001",
-    name: "Cimento CP-II 50kg",
-    price: "R$ 34,90",
-    stock: "320",
-    category: "Acabamento",
-    status: "ok",
-  },
-  {
-    row: 3,
-    externalCode: "PRD-040",
-    name: "Argamassa colante AC-I 20kg",
-    price: "R$ 19,90",
-    stock: "140",
-    category: "Acabamento",
-    status: "ok",
-  },
-  {
-    row: 4,
-    externalCode: "PRD-003",
-    name: "Vergalhão 10mm 12m (duplicado)",
-    price: "R$ 58,00",
-    stock: "96",
-    category: "Ferramentas",
-    status: "erro",
-    error: "Código externo duplicado na planilha.",
-  },
-  {
-    row: 5,
-    externalCode: "PRD-041",
-    name: "Telha cerâmica",
-    price: "1250",
-    stock: "60",
-    category: "Acabamento",
-    status: "erro",
-    error: "Preço mal formatado — use vírgula para centavos (ex.: 12,50).",
-  },
-  {
-    row: 6,
-    externalCode: "",
-    name: "Tijolo baiano 9 furos",
-    price: "R$ 1,20",
-    stock: "2000",
-    category: "Acabamento",
-    status: "erro",
-    error: "Código externo obrigatório.",
-  },
-  {
-    row: 7,
-    externalCode: "PRD-042",
-    name: "",
-    price: "R$ 15,00",
-    stock: "80",
-    category: "Ferramentas",
-    status: "erro",
-    error: "Nome do produto obrigatório.",
-  },
-  {
-    row: 8,
-    externalCode: "PRD-043",
-    name: "Chuveiro elétrico 127V",
-    price: "",
-    stock: "12",
-    category: "Material elétrico",
-    status: "erro",
-    error: "Preço obrigatório.",
-  },
-];
-
-/** Linhas em branco na planilha são descartadas antes mesmo de virar linha de preview. */
-export const ignoredEmptyRowCount = 2;
-
 export async function getProducts(): Promise<Product[]> {
   await new Promise((resolve) => setTimeout(resolve, 400));
   return fakeProducts;
@@ -227,9 +161,4 @@ export async function getProducts(): Promise<Product[]> {
 export async function getCategories(): Promise<ProductCategory[]> {
   await new Promise((resolve) => setTimeout(resolve, 200));
   return fakeCategories;
-}
-
-export async function getProductById(id: string): Promise<Product | undefined> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  return fakeProducts.find((product) => product.id === id);
 }

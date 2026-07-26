@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { ProductForm } from "@/components/catalog/product-form";
-import { getCategories } from "@/lib/catalog/mock-data";
+import { getCategories } from "@/lib/catalog/queries";
 
 export const metadata: Metadata = { title: "Novo produto" };
 

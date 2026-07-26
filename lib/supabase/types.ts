@@ -232,6 +232,85 @@ export type Database = {
             referencedRelation: "product_categories";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "tax_rates_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      products: {
+        Row: {
+          id: string;
+          org_id: string;
+          external_code: string;
+          name: string;
+          price: number;
+          stock: number;
+          category_id: string | null;
+          photo_url: string | null;
+          alternative_title: string;
+          catalog_url: string;
+          manual_url: string;
+          video_url: string;
+          certificate_eligible: boolean;
+          lead_time: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          external_code: string;
+          name: string;
+          // number | string: numeric(18,6) aceita string na escrita — evita o
+          // bounce por float64 do driver ao serializar um Decimal.js (ver
+          // lib/catalog/actions.ts, convenção de dinheiro do briefing §3).
+          price: number | string;
+          stock?: number;
+          category_id?: string | null;
+          photo_url?: string | null;
+          alternative_title?: string;
+          catalog_url?: string;
+          manual_url?: string;
+          video_url?: string;
+          certificate_eligible?: boolean;
+          lead_time?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          external_code: string;
+          name: string;
+          price: number | string;
+          stock: number;
+          category_id: string | null;
+          photo_url: string | null;
+          alternative_title: string;
+          catalog_url: string;
+          manual_url: string;
+          video_url: string;
+          certificate_eligible: boolean;
+          lead_time: string;
+          updated_at: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "products_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "products_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "product_categories";
+            referencedColumns: ["id"];
+          },
         ];
       };
       tax_settings: {
@@ -280,6 +359,17 @@ export type Database = {
       accept_invite: {
         Args: { invite_token: string };
         Returns: Database["public"]["Tables"]["organization_members"]["Row"];
+      };
+      upsert_product_by_external_code: {
+        Args: {
+          p_org_id: string;
+          p_external_code: string;
+          p_name: string;
+          p_price: number | string;
+          p_stock: number;
+          p_category_id: string | null;
+        };
+        Returns: Database["public"]["Tables"]["products"]["Row"];
       };
       get_invite_preview: {
         Args: { invite_token: string };

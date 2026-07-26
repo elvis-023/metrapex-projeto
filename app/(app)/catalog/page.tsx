@@ -4,7 +4,7 @@ import { PlusIcon, TagIcon, UploadIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductFilters } from "@/components/catalog/product-filters";
 import { ProductTable } from "@/components/catalog/product-table";
-import { getCategories, getProducts } from "@/lib/catalog/mock-data";
+import { getCategories, getProducts } from "@/lib/catalog/queries";
 
 export default async function CatalogPage({
   searchParams,

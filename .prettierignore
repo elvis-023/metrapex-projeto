@@ -2,6 +2,9 @@
 node_modules
 package-lock.json
 
+# artefatos gerados pelo CLI do Supabase (já ignorados por supabase/.gitignore)
+supabase/.temp/
+
 # documentos de especificação do motor de impostos e skills — formatação própria, não tocar
 .claude/
 .agents/

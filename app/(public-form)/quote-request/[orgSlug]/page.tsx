@@ -29,7 +29,8 @@ export default async function PublicQuoteRequestPage({
     getProducts(),
   ]);
 
-  const preloadedProductId = produto && products.some((p) => p.id === produto) ? produto : null;
+  const preloadedProductId =
+    produto && products.some((product) => product.id === produto) ? produto : null;
 
   return (
     <PublicQuoteForm
