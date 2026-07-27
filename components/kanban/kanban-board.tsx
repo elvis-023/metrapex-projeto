@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState, type DragEvent } from "react";
+import { useMemo, useState, useTransition, type DragEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PlusIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
@@ -10,9 +12,12 @@ import { ALL_SALESPEOPLE, PipelineFilters } from "@/components/kanban/pipeline-f
 import type { FakeQuoteStatus } from "@/lib/mock-data";
 import { pipelineStages, resolveAssignee, type Salesperson } from "@/lib/pipeline/mock-data";
 import { usePipelineQuotes } from "@/lib/pipeline/pipeline-context";
+import { moveQuoteStageAction } from "@/lib/pipeline/actions";
 
 export function KanbanBoard() {
   const { quotes, moveQuote } = usePipelineQuotes();
+  const router = useRouter();
+  const [, startMoving] = useTransition();
   const [assigneeId, setAssigneeId] = useState(ALL_SALESPEOPLE);
   const [dropTarget, setDropTarget] = useState<FakeQuoteStatus | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -62,7 +67,24 @@ export function KanbanBoard() {
     setDraggedId(null);
     if (!quoteId) return;
 
+    const previousStatus = quotes.find((quote) => quote.id === quoteId)?.status;
+    if (!previousStatus || previousStatus === status) return;
+
+    // Otimista: o card muda de coluna na hora. A permissão de verdade (dono
+    // do orçamento ou admin) é aplicada no banco (migration
+    // 20260727000011_pipeline_backend.sql) — se o RPC recusar, o card volta
+    // pra coluna original e o vendedor vê o motivo no toast.
     moveQuote(quoteId, status);
+
+    startMoving(async () => {
+      try {
+        await moveQuoteStageAction(quoteId, status);
+        router.refresh();
+      } catch (error) {
+        moveQuote(quoteId, previousStatus);
+        toast.error(error instanceof Error ? error.message : "Não foi possível mover o orçamento.");
+      }
+    });
   }
 
   return (

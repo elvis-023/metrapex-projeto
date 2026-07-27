@@ -411,6 +411,24 @@ export async function POST(request: NextRequest) {
   if (pdfUrl) {
     try {
       await sendQuoteEmail({ to: email, organizationName: org.name, quoteNumber, pdfUrl });
+      // Timeline (Milestone 16) — só loga em caso de sucesso: um e-mail que
+      // falhou não foi "enviado ao cliente", e o vendedor precisa ver isso
+      // faltando na timeline para saber que precisa reenviar manualmente.
+      // Falha em gravar a atividade não derruba a resposta nem é confundida
+      // com falha de envio — por isso o catch é dela sozinha, não do e-mail.
+      const { error: activityError } = await supabase.rpc("record_public_quote_activity", {
+        p_quote_id: quote.id,
+        p_type: "envio",
+        p_label: "Enviado por e-mail ao cliente",
+        p_detail: null,
+      });
+      if (activityError) {
+        console.error(
+          "[public-quote] falha ao registrar atividade de envio",
+          quote.id,
+          activityError,
+        );
+      }
     } catch (error) {
       console.error("[public-quote] falha ao enviar e-mail do orçamento", quote.id, error);
     }

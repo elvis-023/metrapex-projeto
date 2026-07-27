@@ -5,42 +5,34 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { AddQuoteNoteForm } from "@/components/kanban/add-quote-note-form";
 import { LiveQuoteStatus } from "@/components/kanban/live-quote-status";
 import { QuoteTimeline } from "@/components/kanban/quote-timeline";
 import { CustomerSourceBadge } from "@/components/customers/customer-source-badge";
 import { IssueQuoteButton } from "@/components/quotes/issue-quote-button";
 import { QuotePdfPreview } from "@/components/quotes/quote-pdf-preview";
 import { currencyFormatter, dateFormatter, parseDateOnly } from "@/lib/dashboard/format";
-import { getQuoteActivitiesSync, initialsOf } from "@/lib/pipeline/mock-data";
+import { initialsOf, type PipelineActivity } from "@/lib/pipeline/mock-data";
 import type { QuoteDocument } from "@/lib/quotes/types";
 
 /**
- * Server Component: o documento vem do banco (Milestone 14). Quando emitido,
- * cada número aqui é o snapshot congelado — nenhuma linha desta tela consulta
- * `tax_types`, `tax_rates` ou `payment_conditions` (briefing §3, skill
- * `snapshot-documento`).
- *
- * A timeline continua mockada: persistência de atividade é Milestone 16.
+ * Server Component: o documento vem do banco (Milestone 14) e a timeline vem
+ * de `quote_activities` (Milestone 16) — nada aqui é mockado. Quando emitido,
+ * cada número do documento é o snapshot congelado — nenhuma linha desta tela
+ * consulta `tax_types`, `tax_rates` ou `payment_conditions` (briefing §3,
+ * skill `snapshot-documento`).
  */
 export function QuoteDetail({
   quote,
   ownerName,
+  activities,
+  canEdit,
 }: {
   quote: QuoteDocument;
   ownerName: string | null;
+  activities: PipelineActivity[];
+  canEdit: boolean;
 }) {
-  const activities = getQuoteActivitiesSync({
-    id: quote.id,
-    number: quote.number,
-    customerName: quote.customerName,
-    sourceId: quote.customerSourceId ?? "site",
-    total: quote.view.total,
-    status: quote.status,
-    expiresAt: quote.expiresAt ?? "",
-    assigneeId: quote.ownerId ?? "",
-    revision: quote.revision,
-  });
-
   const isSuperseded = Boolean(quote.supersededByRevisionId);
   const isIssued = Boolean(quote.issuedAt);
 
@@ -196,8 +188,9 @@ export function QuoteDetail({
           <CardTitle>Timeline de atividades</CardTitle>
           <CardDescription>Histórico do orçamento desde a geração</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-5">
           <QuoteTimeline activities={activities} />
+          {canEdit ? <AddQuoteNoteForm quoteId={quote.id} /> : null}
         </CardContent>
       </Card>
     </div>
