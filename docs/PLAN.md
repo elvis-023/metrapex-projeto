@@ -223,9 +223,9 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 **Branch:** `milestone/16-pipeline-backend`
 **Objetivo:** Persistência real do board e da timeline, ligando ao Milestone 7.
 
-- [ ] Persistência imediata de mudança de etapa (drag-and-drop)
-- [ ] Timeline de atividades (criação, envio, follow-up, mudança de status, notas)
-- [ ] Regra de permissão: edição restrita ao dono do orçamento ou admin; visualização liberada a todos os usuários autenticados da organização
+- [x] Persistência imediata de mudança de etapa (drag-and-drop)
+- [x] Timeline de atividades (criação, envio, follow-up, mudança de status, notas)
+- [x] Regra de permissão: edição restrita ao dono do orçamento ou admin; visualização liberada a todos os usuários autenticados da organização
 
 **Commit final:** `feat(pipeline): kanban persistence, activity timeline and permissions`
 

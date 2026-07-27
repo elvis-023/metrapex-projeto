@@ -11,6 +11,7 @@ export type RateSource = "org_default" | "category" | "product";
 export type PaymentConditionKind = "a_vista" | "cartao" | "boleto";
 export type QuoteStatus = "gerado" | "enviado" | "negociacao" | "convertido" | "expirado";
 export type QuoteDiscountType = "fixed" | "percent";
+export type QuoteActivityType = "criacao" | "envio" | "mudanca_status" | "nota" | "follow_up";
 
 /**
  * Payloads jsonb das funções `save_quote_draft` / `issue_quote`. Todo valor
@@ -857,6 +858,44 @@ export type Database = {
           },
         ];
       };
+      /**
+       * Timeline de atividades do orçamento (Milestone 16). Nunca editada nem
+       * apagada pela aplicação — log de append only; ver migration
+       * 20260727000011_pipeline_backend.sql para a regra de permissão de
+       * escrita (RLS, não só as funções `move_quote_stage`/`add_quote_note`).
+       */
+      quote_activities: {
+        Row: {
+          id: string;
+          quote_id: string;
+          type: QuoteActivityType;
+          label: string;
+          detail: string | null;
+          author_id: string | null;
+          author_label: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          quote_id: string;
+          type: QuoteActivityType;
+          label: string;
+          detail?: string | null;
+          author_id?: string | null;
+          author_label: string;
+          created_at?: string;
+        };
+        Update: Partial<never>;
+        Relationships: [
+          {
+            foreignKeyName: "quote_activities_quote_id_fkey";
+            columns: ["quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       /** Fatia mínima de cliente (Milestone 15) — CRUD completo é Milestone 17. */
       customers: {
         Row: {
@@ -950,6 +989,15 @@ export type Database = {
         };
         Returns: Database["public"]["Tables"]["quotes"]["Row"];
       };
+      // --- Milestone 16 (pipeline/Kanban) ------------------------------------
+      move_quote_stage: {
+        Args: { p_quote_id: string; p_status: QuoteStatus };
+        Returns: Database["public"]["Tables"]["quotes"]["Row"];
+      };
+      add_quote_note: {
+        Args: { p_quote_id: string; p_detail: string };
+        Returns: Database["public"]["Tables"]["quote_activities"]["Row"];
+      };
       get_invite_preview: {
         Args: { invite_token: string };
         Returns: {
@@ -1014,6 +1062,15 @@ export type Database = {
           p_snapshot: QuoteIssueSnapshotPayload;
         };
         Returns: Database["public"]["Tables"]["quotes"]["Row"];
+      };
+      record_public_quote_activity: {
+        Args: {
+          p_quote_id: string;
+          p_type: QuoteActivityType;
+          p_label: string;
+          p_detail?: string | null;
+        };
+        Returns: undefined;
       };
     };
   };

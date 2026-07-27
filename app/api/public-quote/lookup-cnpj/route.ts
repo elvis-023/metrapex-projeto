@@ -38,6 +38,9 @@ type BrasilApiCnpjResponse = {
   razao_social?: string;
   nome_fantasia?: string;
   cep?: string;
+  // BrasilAPI separa o tipo do logradouro ("AVENIDA") do nome ("REPUBLICA DO
+  // CHILE") em dois campos — usar só `logradouro` perde o "Rua"/"Avenida"/etc.
+  descricao_tipo_de_logradouro?: string;
   logradouro?: string;
   numero?: string;
   complemento?: string;
@@ -46,6 +49,15 @@ type BrasilApiCnpjResponse = {
   uf?: string;
   message?: string;
 };
+
+// Exportado só para o teste (route.test.ts) — a BrasilAPI devolve o tipo de
+// logradouro separado do nome, e essa junção já foi esquecida uma vez.
+export function formatStreet(
+  tipoLogradouro: string | undefined,
+  logradouro: string | undefined,
+): string {
+  return [tipoLogradouro?.trim(), logradouro?.trim()].filter(Boolean).join(" ");
+}
 
 export async function GET(request: NextRequest) {
   const cnpjDigits = onlyDigits(request.nextUrl.searchParams.get("cnpj") ?? "");
@@ -81,7 +93,7 @@ export async function GET(request: NextRequest) {
 
   const address: PublicFormAddress = {
     zip: onlyDigits(data.cep ?? ""),
-    street: data.logradouro ?? "",
+    street: formatStreet(data.descricao_tipo_de_logradouro, data.logradouro),
     number: data.numero ?? "",
     complement: data.complemento ?? "",
     neighborhood: data.bairro ?? "",

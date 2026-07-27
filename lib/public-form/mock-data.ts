@@ -19,6 +19,15 @@ export function formatCnpj(digits: string): string {
     .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
 }
 
+/**
+ * Máscara do campo único de documento: até 11 dígitos formata como CPF, a
+ * partir do 12º vira CNPJ. Em 11 dígitos é ambíguo (CPF completo ou CNPJ pela
+ * metade) — formatar como CPF é a escolha certa porque é o caso completo.
+ */
+export function formatDocument(digits: string): string {
+  return digits.length > 11 ? formatCnpj(digits) : formatCpf(digits);
+}
+
 export function formatCep(digits: string): string {
   return digits.slice(0, 8).replace(/(\d{5})(\d{1,3})$/, "$1-$2");
 }

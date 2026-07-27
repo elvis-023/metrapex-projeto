@@ -10,6 +10,7 @@ import { StepProducts } from "@/components/public-form/step-products";
 import { StepConfirmation } from "@/components/public-form/step-confirmation";
 import { cn } from "@/lib/utils";
 import { initialPublicFormState, isStepValid, publicFormReducer } from "@/lib/public-form/reducer";
+import { detectDocumentType } from "@/lib/public-form/cpf-cnpj";
 import type { Product } from "@/lib/catalog/types";
 import type { PublicFormStep } from "@/lib/public-form/types";
 
@@ -86,7 +87,9 @@ export function PublicQuoteForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           publicFormKey,
-          documentType: state.documentType,
+          // Derivado do documento — o formulário não tem seletor de tipo.
+          // `isStepValid` só libera o envio com o tipo já determinado.
+          documentType: detectDocumentType(state.document),
           document: state.document,
           legalName: state.legalName,
           contactName: state.contactName,

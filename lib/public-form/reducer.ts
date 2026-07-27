@@ -1,4 +1,4 @@
-import { isValidCnpj, isValidCpf } from "@/lib/public-form/cpf-cnpj";
+import { detectDocumentType, isValidCnpj, isValidCpf } from "@/lib/public-form/cpf-cnpj";
 import type { PublicFormAddress, PublicFormState, PublicFormStep } from "@/lib/public-form/types";
 import { emptyAddress } from "@/lib/public-form/types";
 
@@ -7,7 +7,6 @@ export function initialPublicFormState(preloadedProductId: string | null): Publi
     step: 1,
     submitted: false,
     protocolNumber: null,
-    documentType: "cnpj",
     document: "",
     legalName: "",
     contactName: "",
@@ -25,7 +24,6 @@ export function initialPublicFormState(preloadedProductId: string | null): Publi
 }
 
 export type PublicFormAction =
-  | { type: "SET_DOCUMENT_TYPE"; documentType: PublicFormState["documentType"] }
   | { type: "SET_DOCUMENT"; digits: string }
   | { type: "LOOKUP_DOCUMENT_START" }
   | { type: "LOOKUP_DOCUMENT_SUCCESS"; legalName: string; address: PublicFormAddress }
@@ -60,7 +58,10 @@ export function isStepValid(state: PublicFormState, step: PublicFormStep): boole
         state.address.street.trim().length > 0 &&
         state.address.city.trim().length > 0;
 
-      if (state.documentType === "cnpj") {
+      // CNPJ exige também o nome do responsável; CPF não tem esse campo.
+      // Documento incompleto (tipo indeterminado) nunca é válido.
+      const documentType = detectDocumentType(state.document);
+      if (documentType === "cnpj") {
         return (
           isValidCnpj(state.document) &&
           state.legalName.trim().length > 1 &&
@@ -68,7 +69,10 @@ export function isStepValid(state: PublicFormState, step: PublicFormStep): boole
           commonValid
         );
       }
-      return isValidCpf(state.document) && state.legalName.trim().length > 1 && commonValid;
+      if (documentType === "cpf") {
+        return isValidCpf(state.document) && state.legalName.trim().length > 1 && commonValid;
+      }
+      return false;
     }
     case 2:
       return state.cart.length > 0 && state.honeypot === "" && state.captchaToken !== null;
@@ -86,20 +90,23 @@ export function publicFormReducer(
   action: PublicFormAction,
 ): PublicFormState {
   switch (action.type) {
-    case "SET_DOCUMENT_TYPE":
+    case "SET_DOCUMENT": {
+      /**
+       * Se a consulta anterior tinha preenchido razão social e endereço
+       * sozinha, mudar o documento invalida esses dados — eles descrevem
+       * outra empresa. Sem isto, apagar um CNPJ consultado e digitar outro
+       * (ou um CPF) deixaria a razão social antiga no formulário.
+       * `documentLookupStatus` volta a "idle" no mesmo instante, então isto
+       * dispara só na PRIMEIRA tecla depois de um preenchimento automático.
+       */
+      const clearAutofilled = state.documentLookupStatus === "done";
       return {
         ...state,
-        documentType: action.documentType,
-        document: "",
-        legalName: "",
-        contactName: "",
-        address: emptyAddress,
+        document: action.digits,
         documentLookupStatus: "idle",
-        cepLookupStatus: "idle",
+        ...(clearAutofilled ? { legalName: "", address: emptyAddress } : {}),
       };
-
-    case "SET_DOCUMENT":
-      return { ...state, document: action.digits, documentLookupStatus: "idle" };
+    }
 
     case "LOOKUP_DOCUMENT_START":
       return { ...state, documentLookupStatus: "loading" };
