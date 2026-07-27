@@ -54,6 +54,24 @@ export function isValidDocument(type: "cpf" | "cnpj", value: string): boolean {
 }
 
 /**
+ * Descobre se o documento digitado é CPF ou CNPJ pela quantidade de dígitos —
+ * o formulário público não tem mais seletor manual. `null` = ainda
+ * indeterminado (o cliente não terminou de digitar, ou 12/13 dígitos, que não
+ * é nem um nem outro).
+ *
+ * O tipo é sempre DERIVADO do documento, nunca guardado no estado: com as
+ * duas coisas no estado, um "escolhi CNPJ mas digitei CPF" viraria estado
+ * inconsistente e o backend receberia um `documentType` que não bate com o
+ * documento.
+ */
+export function detectDocumentType(value: string): "cpf" | "cnpj" | null {
+  const digits = onlyDigits(value);
+  if (digits.length === 11) return "cpf";
+  if (digits.length === 14) return "cnpj";
+  return null;
+}
+
+/**
  * Gera um CNPJ com dígito verificador correto a partir de um prefixo de 12
  * dígitos — para scripts de verificação (scripts/verify-public-quote.mts,
  * scripts/attack-public-quote.mts) montarem documentos de teste válidos sem

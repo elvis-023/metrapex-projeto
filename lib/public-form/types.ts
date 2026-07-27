@@ -30,7 +30,11 @@ export type PublicFormState = {
   step: PublicFormStep;
   submitted: boolean;
   protocolNumber: string | null;
-  documentType: DocumentType;
+  /**
+   * Só os dígitos. Se é CPF ou CNPJ é DERIVADO daqui via
+   * `detectDocumentType` — não existe seletor manual nem campo de tipo no
+   * estado, para não haver duas fontes de verdade que possam divergir.
+   */
   document: string;
   legalName: string;
   contactName: string;
