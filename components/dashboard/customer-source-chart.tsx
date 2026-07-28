@@ -3,7 +3,7 @@ import { EmptyState } from "@/components/states/empty-state";
 import { getCustomerSource } from "@/lib/customers/mock-data";
 import { getSourceAccentClass } from "@/lib/customers/source-colors";
 import { formatRate } from "@/lib/dashboard/format";
-import type { SourceBreakdown } from "@/lib/dashboard/mock-data";
+import type { SourceBreakdown } from "@/lib/dashboard/types";
 
 export function CustomerSourceChart({ breakdown }: { breakdown: SourceBreakdown[] }) {
   const total = breakdown.reduce((sum, entry) => sum + entry.count, 0);

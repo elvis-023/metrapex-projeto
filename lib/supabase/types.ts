@@ -94,6 +94,8 @@ export type CreatePublicQuotePayload = {
   discount_value: string;
   payment_condition_id: string | null;
   expires_at: string | null;
+  /** Milestone 19 — instante do pedido do cliente, capturado no route handler. */
+  requested_at?: string;
 };
 
 export type CreatePublicQuoteItemPayload = {
@@ -622,6 +624,9 @@ export type Database = {
           expires_at: string | null;
           created_at: string;
           updated_at: string;
+          /** Milestone 19 — instrumentação do KPI "tempo até o 1º orçamento". */
+          requested_at: string | null;
+          delivered_at: string | null;
         };
         Insert: {
           id?: string;
@@ -1161,6 +1166,12 @@ export type Database = {
           p_label: string;
           p_detail?: string | null;
         };
+        Returns: undefined;
+      };
+      // Milestone 19 — grava o instante em que o PDF ficou pronto, para o KPI
+      // "tempo até o 1º orçamento". Idempotente (só grava se ainda nulo).
+      record_quote_delivered: {
+        Args: { p_quote_id: string; p_delivered_at: string };
         Returns: undefined;
       };
       // --- Milestone 18 (automações agendadas) -------------------------------

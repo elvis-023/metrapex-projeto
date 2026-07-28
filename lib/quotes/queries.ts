@@ -388,6 +388,67 @@ export type QuoteListEntry = {
   issuedAt: string | null;
 };
 
+export type DraftQuoteInput = Pick<
+  QuoteRow,
+  "id" | "discount_type" | "discount_value" | "payment_condition_id"
+>;
+
+/**
+ * Recalcula o total de rascunhos (`total` nulo no banco, §11.3) sobre a
+ * configuração fiscal e o catálogo VIGENTES. `builderData` é responsabilidade
+ * do CHAMADOR — busca-lo aqui dentro faria o board (`getQuotes`) e o
+ * dashboard (Milestone 19) repetirem a mesma leitura de catálogo/impostos/
+ * pagamento uma vez por chamada; o chamador busca uma vez só, condicionado a
+ * `drafts.length > 0`, e reaproveita entre todos os rascunhos da página.
+ */
+export async function resolveDraftTotals(
+  drafts: DraftQuoteInput[],
+  builderData: QuoteBuilderData,
+): Promise<Map<string, number>> {
+  const draftTotals = new Map<string, number>();
+  if (drafts.length === 0) return draftTotals;
+
+  const supabase = await createClient();
+  const { data: items } = await supabase
+    .from("quote_items")
+    .select("quote_id, product_id, quantity")
+    .in(
+      "quote_id",
+      drafts.map((draft) => draft.id),
+    );
+
+  const itemsByQuote = new Map<string, { productId: string; quantity: number }[]>();
+  for (const item of items ?? []) {
+    const list = itemsByQuote.get(item.quote_id) ?? [];
+    list.push({ productId: item.product_id ?? "", quantity: Number(item.quantity) });
+    itemsByQuote.set(item.quote_id, list);
+  }
+
+  for (const draft of drafts) {
+    try {
+      const calculation = calculateQuote({
+        items: itemsByQuote.get(draft.id) ?? [],
+        products: builderData.products,
+        categoryNamesById: new Map(builderData.categoryNames),
+        taxTypes: builderData.taxTypes,
+        overrides: builderData.overrides,
+        discount: { type: draft.discount_type, value: draft.discount_value },
+        paymentConditionId: draft.payment_condition_id,
+        paymentConditions: builderData.paymentConditions,
+        paymentValueBands: builderData.paymentValueBands,
+      });
+      draftTotals.set(draft.id, round2(calculation.total).toNumber());
+    } catch {
+      // Produto removido do catálogo depois do rascunho: o card aparece
+      // com 0 em vez de derrubar o board inteiro. O erro real reaparece,
+      // com mensagem, quando o vendedor abrir o orçamento para emitir.
+      draftTotals.set(draft.id, 0);
+    }
+  }
+
+  return draftTotals;
+}
+
 /**
  * Orçamentos da organização para o board e o dashboard. Rascunho tem
  * `total` nulo no banco (o valor não está congelado), então é recalculado em
@@ -419,48 +480,10 @@ export async function getQuotes(): Promise<QuoteListEntry[]> {
   }
 
   const drafts = quotes.filter((quote) => quote.tax_snapshot_at === null);
-  const draftTotals = new Map<string, number>();
-
+  let draftTotals = new Map<string, number>();
   if (drafts.length > 0) {
     const builderData = await getQuoteBuilderData();
-    const { data: items } = await supabase
-      .from("quote_items")
-      .select("quote_id, product_id, quantity")
-      .in(
-        "quote_id",
-        drafts.map((quote) => quote.id),
-      );
-
-    if (builderData) {
-      const itemsByQuote = new Map<string, { productId: string; quantity: number }[]>();
-      for (const item of items ?? []) {
-        const list = itemsByQuote.get(item.quote_id) ?? [];
-        list.push({ productId: item.product_id ?? "", quantity: Number(item.quantity) });
-        itemsByQuote.set(item.quote_id, list);
-      }
-
-      for (const draft of drafts) {
-        try {
-          const calculation = calculateQuote({
-            items: itemsByQuote.get(draft.id) ?? [],
-            products: builderData.products,
-            categoryNamesById: new Map(builderData.categoryNames),
-            taxTypes: builderData.taxTypes,
-            overrides: builderData.overrides,
-            discount: { type: draft.discount_type, value: draft.discount_value },
-            paymentConditionId: draft.payment_condition_id,
-            paymentConditions: builderData.paymentConditions,
-            paymentValueBands: builderData.paymentValueBands,
-          });
-          draftTotals.set(draft.id, round2(calculation.total).toNumber());
-        } catch {
-          // Produto removido do catálogo depois do rascunho: o card aparece
-          // com 0 em vez de derrubar o board inteiro. O erro real reaparece,
-          // com mensagem, quando o vendedor abrir o orçamento para emitir.
-          draftTotals.set(draft.id, 0);
-        }
-      }
-    }
+    if (builderData) draftTotals = await resolveDraftTotals(drafts, builderData);
   }
 
   return quotes.map((quote) => ({

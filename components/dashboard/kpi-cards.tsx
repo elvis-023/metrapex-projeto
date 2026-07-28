@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { DashboardMetrics } from "@/lib/dashboard/mock-data";
+import type { DashboardMetrics } from "@/lib/dashboard/types";
 import {
   countFormatter,
   currencyFormatter,

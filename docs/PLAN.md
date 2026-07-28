@@ -269,9 +269,9 @@ real por ele.
 **Branch:** `milestone/19-dashboard-backend`
 **Objetivo:** Substituir os mocks do Milestone 5 por queries reais.
 
-- [ ] Query de orçamentos gerados, valor em pipeline, taxa de conversão
-- [ ] Cálculo do tempo médio até o primeiro orçamento (KPI central)
-- [ ] Funil de vendas por etapa a partir de dados reais
+- [x] Query de orçamentos gerados, valor em pipeline, taxa de conversão
+- [x] Cálculo do tempo médio até o primeiro orçamento (KPI central)
+- [x] Funil de vendas por etapa a partir de dados reais
 
 **Commit final:** `feat(dashboard): wire metrics dashboard to real data`
 

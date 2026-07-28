@@ -3,11 +3,8 @@ import { SalesFunnelChart } from "@/components/dashboard/sales-funnel-chart";
 import { ExpiringQuotesTable } from "@/components/dashboard/expiring-quotes-table";
 import { CustomerSourceChart } from "@/components/dashboard/customer-source-chart";
 import { PeriodFilter } from "@/components/dashboard/period-filter";
-import {
-  getDashboardMetrics,
-  dashboardPeriodOptions,
-  type DashboardPeriod,
-} from "@/lib/dashboard/mock-data";
+import { getDashboardMetrics } from "@/lib/dashboard/queries";
+import { dashboardPeriodOptions, type DashboardPeriod } from "@/lib/dashboard/types";
 
 function resolvePeriod(value: string | undefined): DashboardPeriod {
   return dashboardPeriodOptions.some((option) => option.value === value)

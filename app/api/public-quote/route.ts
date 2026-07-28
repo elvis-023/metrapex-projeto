@@ -104,6 +104,12 @@ function validateBody(body: Partial<PublicQuoteRequestBody>): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  // Instante mais próximo do clique do cliente, para o KPI "tempo até o 1º
+  // orçamento" (CLAUDE.md > KPI central) — capturado antes de qualquer
+  // validação/captcha/consulta, não no momento em que o orçamento é
+  // persistido (isso já seria depois do trabalho pesado do endpoint).
+  const requestedAt = new Date().toISOString();
+
   let body: Partial<PublicQuoteRequestBody>;
   try {
     body = await request.json();
@@ -352,6 +358,7 @@ export async function POST(request: NextRequest) {
       discount_value: "0",
       payment_condition_id: null,
       expires_at: expiryDate(),
+      requested_at: requestedAt,
     },
     p_items: items,
     p_snapshot: snapshot,
@@ -410,6 +417,22 @@ export async function POST(request: NextRequest) {
   }
 
   if (pdfUrl) {
+    // Marca o instante em que o PDF ficou pronto — não o do e-mail, que é um
+    // canal de entrega independente e pode falhar sem que isso represente o
+    // KPI "tempo até o 1º orçamento" incorretamente. Melhor esforço: falha
+    // aqui não derruba a resposta ao cliente final.
+    const { error: deliveredError } = await supabase.rpc("record_quote_delivered", {
+      p_quote_id: quote.id,
+      p_delivered_at: new Date().toISOString(),
+    });
+    if (deliveredError) {
+      console.error(
+        "[public-quote] falha ao registrar instante de entrega do PDF",
+        quote.id,
+        deliveredError,
+      );
+    }
+
     try {
       await sendQuoteEmail({ to: email, organizationName: org.name, quoteNumber, pdfUrl });
       // Timeline (Milestone 16) — só loga em caso de sucesso: um e-mail que
