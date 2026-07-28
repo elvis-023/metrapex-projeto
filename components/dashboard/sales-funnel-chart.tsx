@@ -1,7 +1,7 @@
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/states/empty-state";
 import { stageAccentClass } from "@/lib/pipeline/stage-colors";
-import type { FunnelStage } from "@/lib/dashboard/mock-data";
+import type { FunnelStage } from "@/lib/dashboard/types";
 
 export function SalesFunnelChart({ funnel }: { funnel: FunnelStage[] }) {
   const total = funnel.reduce((sum, stage) => sum + stage.count, 0);

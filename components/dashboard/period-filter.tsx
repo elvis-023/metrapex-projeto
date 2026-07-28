@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { dashboardPeriodOptions, type DashboardPeriod } from "@/lib/dashboard/mock-data";
+import { dashboardPeriodOptions, type DashboardPeriod } from "@/lib/dashboard/types";
 
 export function PeriodFilter({ period }: { period: DashboardPeriod }) {
   const router = useRouter();
