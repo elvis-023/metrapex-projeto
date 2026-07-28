@@ -1,0 +1,77 @@
+{
+  "name": "Metrapex — Envio Agendado de Relatórios (Milestone 20)",
+  "nodes": [
+    {
+      "id": "sticky-setup",
+      "name": "Antes de ativar",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-380, -260],
+      "parameters": {
+        "width": 460,
+        "height": 380,
+        "content": "## Antes de ativar\n\n1. Reaproveite a MESMA credencial Header Auth `Metrapex Automations Secret` já criada para o workflow da Milestone 18 (`Authorization: Bearer <AUTOMATIONS_API_SECRET>`).\n\n2. Reaproveite a variável de ambiente `METRAPEX_APP_URL` já configurada no n8n.\n\n3. Este workflow só decide QUANDO checar — o backend decide QUAIS agendamentos (`report_schedules`) estão de fato vencidos hoje (`next_run_at <= now()`), então uma única execução diária cobre agendamentos diários, semanais e mensais ao mesmo tempo.\n\n4. Códigos de resposta esperados:\n   - `200` — execução normal (`checked`/`sent`/`errors` no corpo).\n   - `409` — outra execução já rodou nesta janela; não é erro.\n   - `401` — credencial ausente/errada.\n\n5. Falhas de execução aparecem na aba Executions do n8n — anexe um Error Workflow se quiser alerta automático."
+      }
+    },
+    {
+      "id": "trigger-send-reports",
+      "name": "Agendamento: Relatórios",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-140, -80],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 7,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "request-send-reports",
+      "name": "Chamar /api/automations/send-reports",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [140, -80],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.METRAPEX_APP_URL }}/api/automations/send-reports",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": false,
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PLACEHOLDER_CREDENTIAL_ID",
+          "name": "Metrapex Automations Secret"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Agendamento: Relatórios": {
+      "main": [
+        [
+          {
+            "node": "Chamar /api/automations/send-reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

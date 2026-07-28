@@ -15,6 +15,9 @@ export type QuoteActivityType = "criacao" | "envio" | "mudanca_status" | "nota" 
 export type AutomationRunStatus = "processing" | "done" | "failed";
 /** Formato livre — cada job (`follow_up`, `expire_quotes`) grava o resumo que quiser. */
 export type AutomationRunSummary = Record<string, unknown>;
+export type ReportFrequency = "diario" | "semanal" | "mensal";
+/** Formato de `lib/reports/types.ts` `CustomReportSpec["filters"]` quando `report_key = 'custom'`; `{}` para pré-construídos sem filtro extra. */
+export type ReportScheduleDefinition = Record<string, unknown>;
 
 /**
  * Payloads jsonb das funções `save_quote_draft` / `issue_quote`. Todo valor
@@ -1010,6 +1013,55 @@ export type Database = {
         }>;
         Relationships: [];
       };
+      /** Envio agendado de relatório por e-mail — Milestone 20. */
+      report_schedules: {
+        Row: {
+          id: string;
+          org_id: string;
+          created_by: string | null;
+          name: string;
+          report_key: string;
+          definition: ReportScheduleDefinition;
+          frequency: ReportFrequency;
+          recipients: string[];
+          active: boolean;
+          next_run_at: string;
+          last_sent_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          created_by?: string | null;
+          name: string;
+          report_key: string;
+          definition?: ReportScheduleDefinition;
+          frequency: ReportFrequency;
+          recipients: string[];
+          active?: boolean;
+          next_run_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          name: string;
+          definition: ReportScheduleDefinition;
+          frequency: ReportFrequency;
+          recipients: string[];
+          active: boolean;
+          next_run_at: string;
+          updated_at: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "report_schedules_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -1225,6 +1277,17 @@ export type Database = {
       automation_expire_quote: {
         Args: { p_quote_id: string };
         Returns: boolean;
+      };
+      // --- Milestone 20 (relatórios: envio agendado) -------------------------
+      // EXECUTE revogado de PUBLIC (20260728000016) — só service_role, mesmo
+      // motivo das funções automation_* acima.
+      report_schedules_due: {
+        Args: Record<PropertyKey, never>;
+        Returns: Database["public"]["Tables"]["report_schedules"]["Row"][];
+      };
+      report_schedules_mark_sent: {
+        Args: { p_id: string; p_next_run_at: string };
+        Returns: undefined;
       };
     };
   };

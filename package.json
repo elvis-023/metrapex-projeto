@@ -14,7 +14,8 @@
     "verify:quotes": "tsx scripts/verify-quote-engine.mts",
     "verify:pipeline": "tsx scripts/verify-pipeline-backend.mts",
     "verify:customers": "tsx scripts/verify-customers-backend.mts",
-    "verify:automations": "tsx scripts/verify-automations.mts"
+    "verify:automations": "tsx scripts/verify-automations.mts",
+    "verify:reports": "tsx scripts/verify-reports.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -23,6 +24,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "decimal.js": "^10.6.0",
+    "html-to-image": "^1.11.13",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.26.0",
     "next": "16.2.11",
     "next-themes": "^0.4.6",

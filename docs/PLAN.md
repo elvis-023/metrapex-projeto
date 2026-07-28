@@ -279,11 +279,51 @@ real por ele.
 **Branch:** `milestone/20-reports`
 **Objetivo:** Relatórios pré-construídos, relatório customizável e exportação.
 
-- [ ] Relatórios pré-construídos (orçamentos por período, conversão por vendedor/origem/faixa, ticket médio, taxa de expiração, produtos mais orçados/convertidos, evolução do tempo até o primeiro orçamento)
-- [ ] Relatório customizável (objeto, métrica, agrupamento, filtro)
-- [ ] Exportação CSV/Excel de dado bruto filtrado
-- [ ] Exportação de gráfico/relatório em PDF/PNG
-- [ ] Envio agendado por e-mail (diário/semanal/mensal)
+- [x] Relatórios pré-construídos (orçamentos por período, conversão por vendedor/origem/faixa, ticket médio, taxa de expiração, produtos mais orçados/convertidos, evolução do tempo até o primeiro orçamento)
+- [x] Relatório customizável (objeto, métrica, agrupamento, filtro)
+- [x] Exportação CSV/Excel de dado bruto filtrado
+- [x] Exportação de gráfico/relatório em PDF/PNG
+- [x] Envio agendado por e-mail (diário/semanal/mensal)
+
+Relatórios monetários (ticket médio, faixa de valor, produtos) só consideram
+orçamento **emitido** (`tax_snapshot_at is not null`) — mesma fotografia do
+documento; relatórios de contagem (por período, taxa de expiração, conversão
+por vendedor/origem) incluem rascunho. `lib/reports/queries.ts` calcula os 8
+relatórios pré-construídos numa única leitura de `quotes`/`quote_items` por
+carregamento de página (mesmo padrão de `getDashboardMetrics`), sem lib de
+gráfico — barras HTML no mesmo estilo do dashboard
+(`components/reports/*-bar-chart.tsx`).
+
+Relatório customizável (`/reports/custom`) roda contra um executor com
+agrupamento em allow-list fixo (`lib/reports/custom.ts`) — nunca SQL montado
+a partir do client. Exportação de dado bruto filtrado (CSV/Excel) reaproveita
+o `xlsx` já usado no import de catálogo (Milestone 13); exportação de
+gráfico em PNG/PDF é 100% client-side (`html-to-image` + `jspdf`, novas
+dependências) — sem template novo no PDFMonkey nem navegador headless de
+servidor.
+
+Envio agendado (`/reports/schedules`, tabela `report_schedules`) segue o
+modelo de automação da Milestone 18: endpoint
+`POST /api/automations/send-reports`, mesmo `AUTOMATIONS_API_SECRET`, mesma
+reivindicação atômica por (job, janela) via `automation_claim_run` (job_name
+`send_reports`), disparado por um novo workflow de cron no n8n
+([docs/n8n/milestone-20-reports.workflow.json](n8n/milestone-20-reports.workflow.json)).
+Decisão de escopo: um agendamento não guarda período — a janela enviada é
+sempre "os últimos 1/7/30 dias" (diário/semanal/mensal) a partir do envio,
+não "desde o último envio" (evita drift se o job atrasar um dia); o corpo do
+e-mail é um resumo HTML e o anexo é sempre CSV do dado bruto do período,
+nunca PNG/PDF do gráfico (exigiria navegador headless de servidor — export
+de imagem continua uma ação client-side sob clique do usuário). A UI de
+criação de agendamento cobre só os 8 relatórios pré-construídos por
+enquanto, não o customizável — o schema (`report_key = 'custom'`,
+`definition` jsonb) já suporta, falta só a tela.
+
+Verificado contra Postgres real (`scripts/verify-reports.mts`): RLS de
+`report_schedules` (select member, write admin, isolamento entre
+organizações), EXECUTE de `report_schedules_due`/`report_schedules_mark_sent`
+revogado de anon/authenticated, e a query `quote_items!inner(quotes)` usada
+pelo relatório de produtos isola corretamente por organização/revisão
+atual/emitido.
 
 **Commit final:** `feat(reports): prebuilt and custom reports with export`
 
