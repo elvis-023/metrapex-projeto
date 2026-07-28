@@ -243,9 +243,25 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 **Branch:** `milestone/18-automations`
 **Objetivo:** Rotinas de follow-up e expiração via n8n, consumindo a API do backend.
 
-- [ ] Job agendado: follow-up automático para orçamentos parados há mais de X dias
-- [ ] Job agendado: expiração automática de orçamentos vencidos não convertidos
-- [ ] Notificação ao vendedor responsável (in-app e/ou e-mail)
+- [x] Job agendado: follow-up automático para orçamentos parados há mais de X dias
+- [x] Job agendado: expiração automática de orçamentos vencidos não convertidos
+- [x] Notificação ao vendedor responsável (e-mail via Resend — sem in-app nesta milestone, decisão registrada abaixo)
+
+Endpoints `POST /api/automations/follow-up` e `POST /api/automations/expire-quotes`
+(`app/api/automations/`), autenticados por segredo compartilhado
+(`AUTOMATIONS_API_SECRET`, `Authorization: Bearer`) verificado em tempo
+constante — não há sessão de usuário, o n8n é o único chamador. Proteção
+contra execução duplicada por reivindicação atômica em `automation_runs`
+(migration `20260727000014_automations.sql`), por (job, janela de 1h): duas
+chamadas concorrentes ou a mesma janela disparada duas vezes não reprocessam
+(segunda devolve 409). Cada expiração de linha é idempotente por si só
+(`automation_expire_quote` reconfere a condição na cláusula WHERE do UPDATE).
+Fluxo do n8n para importar: [docs/n8n/milestone-18-automations.workflow.json](n8n/milestone-18-automations.workflow.json).
+
+Decisão de escopo: notificação só por e-mail (Resend), sem tabela/UI de
+notificação in-app nesta milestone — mantém o escopo pequeno e reaproveita o
+canal já usado no resto do produto; in-app fica para quando houver demanda
+real por ele.
 
 **Commit final:** `feat(automations): scheduled follow-up and expiration jobs`
 

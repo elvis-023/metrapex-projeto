@@ -1,0 +1,132 @@
+{
+  "name": "Metrapex — Follow-up e Expiração de Orçamentos (Milestone 18)",
+  "nodes": [
+    {
+      "id": "sticky-setup",
+      "name": "Antes de ativar",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-380, -260],
+      "parameters": {
+        "width": 460,
+        "height": 400,
+        "content": "## Antes de ativar\n\n1. Crie uma credencial do tipo **Header Auth** chamada `Metrapex Automations Secret`:\n   - Name: `Authorization`\n   - Value: `Bearer <valor de AUTOMATIONS_API_SECRET do .env do backend>`\n   - Selecione essa credencial nos dois nós HTTP Request abaixo (o import não traz o segredo, só o nome da credencial).\n\n2. Defina a variável de ambiente `METRAPEX_APP_URL` nas configurações do n8n (ex.: `https://app.metrapex.com.br`), ou edite a URL direto nos dois nós HTTP Request.\n\n3. Códigos de resposta esperados:\n   - `200` — execução normal (ver `checked`/`notified`/`expired` no corpo).\n   - `409` — outra execução já rodou nesta janela (proteção contra duplicidade do backend); não é erro, é esperado se dois gatilhos caírem perto um do outro.\n   - `401` — credencial ausente/errada.\n\n4. Falhas de execução aparecem na aba Executions do n8n — anexe um Error Workflow se quiser alerta automático."
+      }
+    },
+    {
+      "id": "trigger-follow-up",
+      "name": "Agendamento: Follow-up",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-140, -80],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 8,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "request-follow-up",
+      "name": "Chamar /api/automations/follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [140, -80],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.METRAPEX_APP_URL }}/api/automations/follow-up",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "{\n  \"staleDays\": 3\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PLACEHOLDER_CREDENTIAL_ID",
+          "name": "Metrapex Automations Secret"
+        }
+      }
+    },
+    {
+      "id": "trigger-expire",
+      "name": "Agendamento: Expiração",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-140, 140],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 1,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "request-expire",
+      "name": "Chamar /api/automations/expire-quotes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [140, 140],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.METRAPEX_APP_URL }}/api/automations/expire-quotes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": false,
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PLACEHOLDER_CREDENTIAL_ID",
+          "name": "Metrapex Automations Secret"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Agendamento: Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Chamar /api/automations/follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendamento: Expiração": {
+      "main": [
+        [
+          {
+            "node": "Chamar /api/automations/expire-quotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

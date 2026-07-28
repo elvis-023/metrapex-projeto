@@ -12,6 +12,9 @@ export type PaymentConditionKind = "a_vista" | "cartao" | "boleto";
 export type QuoteStatus = "gerado" | "enviado" | "negociacao" | "convertido" | "expirado";
 export type QuoteDiscountType = "fixed" | "percent";
 export type QuoteActivityType = "criacao" | "envio" | "mudanca_status" | "nota" | "follow_up";
+export type AutomationRunStatus = "processing" | "done" | "failed";
+/** Formato livre — cada job (`follow_up`, `expire_quotes`) grava o resumo que quiser. */
+export type AutomationRunSummary = Record<string, unknown>;
 
 /**
  * Payloads jsonb das funções `save_quote_draft` / `issue_quote`. Todo valor
@@ -626,6 +629,7 @@ export type Database = {
           sequence: number;
           revision?: number;
           previous_revision_id?: string | null;
+          superseded_by_revision_id?: string | null;
           status?: QuoteStatus;
           owner_id?: string | null;
           customer_id?: string | null;
@@ -636,6 +640,7 @@ export type Database = {
           discount_value?: number | string;
           payment_condition_id?: string | null;
           expires_at?: string | null;
+          updated_at?: string;
         };
         /**
          * Só o que a trigger `quotes_guard_issued_immutable` deixa mudar num
@@ -974,6 +979,32 @@ export type Database = {
           },
         ];
       };
+      /** Reivindicação atômica por (job, janela de tempo) — Milestone 18. */
+      automation_runs: {
+        Row: {
+          job_name: string;
+          window_bucket: number;
+          status: AutomationRunStatus;
+          summary: AutomationRunSummary | null;
+          started_at: string;
+          finished_at: string | null;
+        };
+        Insert: {
+          job_name: string;
+          window_bucket: number;
+          status?: AutomationRunStatus;
+          summary?: AutomationRunSummary | null;
+          started_at?: string;
+          finished_at?: string | null;
+        };
+        Update: Partial<{
+          status: AutomationRunStatus;
+          summary: AutomationRunSummary | null;
+          started_at: string;
+          finished_at: string | null;
+        }>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -1121,7 +1152,9 @@ export type Database = {
         };
         Returns: Database["public"]["Tables"]["quotes"]["Row"];
       };
-      record_public_quote_activity: {
+      // Renomeada de `record_public_quote_activity` na Milestone 18 — passou a
+      // servir dois chamadores sem relação com o formulário público.
+      record_system_quote_activity: {
         Args: {
           p_quote_id: string;
           p_type: QuoteActivityType;
@@ -1129,6 +1162,58 @@ export type Database = {
           p_detail?: string | null;
         };
         Returns: undefined;
+      };
+      // --- Milestone 18 (automações agendadas) -------------------------------
+      // Todas as funções abaixo têm EXECUTE revogado de `public` na migration
+      // (20260727000014) — só service_role/postgres podem chamá-las. O n8n
+      // chama os route handlers (`/api/automations/*`), nunca o RPC direto.
+      automation_claim_run: {
+        Args: { p_job_name: string; p_window_seconds: number };
+        Returns: {
+          run_window: number;
+          claimed: boolean;
+          status: AutomationRunStatus;
+          summary: AutomationRunSummary | null;
+        }[];
+      };
+      automation_complete_run: {
+        Args: { p_job_name: string; p_window_bucket: number; p_summary: AutomationRunSummary };
+        Returns: undefined;
+      };
+      automation_fail_run: {
+        Args: { p_job_name: string; p_window_bucket: number; p_error: string };
+        Returns: undefined;
+      };
+      automation_find_stale_quotes: {
+        Args: { p_stale_days: number };
+        Returns: {
+          quote_id: string;
+          org_id: string;
+          org_name: string;
+          owner_id: string;
+          owner_email: string;
+          owner_name: string;
+          customer_name: string;
+          sequence: number;
+          updated_at: string;
+        }[];
+      };
+      automation_find_expirable_quotes: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          quote_id: string;
+          org_id: string;
+          org_name: string;
+          owner_id: string | null;
+          owner_email: string | null;
+          owner_name: string | null;
+          customer_name: string;
+          sequence: number;
+        }[];
+      };
+      automation_expire_quote: {
+        Args: { p_quote_id: string };
+        Returns: boolean;
       };
     };
   };

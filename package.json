@@ -13,7 +13,8 @@
     "test": "vitest run",
     "verify:quotes": "tsx scripts/verify-quote-engine.mts",
     "verify:pipeline": "tsx scripts/verify-pipeline-backend.mts",
-    "verify:customers": "tsx scripts/verify-customers-backend.mts"
+    "verify:customers": "tsx scripts/verify-customers-backend.mts",
+    "verify:automations": "tsx scripts/verify-automations.mts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

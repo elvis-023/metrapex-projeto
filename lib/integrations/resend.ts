@@ -94,3 +94,104 @@ export async function sendQuoteEmail({
     throw new Error(`Falha ao enviar e-mail do orçamento (${response.status}).`);
   }
 }
+
+/**
+ * Lembrete de follow-up (Milestone 18) — disparado pelo job agendado do n8n
+ * quando um orçamento fica parado (sem mudança de status/desconto/revisão)
+ * há mais dias do que o limite configurado. Vai para o vendedor responsável,
+ * nunca para o cliente final.
+ */
+export async function sendFollowUpReminderEmail({
+  to,
+  sellerName,
+  organizationName,
+  quoteNumber,
+  customerName,
+  staleDays,
+  quoteUrl,
+}: {
+  to: string;
+  sellerName: string;
+  organizationName: string;
+  quoteNumber: string;
+  customerName: string;
+  staleDays: number;
+  quoteUrl: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY não configurada.");
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: `${organizationName} via Metrapex <onboarding@resend.dev>`,
+      to,
+      subject: `Follow-up: orçamento ${quoteNumber} parado há ${staleDays} dias`,
+      html: `
+        <p>Olá, ${sellerName}!</p>
+        <p>O orçamento <strong>${quoteNumber}</strong> de <strong>${customerName}</strong> está sem
+        movimentação há mais de ${staleDays} dias.</p>
+        <p><a href="${quoteUrl}">Abrir orçamento</a></p>
+      `,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao enviar e-mail de follow-up (${response.status}).`);
+  }
+}
+
+/**
+ * Aviso de expiração automática (Milestone 18) — o orçamento já foi
+ * marcado como expirado quando este e-mail é disparado; é notificação, não
+ * uma chance de reverter.
+ */
+export async function sendQuoteExpiredEmail({
+  to,
+  sellerName,
+  organizationName,
+  quoteNumber,
+  customerName,
+  quoteUrl,
+}: {
+  to: string;
+  sellerName: string;
+  organizationName: string;
+  quoteNumber: string;
+  customerName: string;
+  quoteUrl: string;
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY não configurada.");
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: `${organizationName} via Metrapex <onboarding@resend.dev>`,
+      to,
+      subject: `Orçamento ${quoteNumber} expirou`,
+      html: `
+        <p>Olá, ${sellerName}!</p>
+        <p>O orçamento <strong>${quoteNumber}</strong> de <strong>${customerName}</strong> venceu sem
+        conversão e foi marcado como expirado automaticamente.</p>
+        <p><a href="${quoteUrl}">Abrir orçamento</a></p>
+      `,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao enviar e-mail de expiração (${response.status}).`);
+  }
+}

@@ -417,7 +417,7 @@ export async function POST(request: NextRequest) {
       // faltando na timeline para saber que precisa reenviar manualmente.
       // Falha em gravar a atividade não derruba a resposta nem é confundida
       // com falha de envio — por isso o catch é dela sozinha, não do e-mail.
-      const { error: activityError } = await supabase.rpc("record_public_quote_activity", {
+      const { error: activityError } = await supabase.rpc("record_system_quote_activity", {
         p_quote_id: quote.id,
         p_type: "envio",
         p_label: "Enviado por e-mail ao cliente",
