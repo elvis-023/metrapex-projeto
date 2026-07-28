@@ -4,14 +4,13 @@ import { redirect } from "next/navigation";
 import { QuoteBuilder } from "@/components/quotes/quote-builder";
 import { EmptyState } from "@/components/states/empty-state";
 import { getCategories } from "@/lib/catalog/queries";
-import { getCustomers, getCustomerSources } from "@/lib/customers/mock-data";
+import { getCustomerSources } from "@/lib/customers/mock-data";
+import { getCustomers } from "@/lib/customers/queries";
 import { getQuoteBuilderData } from "@/lib/quotes/queries";
 
 export const metadata: Metadata = { title: "Novo orçamento" };
 
 export default async function NewQuotePage() {
-  // Cliente ainda é mock (Milestone 17) — o orçamento guarda nome e documento
-  // copiados, então o vínculo real com `customers` entra sem migrar dado.
   const [data, categories, customers, sources] = await Promise.all([
     getQuoteBuilderData(),
     getCategories(),

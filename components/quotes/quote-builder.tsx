@@ -7,6 +7,13 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CustomerPicker } from "@/components/quotes/customer-picker";
 import { ProductPicker } from "@/components/quotes/product-picker";
 import { QuoteLineItems } from "@/components/quotes/quote-line-items";
@@ -41,6 +48,7 @@ export function QuoteBuilder({
   sources,
   revisionOf = null,
   initialCustomer = null,
+  initialCustomerSourceId = null,
   initialItems = [],
   initialDiscount = { type: "fixed", value: 0 },
   omittedProductNames = [],
@@ -52,6 +60,7 @@ export function QuoteBuilder({
   /** Preenchido na tela de nova revisão: número e revisão do orçamento de origem. */
   revisionOf?: { id: string; number: string; revision: number } | null;
   initialCustomer?: Customer | null;
+  initialCustomerSourceId?: string | null;
   initialItems?: QuoteBuilderItem[];
   initialDiscount?: QuoteDiscount;
   /** Produtos da versão anterior que já saíram do catálogo — avisados, não silenciados. */
@@ -66,6 +75,19 @@ export function QuoteBuilder({
   const [discount, setDiscount] = useState<QuoteDiscount>(initialDiscount);
   const [paymentConditionId, setPaymentConditionId] = useState<string | null>(
     data.paymentConditions.find((condition) => condition.active)?.id ?? null,
+  );
+  /**
+   * Origem é atributo do ORÇAMENTO, não do cliente (CLAUDE.md > Origem de
+   * clientes) — por isso vive aqui, não em `Customer` (lib/customers/types.ts,
+   * Milestone 17). "CRM" é o default por ser o vendedor montando manualmente;
+   * o formulário público sempre grava "site" direto no endpoint, sem passar
+   * por esta tela.
+   */
+  const [sourceId, setSourceId] = useState<string | null>(
+    initialCustomerSourceId ??
+      sources.find((source) => source.id === "crm")?.id ??
+      sources[0]?.id ??
+      null,
   );
 
   const revision = revisionOf ? revisionOf.revision + 1 : 1;
@@ -149,10 +171,10 @@ export function QuoteBuilder({
     startSaving(async () => {
       try {
         const { id } = await saveQuoteAction({
-          customerId: null,
+          customerId: customer.id,
           customerName: customer.name,
           customerDocument: customer.document,
-          customerSourceId: customer.sourceId,
+          customerSourceId: sourceId,
           items,
           discount,
           paymentConditionId,
@@ -255,12 +277,33 @@ export function QuoteBuilder({
             </div>
             <CustomerPicker
               customers={allCustomers}
-              sources={sources}
               selected={customer}
               onSelect={setCustomer}
               onClear={() => setCustomer(null)}
               onCreate={handleCreateCustomer}
             />
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="quote-source" className="text-sm font-medium">
+                Origem
+              </label>
+              <Select
+                value={sourceId ?? undefined}
+                onValueChange={(value) => value && setSourceId(value)}
+              >
+                <SelectTrigger id="quote-source" className="w-full sm:w-56">
+                  <SelectValue>
+                    {(value: string) => sources.find((source) => source.id === value)?.name ?? "—"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {sources.map((source) => (
+                    <SelectItem key={source.id} value={source.id}>
+                      {source.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         ) : null}
 

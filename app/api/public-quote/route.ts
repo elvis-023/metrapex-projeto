@@ -292,6 +292,7 @@ export async function POST(request: NextRequest) {
     p_email: email,
     p_phone: phone,
     p_address: address,
+    p_contact_name: contactName,
   });
 
   if (customerError || !customerId) {

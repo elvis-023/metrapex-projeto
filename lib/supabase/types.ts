@@ -896,7 +896,7 @@ export type Database = {
           },
         ];
       };
-      /** Fatia mínima de cliente (Milestone 15) — CRUD completo é Milestone 17. */
+      /** CRUD completo desde a Milestone 17; dedupe por (org_id, document) desde a Milestone 15. */
       customers: {
         Row: {
           id: string;
@@ -934,6 +934,42 @@ export type Database = {
             columns: ["org_id"];
             isOneToOne: false;
             referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      /** Pessoas associadas a um cliente (Milestone 17) — dedupe por (customer_id, email). */
+      customer_contacts: {
+        Row: {
+          id: string;
+          customer_id: string;
+          name: string;
+          email: string | null;
+          phone: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_id: string;
+          name: string;
+          email?: string | null;
+          phone?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<{
+          name: string;
+          email: string | null;
+          phone: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "customer_contacts_customer_id_fkey";
+            columns: ["customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
             referencedColumns: ["id"];
           },
         ];
@@ -1051,8 +1087,30 @@ export type Database = {
           p_email: string | null;
           p_phone: string | null;
           p_address: PublicCustomerAddressPayload | null;
+          p_contact_name?: string | null;
         };
         Returns: string;
+      };
+      // --- Milestone 17 (clientes e contatos) --------------------------------
+      upsert_customer: {
+        Args: {
+          p_org_id: string;
+          p_document: string;
+          p_name: string;
+          p_email: string | null;
+          p_phone: string | null;
+          p_address?: PublicCustomerAddressPayload | null;
+        };
+        Returns: Database["public"]["Tables"]["customers"]["Row"];
+      };
+      upsert_customer_contact: {
+        Args: {
+          p_customer_id: string;
+          p_name: string;
+          p_email: string | null;
+          p_phone: string | null;
+        };
+        Returns: Database["public"]["Tables"]["customer_contacts"]["Row"];
       };
       create_public_quote: {
         Args: {
