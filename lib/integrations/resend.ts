@@ -148,6 +148,65 @@ export async function sendFollowUpReminderEmail({
 }
 
 /**
+ * Envio agendado de relatório (Milestone 20) — corpo é um resumo em HTML
+ * (top linhas agregadas) e o anexo é o dado bruto filtrado da mesma janela,
+ * já em CSV/Excel (mesmas colunas da exportação manual, `lib/reports/export.ts`).
+ * Não tenta anexar gráfico: renderizar PNG/PDF de servidor exigiria um
+ * navegador headless, fora do escopo deste milestone (a exportação de
+ * imagem/PDF é sempre client-side, sob ação do usuário).
+ */
+export async function sendReportEmail({
+  to,
+  organizationName,
+  scheduleName,
+  periodLabel,
+  summaryRows,
+  attachment,
+}: {
+  to: string[];
+  organizationName: string;
+  scheduleName: string;
+  periodLabel: string;
+  summaryRows: { label: string; value: string }[];
+  attachment: { filename: string; base64: string };
+}): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY não configurada.");
+  }
+
+  const rowsHtml = summaryRows
+    .map(
+      (row) =>
+        `<tr><td style="padding:4px 12px 4px 0;color:#555;">${row.label}</td><td style="padding:4px 0;font-weight:600;">${row.value}</td></tr>`,
+    )
+    .join("");
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: `${organizationName} via Metrapex <onboarding@resend.dev>`,
+      to,
+      subject: `Relatório agendado: ${scheduleName} — ${periodLabel}`,
+      html: `
+        <p>Segue o relatório <strong>${scheduleName}</strong> de <strong>${organizationName}</strong>, referente a ${periodLabel}.</p>
+        <table style="border-collapse:collapse;margin:12px 0;">${rowsHtml}</table>
+        <p>O dado bruto filtrado do período está anexado.</p>
+      `,
+      attachments: [{ filename: attachment.filename, content: attachment.base64 }],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Falha ao enviar e-mail de relatório agendado (${response.status}).`);
+  }
+}
+
+/**
  * Aviso de expiração automática (Milestone 18) — o orçamento já foi
  * marcado como expirado quando este e-mail é disparado; é notificação, não
  * uma chance de reverter.
