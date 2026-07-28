@@ -17,7 +17,7 @@
  *  - a timeline grava `criacao` (autenticado e formulário público),
  *    `mudanca_status` e `nota` nos eventos certos, e mover pra mesma etapa
  *    não duplica atividade;
- *  - `record_public_quote_activity` só é executável por service_role;
+ *  - `record_system_quote_activity` só é executável por service_role;
  *  - isolamento entre organizações;
  *  - fix retroativo de 20260727000012: um membro enxerga o `full_name` de
  *    outro membro da MESMA organização (o board/detalhe do orçamento
@@ -354,20 +354,20 @@ async function main() {
     "Formulário público",
   );
 
-  const { error: recordActivityError } = await admin.rpc("record_public_quote_activity", {
+  const { error: recordActivityError } = await admin.rpc("record_system_quote_activity", {
     p_quote_id: publicQuoteId,
     p_type: "envio",
     p_label: "Enviado por e-mail ao cliente",
     p_detail: null,
   });
   check(
-    "record_public_quote_activity grava o envio",
+    "record_system_quote_activity grava o envio",
     !recordActivityError,
     recordActivityError?.message,
   );
 
-  console.log("\n== record_public_quote_activity não é chamável fora do service_role ==");
-  const { error: leakedExecError } = await vendedorA.rpc("record_public_quote_activity", {
+  console.log("\n== record_system_quote_activity não é chamável fora do service_role ==");
+  const { error: leakedExecError } = await vendedorA.rpc("record_system_quote_activity", {
     p_quote_id: quoteId,
     p_type: "envio",
     p_label: "Tentativa indevida",
