@@ -5,6 +5,7 @@ import {
   isValidCnpj,
   isValidCpf,
   isValidDocument,
+  normalizeDocument,
 } from "@/lib/public-form/cpf-cnpj";
 
 describe("isValidCpf", () => {
@@ -85,5 +86,38 @@ describe("detectDocumentType", () => {
     // tipo e o formulário não teria como apontar o erro.
     expect(detectDocumentType("11111111111")).toBe("cpf");
     expect(detectDocumentType("11111111111111")).toBe("cnpj");
+  });
+});
+
+/**
+ * `lib/customers/actions.ts` (Milestone 17) roda isto ANTES de chamar
+ * `upsert_customer` — com ou sem máscara precisa colapsar nos MESMOS dígitos,
+ * senão o dedupe por (org_id, document) veria dois documentos diferentes.
+ */
+describe("normalizeDocument", () => {
+  it("CNPJ com e sem máscara normalizam para os mesmos dígitos", () => {
+    const masked = normalizeDocument("11.222.333/0001-81");
+    const unmasked = normalizeDocument("11222333000181");
+    expect(masked).toEqual({ ok: true, digits: "11222333000181", type: "cnpj" });
+    expect(unmasked).toEqual(masked);
+  });
+
+  it("CPF com e sem máscara normalizam para os mesmos dígitos", () => {
+    const masked = normalizeDocument("111.444.777-35");
+    const unmasked = normalizeDocument("11144477735");
+    expect(masked).toEqual({ ok: true, digits: "11144477735", type: "cpf" });
+    expect(unmasked).toEqual(masked);
+  });
+
+  it("recusa dígito verificador inválido mesmo com máscara bem formada", () => {
+    const result = normalizeDocument("11.222.333/0001-82");
+    expect(result).toEqual({ ok: false, error: "CNPJ inválido." });
+  });
+
+  it("recusa tamanho que não é nem CPF nem CNPJ", () => {
+    expect(normalizeDocument("123")).toEqual({
+      ok: false,
+      error: "Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido.",
+    });
   });
 });

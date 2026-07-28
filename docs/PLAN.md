@@ -233,9 +233,9 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 **Branch:** `milestone/17-customers-backend`
 **Objetivo:** Cadastro de clientes com deduplicação, usado pelo Milestone 8 e pelo formulário público.
 
-- [ ] CRUD de clientes por CPF/CNPJ
-- [ ] Deduplicação automática dentro da organização
-- [ ] Múltiplos contatos por cliente
+- [x] CRUD de clientes por CPF/CNPJ
+- [x] Deduplicação automática dentro da organização
+- [x] Múltiplos contatos por cliente
 
 **Commit final:** `feat(customers): customer records with dedup and multiple contacts`
 

@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 
 import { QuoteBuilder, type QuoteBuilderItem } from "@/components/quotes/quote-builder";
 import { getCategories } from "@/lib/catalog/queries";
-import { getCustomers, getCustomerSources } from "@/lib/customers/mock-data";
+import { getCustomerSources } from "@/lib/customers/mock-data";
+import { getCustomers } from "@/lib/customers/queries";
 import { getQuoteBuilderData, getQuoteById } from "@/lib/quotes/queries";
 import type { Customer } from "@/lib/customers/types";
 
@@ -53,7 +54,7 @@ export default async function ReviseQuotePage({ params }: { params: Promise<{ id
     document: quote.customerDocument,
     email: "",
     phone: "",
-    sourceId: quote.customerSourceId ?? "site",
+    address: null,
   };
 
   return (
@@ -64,6 +65,7 @@ export default async function ReviseQuotePage({ params }: { params: Promise<{ id
       sources={sources}
       revisionOf={{ id: quote.id, number: quote.number, revision: quote.revision }}
       initialCustomer={customer}
+      initialCustomerSourceId={quote.customerSourceId}
       initialItems={initialItems}
       initialDiscount={quote.discount}
       omittedProductNames={omittedProductNames}

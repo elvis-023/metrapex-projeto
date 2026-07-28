@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { PlusIcon, SearchIcon, UserIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,50 +15,38 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { EmptyState } from "@/components/states/empty-state";
-import { CustomerSourceBadge } from "@/components/customers/customer-source-badge";
+import { upsertCustomerAction } from "@/lib/customers/actions";
 import { cn } from "@/lib/utils";
-import type { Customer, CustomerSource } from "@/lib/customers/types";
+import type { Customer } from "@/lib/customers/types";
 
 type NewCustomerForm = {
   name: string;
   document: string;
   email: string;
   phone: string;
-  sourceId: string;
 };
 
-function emptyForm(defaultSourceId: string): NewCustomerForm {
-  return { name: "", document: "", email: "", phone: "", sourceId: defaultSourceId };
-}
+const emptyForm: NewCustomerForm = { name: "", document: "", email: "", phone: "" };
 
 export function CustomerPicker({
   customers,
-  sources,
   selected,
   onSelect,
   onClear,
   onCreate,
 }: {
   customers: Customer[];
-  sources: CustomerSource[];
   selected: Customer | null;
   onSelect: (customer: Customer) => void;
   onClear: () => void;
   onCreate: (customer: Customer) => void;
 }) {
-  const defaultSourceId = sources[0]?.id ?? "site";
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<NewCustomerForm>(() => emptyForm(defaultSourceId));
+  const [form, setForm] = useState<NewCustomerForm>(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -72,18 +61,27 @@ export function CustomerPicker({
   }, [customers, query]);
 
   function openCreateDialog() {
-    setForm(emptyForm(defaultSourceId));
+    setForm(emptyForm);
     setError(null);
   }
 
-  function handleCreate() {
+  async function handleCreate() {
     if (!form.name.trim() || !form.document.trim()) {
       setError("Nome e CPF/CNPJ são obrigatórios.");
       return;
     }
-    const customer: Customer = { id: `cus_new_${Date.now()}`, ...form };
-    onCreate(customer);
-    setOpen(false);
+
+    setIsSaving(true);
+    try {
+      const customer = await upsertCustomerAction(form);
+      onCreate(customer);
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Não foi possível cadastrar o cliente.");
+      toast.error(err instanceof Error ? err.message : "Não foi possível cadastrar o cliente.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   if (selected) {
@@ -94,10 +92,7 @@ export function CustomerPicker({
             <UserIcon className="text-muted-foreground size-4" aria-hidden="true" />
           </div>
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-medium">{selected.name}</span>
-              <CustomerSourceBadge sourceId={selected.sourceId} />
-            </div>
+            <span className="text-sm font-medium">{selected.name}</span>
             <span className="text-muted-foreground text-xs tabular-nums">{selected.document}</span>
           </div>
         </div>
@@ -188,40 +183,14 @@ export function CustomerPicker({
                   />
                 </div>
               </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="customer-source" className="text-sm font-medium">
-                  Origem
-                </label>
-                <Select
-                  value={form.sourceId}
-                  onValueChange={(value) =>
-                    value && setForm((current) => ({ ...current, sourceId: value }))
-                  }
-                >
-                  <SelectTrigger id="customer-source" className="w-full">
-                    <SelectValue>
-                      {(value: string) =>
-                        sources.find((source) => source.id === value)?.name ?? "—"
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sources.map((source) => (
-                      <SelectItem key={source.id} value={source.id}>
-                        {source.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               {error ? <p className="text-destructive text-sm">{error}</p> : null}
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="button" onClick={handleCreate}>
-                Cadastrar e selecionar
+              <Button type="button" onClick={handleCreate} disabled={isSaving}>
+                {isSaving ? "Cadastrando…" : "Cadastrar e selecionar"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -248,7 +217,6 @@ export function CustomerPicker({
                   {customer.document}
                 </span>
               </div>
-              <CustomerSourceBadge sourceId={customer.sourceId} />
             </button>
           ))
         )}

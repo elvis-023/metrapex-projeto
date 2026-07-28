@@ -315,22 +315,57 @@ async function main() {
     1,
   );
 
-  console.log("\n== dedupe de cliente por (organização, documento) ==");
+  console.log("\n== dedupe de cliente por (organização, documento) — cliente novo ==");
   const dedupeDocument = buildTestCnpj("445556660001");
+  const { count: beforeAnySubmission } = await admin
+    .from("customers")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", setup.orgId)
+    .eq("document", dedupeDocument);
+  eq("nenhum cliente com este documento antes da 1ª submissão", beforeAnySubmission, 0);
+
   const firstSubmission = await postPublicQuote(
     baseBody({
       publicFormKey: setup.publicFormKey,
       document: dedupeDocument,
+      contactName: "Maria Compradora",
       email: "compras@clienterecorrente.test",
       cart: [{ productId: setup.furadeira, quantity: 1 }],
     }),
     "203.0.113.16",
   );
+  check(
+    "1ª submissão (cliente novo) responde com sucesso",
+    Boolean(firstSubmission.quoteNumber),
+    firstSubmission,
+  );
+
+  const { data: newCustomerRows } = await admin
+    .from("customers")
+    .select("id, email")
+    .eq("org_id", setup.orgId)
+    .eq("document", dedupeDocument);
+  eq("1ª submissão cria exatamente um cliente", newCustomerRows?.length, 1);
+  const dedupeCustomerId = newCustomerRows![0].id;
+
+  const { data: firstContact } = await admin
+    .from("customer_contacts")
+    .select("name, email")
+    .eq("customer_id", dedupeCustomerId);
+  eq("1ª submissão cria exatamente um contato", firstContact?.length, 1);
+  eq(
+    "nome do contato é o 'Responsável' da 1ª submissão",
+    firstContact?.[0]?.name,
+    "Maria Compradora",
+  );
+
+  console.log("\n== mesmo formulário, cliente que já existe — CONTATO NOVO (e-mail diferente) ==");
   const secondSubmission = await postPublicQuote(
     baseBody({
       publicFormKey: setup.publicFormKey,
       document: dedupeDocument,
-      email: "novo-email@clienterecorrente.test", // e-mail mudou — dedupe deve ATUALIZAR, não duplicar
+      contactName: "Maria Compradora", // mesma pessoa, mas e-mail novo — não há como casar, vira contato novo
+      email: "novo-email@clienterecorrente.test",
       cart: [{ productId: setup.serra, quantity: 1 }], // carrinho diferente: não é o mesmo caminho de idempotência
     }),
     "203.0.113.16",
@@ -346,7 +381,7 @@ async function main() {
     .select("id, email")
     .eq("org_id", setup.orgId)
     .eq("document", dedupeDocument);
-  eq("só um registro de cliente para o documento repetido", dedupedCustomers?.length, 1);
+  eq("continua só um registro de cliente para o documento repetido", dedupedCustomers?.length, 1);
   eq(
     "o registro de cliente foi atualizado com o e-mail mais recente",
     dedupedCustomers?.[0]?.email,
@@ -360,6 +395,48 @@ async function main() {
     .eq("customer_document", dedupeDocument);
   const distinctCustomerIds = new Set((dedupedQuotes ?? []).map((row) => row.customer_id));
   eq("os dois orçamentos apontam para o mesmo cliente", distinctCustomerIds.size, 1);
+
+  const { data: contactsAfterSecond } = await admin
+    .from("customer_contacts")
+    .select("name, email")
+    .eq("customer_id", dedupeCustomerId);
+  eq(
+    "e-mail diferente vira SEGUNDO contato (não sobrescreve o primeiro)",
+    contactsAfterSecond?.length,
+    2,
+  );
+
+  console.log("\n== mesmo formulário, cliente que já existe — MESMO CONTATO repetido ==");
+  const thirdSubmission = await postPublicQuote(
+    baseBody({
+      publicFormKey: setup.publicFormKey,
+      document: dedupeDocument,
+      contactName: "Maria Compradora Silva", // sobrenome novo — mesma pessoa
+      email: "novo-email@clienterecorrente.test", // MESMO e-mail da 2ª submissão
+      cart: [{ productId: setup.furadeira, quantity: 2 }], // carrinho diferente de novo
+    }),
+    "203.0.113.16",
+  );
+  check(
+    "3ª submissão (contato repetido) responde com sucesso",
+    Boolean(thirdSubmission.quoteNumber),
+    thirdSubmission,
+  );
+
+  const { data: contactsAfterThird } = await admin
+    .from("customer_contacts")
+    .select("name, email")
+    .eq("customer_id", dedupeCustomerId)
+    .order("email");
+  eq(
+    "e-mail repetido ATUALIZA o contato existente, não cria um terceiro",
+    contactsAfterThird?.length,
+    2,
+  );
+  const repeatedContact = contactsAfterThird?.find(
+    (contact) => contact.email === "novo-email@clienterecorrente.test",
+  );
+  eq("nome do contato repetido foi atualizado", repeatedContact?.name, "Maria Compradora Silva");
 
   console.log("\n== rate limit por documento (5/dia) ==");
   const rateLimitDocument = buildTestCnpj("334445550001");

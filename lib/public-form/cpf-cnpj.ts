@@ -53,6 +53,28 @@ export function isValidDocument(type: "cpf" | "cnpj", value: string): boolean {
   return type === "cpf" ? isValidCpf(value) : isValidCnpj(value);
 }
 
+export type DocumentNormalizationResult =
+  { ok: true; digits: string; type: "cpf" | "cnpj" } | { ok: false; error: string };
+
+/**
+ * Só dígitos + dígito verificador válido, com ou sem máscara — usado pelo CRUD
+ * de clientes (Milestone 17: `lib/customers/actions.ts`) para normalizar ANTES
+ * de deduplicar por (org_id, document). O formulário público não precisa
+ * disto: `state.document` (lib/public-form/reducer.ts) já nasce só dígitos, a
+ * máscara ali é só de exibição (`formatDocument`).
+ */
+export function normalizeDocument(raw: string): DocumentNormalizationResult {
+  const digits = onlyDigits(raw);
+  if (digits.length !== 11 && digits.length !== 14) {
+    return { ok: false, error: "Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido." };
+  }
+  const type = digits.length === 11 ? "cpf" : "cnpj";
+  if (!isValidDocument(type, digits)) {
+    return { ok: false, error: type === "cpf" ? "CPF inválido." : "CNPJ inválido." };
+  }
+  return { ok: true, digits, type };
+}
+
 /**
  * Descobre se o documento digitado é CPF ou CNPJ pela quantidade de dígitos —
  * o formulário público não tem mais seletor manual. `null` = ainda
