@@ -21,7 +21,16 @@ export default async function DashboardPage({
   const metrics = await getDashboardMetrics(period);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="relative flex flex-col gap-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-64"
+        style={{
+          background:
+            "radial-gradient(ellipse at top, color-mix(in oklch, var(--primary) 3%, transparent), transparent 70%)",
+        }}
+      />
+
       <div className="flex items-center justify-end">
         <PeriodFilter period={period} />
       </div>

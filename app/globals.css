@@ -306,6 +306,26 @@
   }
 }
 
+/* Entrada de página (components/layout/page-transition.tsx) — dispara ao
+   montar (troca de rota), não ao rolar; por isso é uma animação própria,
+   não o .animate-on-scroll acima. */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-page-enter {
+    animation: page-enter 0.3s ease-out;
+  }
+}
+
 /* Glassmorphism (Trezofy design scope §05) — usada nos cards de case da landing (§03). */
 .glass-card {
   background-color: color-mix(in oklch, var(--card) 70%, transparent);
