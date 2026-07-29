@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
         await sendReportEmail({
           to: schedule.recipients,
-          organizationName: org?.name ?? "Metrapex",
+          organizationName: org?.name ?? "Trezofy",
           scheduleName: schedule.name || prebuiltReportLabel(schedule.report_key),
           periodLabel: `últimos ${lookbackDays} dia(s)`,
           summaryRows,

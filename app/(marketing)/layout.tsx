@@ -5,12 +5,12 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Metrapex",
-    default: "Metrapex — Orçamento automático e CRM enxuto",
+    template: "%s | Trezofy",
+    default: "Trezofy — Orçamento automático e CRM enxuto",
   },
   description: "Geração automática de orçamentos e CRM enxuto para times de vendas.",
   openGraph: {
-    siteName: "Metrapex",
+    siteName: "Trezofy",
     type: "website",
     locale: "pt_BR",
   },

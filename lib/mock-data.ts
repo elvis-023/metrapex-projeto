@@ -8,8 +8,8 @@ export type FakeOrganization = {
 export const fakeOrganizations: FakeOrganization[] = [
   {
     id: "org_1",
-    name: "Metrapex Distribuidora",
-    slug: "metrapex-distribuidora",
+    name: "Trezofy Distribuidora",
+    slug: "trezofy-distribuidora",
     plan: "Profissional",
   },
   { id: "org_2", name: "Consultoria Ugwu", slug: "consultoria-ugwu", plan: "Entrada" },

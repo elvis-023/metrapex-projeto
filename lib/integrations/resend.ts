@@ -33,9 +33,9 @@ export async function sendInviteEmail({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      // TODO: trocar para um domínio próprio verificado na Resend (ex.: convites@metrapex.com.br)
+      // TODO: trocar para um domínio próprio verificado na Resend (ex.: convites@trezofy.com.br)
       // assim que ele for verificado — onboarding@resend.dev é o domínio sandbox, sem branding.
-      from: "Metrapex <onboarding@resend.dev>",
+      from: "Trezofy <onboarding@resend.dev>",
       to,
       subject: `Convite para colaborar em ${organizationName}`,
       html: `
@@ -80,7 +80,7 @@ export async function sendQuoteEmail({
     },
     body: JSON.stringify({
       // TODO: mesmo domínio sandbox de sendInviteEmail — trocar quando houver domínio verificado.
-      from: `${organizationName} via Metrapex <onboarding@resend.dev>`,
+      from: `${organizationName} via Trezofy <onboarding@resend.dev>`,
       to,
       subject: `Seu orçamento ${quoteNumber} — ${organizationName}`,
       html: `
@@ -130,7 +130,7 @@ export async function sendFollowUpReminderEmail({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: `${organizationName} via Metrapex <onboarding@resend.dev>`,
+      from: `${organizationName} via Trezofy <onboarding@resend.dev>`,
       to,
       subject: `Follow-up: orçamento ${quoteNumber} parado há ${staleDays} dias`,
       html: `
@@ -189,7 +189,7 @@ export async function sendReportEmail({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: `${organizationName} via Metrapex <onboarding@resend.dev>`,
+      from: `${organizationName} via Trezofy <onboarding@resend.dev>`,
       to,
       subject: `Relatório agendado: ${scheduleName} — ${periodLabel}`,
       html: `
@@ -238,7 +238,7 @@ export async function sendQuoteExpiredEmail({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: `${organizationName} via Metrapex <onboarding@resend.dev>`,
+      from: `${organizationName} via Trezofy <onboarding@resend.dev>`,
       to,
       subject: `Orçamento ${quoteNumber} expirou`,
       html: `

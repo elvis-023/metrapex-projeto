@@ -10,7 +10,7 @@ export default function PublicFormLayout({ children }: { children: ReactNode }) 
     <div className="bg-muted/30 flex min-h-screen flex-col items-center justify-center gap-4 px-3 py-6 sm:px-4">
       {children}
       <p className="text-muted-foreground text-center text-[0.7rem]">
-        Orçamento gerado por <span className="text-foreground font-medium">Metrapex</span>
+        Orçamento gerado por <span className="text-foreground font-medium">Trezofy</span>
       </p>
     </div>
   );

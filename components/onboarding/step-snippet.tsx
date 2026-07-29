@@ -22,7 +22,7 @@ export function StepSnippet({ state, dispatch }: StepSnippetProps) {
   data-org-key="${publicFormKey}"
   async
 ></script>
-<div id="metrapex-orcamento"></div>`
+<div id="trezofy-orcamento"></div>`
     : "";
 
   async function handleCopy() {
