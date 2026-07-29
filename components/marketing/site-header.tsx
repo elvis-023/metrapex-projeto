@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Logo } from "@/components/shared/logo";
 
 const navLinks = [
   { href: "#features", label: "Funcionalidades" },
@@ -12,12 +13,7 @@ export function SiteHeader() {
   return (
     <header className="border-border bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md text-xs font-bold">
-            T
-          </span>
-          Trezofy
-        </Link>
+        <Logo size="md" />
 
         <nav className="text-muted-foreground hidden items-center gap-5 text-sm md:flex">
           {navLinks.map((link) => (
