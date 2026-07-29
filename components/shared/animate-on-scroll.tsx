@@ -13,11 +13,11 @@ type AnimateOnScrollProps = {
 
 export function AnimateOnScroll({ children, className, delayMs = 0 }: AnimateOnScrollProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(() => typeof IntersectionObserver === "undefined");
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const element = ref.current;
-    if (!element || typeof IntersectionObserver === "undefined") return;
+    if (!element) return;
 
     let timeoutId: number | undefined;
 
