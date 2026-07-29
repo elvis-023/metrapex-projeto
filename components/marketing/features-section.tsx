@@ -1,3 +1,5 @@
+import { AnimateOnScroll } from "@/components/shared/animate-on-scroll";
+
 const features = [
   {
     tag: "FORM",
@@ -42,16 +44,18 @@ export function FeaturesSection() {
       </div>
 
       <div className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2">
-        {features.map((feature) => (
-          <div key={feature.title} className="border-primary/25 border-l-2 border-dashed pl-5">
-            <span className="text-primary font-mono text-xs font-medium tracking-[0.1em]">
-              [{feature.tag}]
-            </span>
-            <h3 className="mt-2 text-base font-medium">{feature.title}</h3>
-            <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
-              {feature.description}
-            </p>
-          </div>
+        {features.map((feature, index) => (
+          <AnimateOnScroll key={feature.title} delayMs={index * 100}>
+            <div className="border-primary/25 hover:border-primary/60 -translate-y-0 border-l-2 border-dashed pl-5 transition-[border-color,transform] duration-300 hover:-translate-y-1">
+              <span className="text-primary font-mono text-xs font-medium tracking-[0.1em]">
+                [{feature.tag}]
+              </span>
+              <h3 className="mt-2 text-base font-medium">{feature.title}</h3>
+              <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed">
+                {feature.description}
+              </p>
+            </div>
+          </AnimateOnScroll>
         ))}
       </div>
     </section>
