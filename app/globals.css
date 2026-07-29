@@ -8,8 +8,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-heading: var(--font-heading);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -62,19 +62,19 @@
   --card-foreground: oklch(0.23 0.007 85);
   --popover: oklch(0.995 0.003 85);
   --popover-foreground: oklch(0.23 0.007 85);
-  /* Tinta de carimbo — azul-cobalto dessaturado, não o índigo brilhante padrão de SaaS (CLAUDE.md > Identidade visual) */
-  --primary: oklch(0.42 0.14 250);
-  --primary-foreground: oklch(0.98 0.012 250);
+  /* Accent de marca Trezofy — família #009FFC, escurecida no light mode pra manter contraste AA com texto branco (CLAUDE.md > Identidade visual) */
+  --primary: oklch(0.55 0.17 246);
+  --primary-foreground: oklch(0.98 0.012 246);
   --secondary: oklch(0.955 0.006 85);
   --secondary-foreground: oklch(0.23 0.007 85);
   --muted: oklch(0.955 0.006 85);
   --muted-foreground: oklch(0.49 0.012 85);
-  --accent: oklch(0.93 0.03 250);
-  --accent-foreground: oklch(0.34 0.1 250);
+  --accent: oklch(0.93 0.03 246);
+  --accent-foreground: oklch(0.34 0.1 246);
   --destructive: oklch(0.53 0.18 25);
   --border: oklch(0.89 0.009 85);
   --input: oklch(0.89 0.009 85);
-  --ring: oklch(0.42 0.14 250 / 50%);
+  --ring: oklch(0.55 0.17 246 / 50%);
   /* Cores semânticas — verde-livro-caixa, âmbar-carbono, vermelho-tinta-oxidada; separadas da tinta de carimbo */
   --success: oklch(0.55 0.13 150);
   --success-foreground: oklch(0.98 0 0);
@@ -82,7 +82,7 @@
   --warning-foreground: oklch(0.22 0.03 75);
   --danger: oklch(0.53 0.18 25);
   --danger-foreground: oklch(0.98 0 0);
-  --chart-1: oklch(0.42 0.14 250);
+  --chart-1: oklch(0.55 0.17 246);
   --chart-2: oklch(0.55 0.13 150);
   --chart-3: oklch(0.72 0.15 75);
   --chart-4: oklch(0.53 0.18 25);
@@ -91,12 +91,12 @@
   --radius: 0.35rem;
   --sidebar: oklch(0.965 0.007 85);
   --sidebar-foreground: oklch(0.23 0.007 85);
-  --sidebar-primary: oklch(0.42 0.14 250);
-  --sidebar-primary-foreground: oklch(0.98 0.012 250);
-  --sidebar-accent: oklch(0.93 0.03 250);
-  --sidebar-accent-foreground: oklch(0.34 0.1 250);
+  --sidebar-primary: oklch(0.55 0.17 246);
+  --sidebar-primary-foreground: oklch(0.98 0.012 246);
+  --sidebar-accent: oklch(0.93 0.03 246);
+  --sidebar-accent-foreground: oklch(0.34 0.1 246);
   --sidebar-border: oklch(0.89 0.009 85);
-  --sidebar-ring: oklch(0.42 0.14 250 / 50%);
+  --sidebar-ring: oklch(0.55 0.17 246 / 50%);
 }
 
 .dark {
@@ -106,37 +106,37 @@
   --card-foreground: oklch(0.96 0.006 85);
   --popover: oklch(0.22 0.01 85);
   --popover-foreground: oklch(0.96 0.006 85);
-  --primary: oklch(0.74 0.12 250);
-  --primary-foreground: oklch(0.16 0.03 250);
+  --primary: oklch(0.68 0.17 246);
+  --primary-foreground: oklch(0.16 0.03 246);
   --secondary: oklch(0.27 0.01 85);
   --secondary-foreground: oklch(0.96 0.006 85);
   --muted: oklch(0.27 0.01 85);
   --muted-foreground: oklch(0.68 0.014 85);
-  --accent: oklch(0.3 0.05 250);
-  --accent-foreground: oklch(0.88 0.06 250);
+  --accent: oklch(0.3 0.05 246);
+  --accent-foreground: oklch(0.88 0.06 246);
   --destructive: oklch(0.68 0.18 25);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.74 0.12 250 / 50%);
+  --ring: oklch(0.68 0.17 246 / 50%);
   --success: oklch(0.68 0.14 150);
   --success-foreground: oklch(0.15 0.03 150);
   --warning: oklch(0.78 0.14 78);
   --warning-foreground: oklch(0.2 0.03 78);
   --danger: oklch(0.68 0.18 25);
   --danger-foreground: oklch(0.15 0.03 25);
-  --chart-1: oklch(0.74 0.12 250);
+  --chart-1: oklch(0.68 0.17 246);
   --chart-2: oklch(0.68 0.14 150);
   --chart-3: oklch(0.78 0.14 78);
   --chart-4: oklch(0.68 0.18 25);
   --chart-5: oklch(0.68 0.014 85);
   --sidebar: oklch(0.2 0.01 85);
   --sidebar-foreground: oklch(0.96 0.006 85);
-  --sidebar-primary: oklch(0.74 0.12 250);
-  --sidebar-primary-foreground: oklch(0.16 0.03 250);
-  --sidebar-accent: oklch(0.3 0.05 250);
-  --sidebar-accent-foreground: oklch(0.88 0.06 250);
+  --sidebar-primary: oklch(0.68 0.17 246);
+  --sidebar-primary-foreground: oklch(0.16 0.03 246);
+  --sidebar-accent: oklch(0.3 0.05 246);
+  --sidebar-accent-foreground: oklch(0.88 0.06 246);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.74 0.12 250 / 50%);
+  --sidebar-ring: oklch(0.68 0.17 246 / 50%);
 }
 
 @layer base {
@@ -148,6 +148,14 @@
   }
   html {
     @apply font-sans;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading;
   }
 }
 
@@ -200,4 +208,118 @@
   .stamp-seal {
     animation: stamp-press 0.5s 0.35s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
   }
+}
+
+/* Catálogo de animações (Trezofy design scope §06) — infraestrutura disponível
+   como utility class; nenhuma delas é aplicada a uma tela por este commit. */
+@keyframes orb-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(25px, -15px) scale(1.05);
+  }
+  66% {
+    transform: translate(-15px, 10px) scale(0.97);
+  }
+}
+
+@keyframes wave-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes flow-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scaleX(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes case-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-orb-float {
+    animation: orb-float 10s ease-in-out infinite;
+  }
+
+  .animate-wave-scroll {
+    animation: wave-scroll 14s linear infinite;
+  }
+
+  .animate-flow-pulse {
+    animation: flow-pulse 3s ease-in-out infinite;
+  }
+
+  .animate-case-float {
+    animation: case-float 3.5s ease-in-out infinite;
+  }
+}
+
+/* Entrada por scroll (components/shared/animate-on-scroll.tsx) — o estado
+   oculto só existe enquanto animação é permitida; sob prefers-reduced-motion
+   o conteúdo já nasce visível, nunca preso a um efeito de movimento. */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(15px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-on-scroll.is-visible {
+    animation: fade-slide-up 0.4s ease-out forwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-on-scroll {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Glassmorphism (Trezofy design scope §05) — utility disponível; ainda não
+   aplicada a nenhum card de tela por este commit. */
+.glass-card {
+  background-color: color-mix(in oklch, var(--card) 70%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in oklch, var(--primary) 8%, transparent);
+  transition:
+    border-color 0.3s ease,
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: color-mix(in oklch, var(--primary) 30%, transparent);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px color-mix(in oklch, var(--primary) 8%, transparent);
 }
