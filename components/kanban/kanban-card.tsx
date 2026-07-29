@@ -9,6 +9,7 @@ import { CustomerSourceBadge } from "@/components/customers/customer-source-badg
 import { cn } from "@/lib/utils";
 import { currencyFormatter, dateFormatter, parseDateOnly } from "@/lib/dashboard/format";
 import { resolveAssignee, type PipelineQuote } from "@/lib/pipeline/mock-data";
+import { stageHoverClass } from "@/lib/pipeline/stage-colors";
 
 function expiryTone(expiresAt: string, status: PipelineQuote["status"]): string {
   if (status === "expirado") return "text-danger";
@@ -34,7 +35,13 @@ export function KanbanCard({
       onDragStart={(event) => onDragStart(event, quote.id)}
       className="block cursor-grab active:cursor-grabbing"
     >
-      <Card size="sm" className="hover:ring-foreground/20 gap-2.5 transition-shadow">
+      <Card
+        size="sm"
+        className={cn(
+          "gap-2.5 border border-transparent transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5",
+          stageHoverClass[quote.status],
+        )}
+      >
         <div className="flex items-center justify-between px-3">
           <span className="font-mono text-xs font-medium tabular-nums">{quote.number}</span>
           <span className="font-mono text-sm font-semibold tabular-nums">

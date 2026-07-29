@@ -14,3 +14,12 @@ export const stageAccentClass: Record<FakeQuoteStatus, string> = {
   convertido: "bg-success",
   expirado: "bg-danger",
 };
+
+/** Hover do card do Kanban (Trezofy design scope §05) — mesma cor por estágio do dot acima, como borda + sombra. */
+export const stageHoverClass: Record<FakeQuoteStatus, string> = {
+  gerado: "hover:border-chart-5 hover:shadow-md hover:shadow-chart-5/25",
+  enviado: "hover:border-chart-1 hover:shadow-md hover:shadow-chart-1/25",
+  negociacao: "hover:border-warning hover:shadow-md hover:shadow-warning/25",
+  convertido: "hover:border-success hover:shadow-md hover:shadow-success/25",
+  expirado: "hover:border-danger hover:shadow-md hover:shadow-danger/25",
+};

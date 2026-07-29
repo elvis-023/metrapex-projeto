@@ -7,6 +7,7 @@ import { PlusIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { AnimateOnScroll } from "@/components/shared/animate-on-scroll";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
 import { ALL_SALESPEOPLE, PipelineFilters } from "@/components/kanban/pipeline-filters";
 import type { FakeQuoteStatus } from "@/lib/mock-data";
@@ -108,17 +109,18 @@ export function KanbanBoard() {
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {pipelineStages.map((stage) => (
-          <KanbanColumn
-            key={stage.status}
-            stage={stage}
-            quotes={visibleQuotes.filter((quote) => quote.status === stage.status)}
-            isDropTarget={dropTarget === stage.status}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragLeave={() => setDropTarget(null)}
-            onDrop={handleDrop}
-          />
+        {pipelineStages.map((stage, index) => (
+          <AnimateOnScroll key={stage.status} delayMs={index * 100} className="shrink-0">
+            <KanbanColumn
+              stage={stage}
+              quotes={visibleQuotes.filter((quote) => quote.status === stage.status)}
+              isDropTarget={dropTarget === stage.status}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragLeave={() => setDropTarget(null)}
+              onDrop={handleDrop}
+            />
+          </AnimateOnScroll>
         ))}
       </div>
     </div>
