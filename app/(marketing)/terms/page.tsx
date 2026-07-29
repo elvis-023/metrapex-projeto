@@ -37,8 +37,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-medium">2. Uso do serviço</h2>
           <p className="text-muted-foreground mt-2">
-            O Trezofy é um serviço de geração de orçamentos e gestão de pipeline de vendas
-            oferecido por assinatura, sujeito aos limites e recursos de cada plano.
+            O Trezofy é um serviço de geração de orçamentos e gestão de pipeline de vendas oferecido
+            por assinatura, sujeito aos limites e recursos de cada plano.
           </p>
         </section>
 

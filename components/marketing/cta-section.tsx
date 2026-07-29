@@ -10,8 +10,8 @@ export function CtaSection() {
           Pare de perder venda por demora no orçamento
         </h2>
         <p className="max-w-xl text-balance opacity-90">
-          Configure seu catálogo e seus impostos uma vez. O resto — cálculo, PDF e envio — o
-          Trezofy faz sozinho.
+          Configure seu catálogo e seus impostos uma vez. O resto — cálculo, PDF e envio — o Trezofy
+          faz sozinho.
         </p>
         <Button
           size="lg"

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 
-const description =
-  "Como o Trezofy coleta, usa e protege dados de organizações e clientes finais.";
+const description = "Como o Trezofy coleta, usa e protege dados de organizações e clientes finais.";
 
 export const metadata: Metadata = {
   title: "Política de Privacidade",
@@ -23,9 +22,9 @@ export default function PrivacyPage() {
 
       <div className="mt-8 flex flex-col gap-6 text-sm leading-relaxed">
         <p>
-          Este é um texto placeholder. A Política de Privacidade definitiva do Trezofy será
-          redigida por um profissional jurídico, em conformidade com a LGPD, antes do lançamento em
-          produção, e substituirá este conteúdo.
+          Este é um texto placeholder. A Política de Privacidade definitiva do Trezofy será redigida
+          por um profissional jurídico, em conformidade com a LGPD, antes do lançamento em produção,
+          e substituirá este conteúdo.
         </p>
 
         <section>
