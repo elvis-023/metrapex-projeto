@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnimateOnScroll } from "@/components/shared/animate-on-scroll";
 import type { DashboardMetrics } from "@/lib/dashboard/types";
 import {
   countFormatter,
@@ -35,16 +36,18 @@ export function KpiCards({ metrics }: { metrics: DashboardMetrics }) {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {kpis.map((kpi) => (
-        <Card key={kpi.label}>
-          <CardHeader>
-            <CardDescription>{kpi.label}</CardDescription>
-            <CardTitle className="text-2xl tabular-nums">{kpi.value}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-xs">{kpi.hint}</p>
-          </CardContent>
-        </Card>
+      {kpis.map((kpi, index) => (
+        <AnimateOnScroll key={kpi.label} delayMs={index * 100}>
+          <Card className="glass-card">
+            <CardHeader>
+              <CardDescription>{kpi.label}</CardDescription>
+              <CardTitle className="text-2xl tabular-nums">{kpi.value}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-xs">{kpi.hint}</p>
+            </CardContent>
+          </Card>
+        </AnimateOnScroll>
       ))}
     </div>
   );

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
+import { PageTransition } from "@/components/layout/page-transition";
 import type { SessionOrganization, SessionUser } from "@/lib/auth/session";
 
 export function AppShell({
@@ -26,7 +27,9 @@ export function AppShell({
           organizations={organizations}
           currentOrganization={currentOrganization}
         />
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          <PageTransition>{children}</PageTransition>
+        </main>
       </div>
     </div>
   );
