@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
-const description = "Condições de uso da plataforma Metrapex.";
+const description = "Condições de uso da plataforma Trezofy.";
 
 export const metadata: Metadata = {
   title: "Termos de Uso",
   description,
   openGraph: {
-    title: "Termos de Uso | Metrapex",
+    title: "Termos de Uso | Trezofy",
     description,
-    siteName: "Metrapex",
+    siteName: "Trezofy",
     type: "website",
     locale: "pt_BR",
   },
@@ -22,14 +22,14 @@ export default function TermsPage() {
 
       <div className="mt-8 flex flex-col gap-6 text-sm leading-relaxed">
         <p>
-          Este é um texto placeholder. Os Termos de Uso definitivos do Metrapex serão redigidos por
+          Este é um texto placeholder. Os Termos de Uso definitivos do Trezofy serão redigidos por
           um profissional jurídico antes do lançamento em produção e substituirão este conteúdo.
         </p>
 
         <section>
           <h2 className="text-lg font-medium">1. Aceitação dos termos</h2>
           <p className="text-muted-foreground mt-2">
-            Ao criar uma conta ou utilizar o Metrapex, você concorda com estes Termos de Uso e com a
+            Ao criar uma conta ou utilizar o Trezofy, você concorda com estes Termos de Uso e com a
             nossa Política de Privacidade.
           </p>
         </section>
@@ -37,7 +37,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-medium">2. Uso do serviço</h2>
           <p className="text-muted-foreground mt-2">
-            O Metrapex é um serviço de geração de orçamentos e gestão de pipeline de vendas
+            O Trezofy é um serviço de geração de orçamentos e gestão de pipeline de vendas
             oferecido por assinatura, sujeito aos limites e recursos de cada plano.
           </p>
         </section>

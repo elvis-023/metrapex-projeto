@@ -36,9 +36,9 @@ export default function OpengraphImage() {
             justifyContent: "center",
           }}
         >
-          M
+          T
         </div>
-        <div style={{ display: "flex", fontSize: 28, fontWeight: 600, color: ink }}>Metrapex</div>
+        <div style={{ display: "flex", fontSize: 28, fontWeight: 600, color: ink }}>Trezofy</div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>

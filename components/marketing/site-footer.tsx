@@ -6,13 +6,13 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-2 text-sm font-medium">
           <span className="bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-md text-[0.65rem] font-bold">
-            M
+            T
           </span>
-          Metrapex
+          Trezofy
         </div>
 
         <p className="text-muted-foreground text-sm">
-          © {new Date().getFullYear()} Metrapex. Todos os direitos reservados.
+          © {new Date().getFullYear()} Trezofy. Todos os direitos reservados.
         </p>
 
         <nav className="text-muted-foreground flex items-center gap-4 text-sm">

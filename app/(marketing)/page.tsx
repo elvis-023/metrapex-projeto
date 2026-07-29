@@ -6,11 +6,11 @@ import { PricingSection } from "@/components/marketing/pricing-section";
 import { CtaSection } from "@/components/marketing/cta-section";
 
 export const metadata: Metadata = {
-  title: "Metrapex — Orçamento automático e CRM enxuto",
+  title: "Trezofy — Orçamento automático e CRM enxuto",
   openGraph: {
-    title: "Metrapex — Orçamento automático e CRM enxuto",
+    title: "Trezofy — Orçamento automático e CRM enxuto",
     description: "Geração automática de orçamentos e CRM enxuto para times de vendas.",
-    siteName: "Metrapex",
+    siteName: "Trezofy",
     type: "website",
     locale: "pt_BR",
   },

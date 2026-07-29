@@ -32,7 +32,7 @@ export function StepOrganization({ state, dispatch }: StepOrganizationProps) {
       <FormField
         label="Nome da organização"
         name="organization-name"
-        placeholder="Ex.: Metrapex Distribuidora"
+        placeholder="Ex.: Trezofy Distribuidora"
         value={organization.name}
         onChange={(event) =>
           dispatch({ type: "SET_ORGANIZATION", field: "name", value: event.target.value })

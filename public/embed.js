@@ -6,7 +6,7 @@
  *
  * Uso:
  *   <script src="https://SEU_DOMINIO/embed.js" data-org-key="pfk_..." async></script>
- *   <div id="metrapex-orcamento"></div>
+ *   <div id="trezofy-orcamento"></div>
  *
  * Atributos opcionais no <script>:
  *   data-produto="CODIGO"  — pré-carrega um produto específico do catálogo.
@@ -18,14 +18,14 @@
 
   var orgKey = current.getAttribute("data-org-key");
   if (!orgKey) {
-    console.error("[metrapex] embed.js: atributo data-org-key ausente no <script>.");
+    console.error("[trezofy] embed.js: atributo data-org-key ausente no <script>.");
     return;
   }
 
-  var targetId = current.getAttribute("data-target") || "metrapex-orcamento";
+  var targetId = current.getAttribute("data-target") || "trezofy-orcamento";
   var target = document.getElementById(targetId);
   if (!target) {
-    console.error('[metrapex] embed.js: elemento "#' + targetId + '" não encontrado na página.');
+    console.error('[trezofy] embed.js: elemento "#' + targetId + '" não encontrado na página.');
     return;
   }
 

@@ -105,21 +105,21 @@ export const initialTeamMembers: TeamMember[] = [
   {
     id: "member_1",
     name: "Elvis Ugwu",
-    email: "elvis@metrapex-distribuidora.com.br",
+    email: "elvis@trezofy-distribuidora.com.br",
     role: "admin",
     isCurrentUser: true,
   },
   {
     id: "member_2",
     name: "Camila Duarte",
-    email: "camila@metrapex-distribuidora.com.br",
+    email: "camila@trezofy-distribuidora.com.br",
     role: "vendedor",
     isCurrentUser: false,
   },
   {
     id: "member_3",
     name: "Rafael Souza",
-    email: "rafael@metrapex-distribuidora.com.br",
+    email: "rafael@trezofy-distribuidora.com.br",
     role: "vendedor",
     isCurrentUser: false,
   },
@@ -128,7 +128,7 @@ export const initialTeamMembers: TeamMember[] = [
 export const initialTeamInvites: TeamInvite[] = [
   {
     id: "invite_1",
-    email: "novo.vendedor@metrapex-distribuidora.com.br",
+    email: "novo.vendedor@trezofy-distribuidora.com.br",
     role: "vendedor",
     invitedAt: "2026-07-20",
   },

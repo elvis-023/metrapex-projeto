@@ -14,9 +14,9 @@ export function SiteHeader() {
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md text-xs font-bold">
-            M
+            T
           </span>
-          Metrapex
+          Trezofy
         </Link>
 
         <nav className="text-muted-foreground hidden items-center gap-5 text-sm md:flex">
