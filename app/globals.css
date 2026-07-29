@@ -210,8 +210,8 @@
   }
 }
 
-/* Catálogo de animações (Trezofy design scope §06) — infraestrutura disponível
-   como utility class; nenhuma delas é aplicada a uma tela por este commit. */
+/* Catálogo de animações (Trezofy design scope §06) — usadas no hero, nos
+   separadores entre seções e nos cards de case da landing (§02/§03). */
 @keyframes orb-float {
   0%,
   100% {
@@ -273,7 +273,7 @@
   }
 
   .animate-wave-scroll {
-    animation: wave-scroll 14s linear infinite;
+    animation: wave-scroll 12s linear infinite;
   }
 
   .animate-flow-pulse {
@@ -306,8 +306,7 @@
   }
 }
 
-/* Glassmorphism (Trezofy design scope §05) — utility disponível; ainda não
-   aplicada a nenhum card de tela por este commit. */
+/* Glassmorphism (Trezofy design scope §05) — usada nos cards de case da landing (§03). */
 .glass-card {
   background-color: color-mix(in oklch, var(--card) 70%, transparent);
   backdrop-filter: blur(12px);
