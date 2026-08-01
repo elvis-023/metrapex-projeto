@@ -227,10 +227,16 @@ async function main() {
   console.log("\n== páginas autenticadas ANTES da troca de regime (org com ICMS) ==");
   for (const path of ["/dashboard", "/reports", "/quotes/new", `/pipeline/${emittedQuoteId}`]) {
     const res = await fetchPage(path, cookie);
-    check(`GET ${path} → ${res.status} (não é 500)`, res.status < 500, await res.text().catch(() => ""));
+    check(
+      `GET ${path} → ${res.status} (não é 500)`,
+      res.status < 500,
+      await res.text().catch(() => ""),
+    );
   }
 
-  console.log("\n== TROCA DE REGIME: lucro_presumido -> MEI (mesma ação da UI, applyRegimeTemplateAction) ==");
+  console.log(
+    "\n== TROCA DE REGIME: lucro_presumido -> MEI (mesma ação da UI, applyRegimeTemplateAction) ==",
+  );
   // Mesma sequência exata de lib/tax-engine/actions.ts:applyRegimeTemplateAction:
   // apaga tax_rates -> tax_types -> tax_settings da org, insere o preset do
   // regime novo (MEI = plan.taxTypes: [] , showTaxLines: false).
@@ -270,7 +276,11 @@ async function main() {
     .from("quote_item_taxes")
     .select("tax_code, tax_amount")
     .eq("quote_item_id", quoteItem!.id);
-  check("linha de ICMS do emitido sobrevive à troca de regime", (taxLines ?? []).length === 1, taxLines);
+  check(
+    "linha de ICMS do emitido sobrevive à troca de regime",
+    (taxLines ?? []).length === 1,
+    taxLines,
+  );
 
   console.log("\n== páginas autenticadas DEPOIS da troca (org agora é MEI, zero tributo) ==");
   for (const path of ["/dashboard", "/reports", "/quotes/new", `/pipeline/${emittedQuoteId}`]) {
@@ -281,8 +291,7 @@ async function main() {
 
   console.log("\n== rascunho reaberto depois da troca: recalcula sem tributo, sem crash ==");
   const draftPage = await fetchPage(`/pipeline/${draftQuoteId}`, cookie);
-  const draftBody =
-    draftPage.status >= 500 ? await draftPage.text().catch(() => "") : "";
+  const draftBody = draftPage.status >= 500 ? await draftPage.text().catch(() => "") : "";
   check(
     `GET /pipeline/${draftQuoteId} (rascunho, org sem tributo) → ${draftPage.status} (não é 500)`,
     draftPage.status < 500,
