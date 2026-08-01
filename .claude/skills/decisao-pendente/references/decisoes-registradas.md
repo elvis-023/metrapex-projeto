@@ -51,3 +51,66 @@ Impacto: `documentTotals` em `lib/tax-engine/calc-tax.ts`, leitura do documento,
 Decisão: confirmado — `quote_item_taxes.tax_type_id` fica sem FK, e nenhuma query, DTO, repository ou tela do documento faz `join` com `tax_types`; a leitura é `quote_items left join quote_item_taxes`, com item sem tributo tratado como caso normal.
 Porquê: fecha o invariante do briefing §3 ("fotografia, não consulta") na camada de leitura, garantindo reimpressão idêntica mesmo após desativação ou exclusão do tributo. `left join` porque organização sem tributo (MEI/Simples sem destaque) é configuração válida e emitível.
 Impacto: DDL e todas as consultas de leitura de orçamento do Milestone 14.
+
+---
+
+## Decisões fora do §11 — mudança "Regime Tributário" (fora do plano, chegou depois do Milestone 20)
+
+Estas quatro não são das 8 perguntas do briefing — são decisões de arquitetura para a
+mudança do passo 2 do onboarding de "template fiscal" para "Regime Tributário" (MEI,
+Simples Nacional, Lucro Real, Lucro Presumido) com detecção automática por CNPJ.
+Registradas aqui pelo mesmo motivo: nascer explicadas, não implícitas no código.
+
+### Regime Tributário #1 — coluna persistida em `organizations` — decidido em 2026-08-01
+
+Decisão: `organizations` ganha uma coluna `tax_regime` persistida, mesmo o motor de
+cálculo (`resolveRate`/`calcTax`) nunca lendo esse campo.
+Porquê: o campo existe só para exibir a escolha detectada no onboarding (via CNPJ) e
+permitir trocar de regime depois — não para o motor decidir cálculo por regime, o que
+violaria o invariante "regras, não colunas" do briefing §2. Descartado não persistir
+nada, o que impediria mostrar/editar a escolha fora do fluxo de criação da organização.
+Impacto: migration em `organizations`, onboarding (passo 2), tela de settings que vier
+a expor/editar o regime.
+
+### Regime Tributário #2 — quarto template como entrada própria — decidido em 2026-08-01
+
+Decisão: `"lucro-real"` é um `TaxTemplateId` próprio em `buildTaxTemplatePlan`
+(`lib/tax-engine/onboarding-templates.ts`), com seu próprio `case`, não um alias/fallthrough
+para `"icms-ipi"` — mesmo que o plano de saída inicial seja idêntico hoje.
+Porquê: os dois regimes coincidem por acaso no V1 (nenhum dos quatro exige mudança de
+cálculo, conforme diagnóstico), mas são conceitos diferentes para quem lê o código e
+podem divergir no futuro (ex.: PIS/COFINS não-cumulativo do Lucro Real, hoje fora de
+escopo). Alias economiza uma entrada hoje e obriga a separar depois sem histórico do
+porquê eram iguais.
+Impacto: `lib/tax-engine/onboarding-templates.ts` (`TaxTemplateId`, `buildTaxTemplatePlan`),
+`lib/onboarding/mock-data.ts` (copy do passo 2).
+
+### Regime Tributário #3 — `/settings/taxes` sai do mock, vira CRUD real — decidido em 2026-08-01
+
+Decisão: `app/(app)/settings/taxes` deixa de rodar sobre `lib/settings/mock-data.ts` e
+passa a ler/escrever `tax_types`/`tax_rates`/`tax_settings` de verdade, reaproveitando
+`getTaxConfiguration` de `lib/quotes/queries.ts` como base da leitura. Entra no escopo
+do bloco que mexe nessa tela (não um milestone separado).
+Porquê: a tela já existe desde o Milestone 10 mas nunca foi ligada a dado real; a
+mudança de regime torna essa lacuna visível (usuário escolhe regime no onboarding, mas
+não consegue conferir/ajustar o resultado na tela de configuração). Reaproveitar
+`getTaxConfiguration` evita uma segunda função de leitura das mesmas três tabelas.
+Impacto: `app/(app)/settings/taxes/page.tsx`, `components/settings/tax-settings-manager.tsx`,
+`lib/settings/` (mock a ser removido), possível extensão de `lib/quotes/queries.ts` se
+`getTaxConfiguration` precisar de campos que a tela usa e a leitura do orçamento não.
+
+### Regime Tributário #4 — client de BrasilAPI extraído para lib compartilhada — decidido em 2026-08-01
+
+Decisão: a chamada HTTP à BrasilAPI hoje embutida em
+`app/api/public-quote/lookup-cnpj/route.ts` é extraída para uma função de
+`lib/integrations/` (client compartilhado); o onboarding autenticado consome essa
+função diretamente, sem chamar a rota pública do formulário.
+Porquê: a rota pública tem rate-limit e contrato de resposta (`legalName`+`address`)
+pensados para o visitante anônimo do formulário; o onboarding autenticado precisa
+também de `porte`/`opcao_pelo_simples`/`opcao_pelo_mei` (campos que a rota pública hoje
+descarta) para a detecção automática de MEI/Simples — forçar o onboarding a chamar a
+rota pública acoplaria dois consumidores com necessidades diferentes a um único
+contrato de resposta. Descartado duplicar a chamada fetch em dois lugares.
+Impacto: novo arquivo em `lib/integrations/` (ex.: `lib/integrations/brasil-api.ts`),
+`app/api/public-quote/lookup-cnpj/route.ts` (passa a chamar a função em vez do fetch
+inline), novo ponto de consumo no onboarding (Bloco 7).

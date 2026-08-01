@@ -6,7 +6,7 @@ Módulo autônomo para sistemas que emitem orçamento, proposta ou nota de venda
 
 ## 1. Objetivo
 
-Calcular e destacar tributos em documentos de venda de produto para qualquer empresa brasileira — do MEI no Simples Nacional (que não destaca nada, só imprime a nota de transparência) até a revenda no Lucro Presumido com ICMS por fora e IPI embutido no preço de tabela — **sem alteração de código, apenas configuração por organização**. O mesmo motor, o mesmo schema e o mesmo caminho de cálculo atendem os três casos; o que muda é o conteúdo de duas tabelas.
+Calcular e destacar tributos em documentos de venda de produto para qualquer empresa brasileira — do MEI e do Simples Nacional (que não destacam nada, só imprimem a nota de transparência) até a revenda no Lucro Presumido ou no Lucro Real, com ICMS por fora e IPI embutido no preço de tabela — **sem alteração de código, apenas configuração por organização**. O mesmo motor, o mesmo schema e o mesmo caminho de cálculo atendem os quatro regimes; o que muda é o conteúdo de duas tabelas. Nenhum dos quatro regimes exige mudança no cálculo em si (`resolveRate`/`calcTax` não sabem o que é "regime") — ver decisões registradas em `.claude/skills/decisao-pendente/references/decisoes-registradas.md`, seção "Regime Tributário".
 
 ---
 
@@ -287,35 +287,39 @@ O total fecha nas duas, mas a base diverge em R$ 0,01. Padronize **por linha** e
 
 ---
 
-## 6. Templates de onboarding
+## 6. Regime Tributário (onboarding)
 
-Presets aplicados na criação da organização, para que ninguém comece com tela em branco. São inserts, não código.
+O passo 2 do onboarding pergunta o **Regime Tributário** da organização — MEI, Simples Nacional, Lucro Real ou Lucro Presumido — e usa a resposta como preset inicial de `tax_types`/`tax_rates`/`tax_settings`. São inserts, não código: cada regime abaixo tem sua própria entrada em `buildTaxTemplatePlan` (`lib/tax-engine/onboarding-templates.ts`), mesmo quando duas coincidem no conteúdo inicial, porque podem divergir depois (ex.: Lucro Real e PIS/COFINS não-cumulativo, hoje fora de escopo — §8, §10).
 
-### "Simples Nacional (sem destaque)"
+**"Regime tributário" é metadado da organização, não dado de cálculo.** Ele determina qual preset roda no onboarding e orienta a UI (ex.: `organizations.tax_regime`, exibido/editável depois na tela de configuração) — o motor de cálculo (`resolveRate`/`calcTax`) continua sem conhecer regime por nome, e resolve alíquota exclusivamente pela hierarquia produto > categoria > padrão da organização (§4). Nenhuma linha de código do motor lê `tax_regime`.
 
-Nenhum `tax_type`. Só o rodapé informativo.
+Todas as alíquotas abaixo são **sugestão inicial**, não verdade fiscal: a organização (ou o contador dela) precisa confirmar e ajustar em `/settings/taxes` antes de emitir com valor real — §9 continua valendo integralmente, inclusive para quem chegou pelo fluxo de regime.
+
+### MEI
+
+Nenhum `tax_type`. Só o rodapé informativo — MEI não destaca tributo no documento de venda.
 
 ```sql
 insert into tax_settings (org_id, document_footer, show_tax_lines)
 values (:org, 'Valor aproximado dos tributos incidentes conforme Lei 12.741/2012.', false);
 ```
 
-Documento sai sem nenhuma linha de imposto; o total é o preço de catálogo; a frase aparece no rodapé. É o default para MEI e Simples que não destaca.
+Documento sai sem nenhuma linha de imposto; o total é o preço de catálogo; a frase aparece no rodapé. **Sugestão a confirmar:** o texto do rodapé é o modelo genérico da Lei 12.741/2012 — se o contador da organização quiser outro texto (ou nenhum), é ajustável em `/settings/taxes` depois do onboarding.
 
-### "Isento"
+### Simples Nacional
 
-Nenhum `tax_type`, nenhum rodapé.
+Mesmo preset do MEI — nenhum `tax_type`, só o rodapé informativo. É o comportamento correto para a maioria das empresas do Simples, que não destacam tributo no orçamento.
 
 ```sql
 insert into tax_settings (org_id, document_footer, show_tax_lines)
-values (:org, null, false);
+values (:org, 'Valor aproximado dos tributos incidentes conforme Lei 12.741/2012.', false);
 ```
 
-Serve para quem só quer orçamento limpo (serviço não tributado no destaque, venda interna, teste do produto).
+**Sugestão a confirmar:** existem empresas do Simples que destacam algum tributo específico (raro, mas possível conforme o anexo/atividade) — isso não é resolvido pelo regime sozinho; o contador precisa avaliar e, se for o caso, cadastrar o tributo manualmente em `/settings/taxes` depois do onboarding.
 
-### "ICMS + IPI padrão"
+### Lucro Presumido
 
-Revenda no Lucro Presumido: ICMS por fora no padrão da empresa, IPI embutido por categoria.
+ICMS por fora no padrão da empresa, IPI embutido por categoria — caso típico de revenda.
 
 ```sql
 insert into tax_types (org_id, code, label, mode, default_rate, display_order)
@@ -328,7 +332,33 @@ insert into tax_rates (tax_type_id, category_id, rate)
 values (:ipi_id, :categoria_industrializados, 5.0000);
 ```
 
-Note o IPI com `default_rate = 0`: a organização usa o tributo, mas ele só incide onde houver override de categoria. Zero como padrão é o jeito de dizer "existe, mas não incide por omissão".
+Note o IPI com `default_rate = 0`: a organização usa o tributo, mas ele só incide onde houver override de categoria. Zero como padrão é o jeito de dizer "existe, mas não incide por omissão". **Sugestão a confirmar:** os 18% de ICMS e os 5% de IPI são valores de exemplo do briefing, não a alíquota real de nenhuma organização — o contador confirma a alíquota de ICMS do estado/produto e quais categorias realmente têm IPI antes da primeira emissão real.
+
+### Lucro Real
+
+Mesmo conteúdo inicial do Lucro Presumido — ICMS por fora, IPI embutido por categoria —, mas com entrada própria (`"lucro-real"`) em `buildTaxTemplatePlan`, não um alias de `"icms-ipi"`.
+
+```sql
+insert into tax_types (org_id, code, label, mode, default_rate, display_order)
+values
+  (:org, 'ICMS', 'ICMS', 'exclusive', 18.0000, 1),
+  (:org, 'IPI',  'IPI',  'inclusive',  0.0000, 2);
+
+-- IPI de 5% só na categoria que tem industrialização; demais ficam em 0.
+insert into tax_rates (tax_type_id, category_id, rate)
+values (:ipi_id, :categoria_industrializados, 5.0000);
+```
+
+**Sugestão a confirmar:** mesma ressalva do Lucro Presumido — ICMS e IPI de exemplo, a confirmar com o contador. A entrada própria existe porque Lucro Real e Lucro Presumido só coincidem por acaso no V1; PIS/COFINS não-cumulativo (regime típico de parte do Lucro Real) está fora de escopo hoje (§8) e, se entrar no V2, muda só o preset do Lucro Real, sem tocar no do Lucro Presumido.
+
+### Fora do fluxo de regime: preset "Isento"
+
+`tax_types` vazio, sem rodapé — não é uma das quatro opções do passo 2, fica disponível como ajuste manual em `/settings/taxes` para quem não se encaixa em nenhum regime (venda interna, teste do produto, serviço não tributado no destaque).
+
+```sql
+insert into tax_settings (org_id, document_footer, show_tax_lines)
+values (:org, null, false);
+```
 
 ---
 
