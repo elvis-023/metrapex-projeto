@@ -257,9 +257,9 @@ export function TaxSettingsManager({
           não valida a legislação em si, só congela o que foi configurado. */}
       <div className="border-warning/40 bg-warning/10 text-warning-foreground rounded-lg border px-3 py-2 text-sm">
         Estes tributos e alíquotas são um ponto de partida sugerido pelo regime tributário da
-        organização — não são verdade fiscal. Confirme com o contador da organização quais
-        tributos realmente incidem, o modo de cálculo e a alíquota de cada um antes de emitir
-        orçamentos com valor oficial.
+        organização — não são verdade fiscal. Confirme com o contador da organização quais tributos
+        realmente incidem, o modo de cálculo e a alíquota de cada um antes de emitir orçamentos com
+        valor oficial.
       </div>
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-3">

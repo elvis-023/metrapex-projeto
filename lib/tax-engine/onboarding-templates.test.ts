@@ -73,7 +73,11 @@ describe("buildTaxTemplatePlan", () => {
   });
 
   it("Lucro Real e Lucro Presumido coincidem hoje no conteúdo inicial (mesma alíquota de entrada)", () => {
-    const presumido = buildTaxTemplatePlan({ templateId: "icms-ipi", icmsRate: 18, footerText: "" });
+    const presumido = buildTaxTemplatePlan({
+      templateId: "icms-ipi",
+      icmsRate: 18,
+      footerText: "",
+    });
     const real = buildTaxTemplatePlan({ templateId: "lucro-real", icmsRate: 18, footerText: "" });
     expect(real).toEqual(presumido);
   });
