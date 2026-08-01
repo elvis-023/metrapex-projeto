@@ -6,6 +6,8 @@
  */
 export type OrgRole = "admin" | "vendedor";
 export type OrgPlan = "entrada" | "profissional" | "escala";
+/** Metadado da organização (briefing-motor-impostos.md §6) — nunca lido por resolveRate/calcTax. `null` = regime não confirmado. */
+export type TaxRegime = "mei" | "simples_nacional" | "lucro_presumido" | "lucro_real";
 export type TaxMode = "inclusive" | "exclusive";
 export type RateSource = "org_default" | "category" | "product";
 export type PaymentConditionKind = "a_vista" | "cartao" | "boleto";
@@ -160,6 +162,8 @@ export type Database = {
            * 20260726000010_public_form_backend.sql.
            */
           public_form_key: string;
+          /** Ver migration 20260801000017_tax_regime.sql. */
+          tax_regime: TaxRegime | null;
           created_at: string;
         };
         Insert: {
@@ -168,6 +172,7 @@ export type Database = {
           slug: string;
           plan?: OrgPlan;
           public_form_key?: string;
+          tax_regime?: TaxRegime | null;
           created_at?: string;
         };
         Update: Partial<{
@@ -175,6 +180,7 @@ export type Database = {
           slug: string;
           plan: OrgPlan;
           public_form_key: string;
+          tax_regime: TaxRegime | null;
         }>;
         Relationships: [];
       };
