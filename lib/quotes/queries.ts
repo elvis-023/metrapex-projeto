@@ -61,13 +61,18 @@ export async function getTaxConfiguration(orgId: string): Promise<TaxConfigurati
   if (types.length > 0) {
     const { data } = await supabase
       .from("tax_rates")
-      .select("tax_type_id, category_id, product_id, rate, note")
+      .select("id, tax_type_id, category_id, product_id, rate, note")
       .in(
         "tax_type_id",
         types.map((type) => type.id),
       );
 
+    // `id` viaja aqui só para a tela de configuração (Milestone 10) editar/
+    // excluir um override específico sem duplicar esta query — resolveRate/
+    // calcTax nunca leem esse campo (casam override por taxTypeId +
+    // categoryId/productId, não por id).
     overrides = (data ?? []).map((row) => ({
+      id: row.id,
       taxTypeId: row.tax_type_id,
       categoryId: row.category_id,
       productId: row.product_id,
