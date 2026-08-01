@@ -1,14 +1,16 @@
+import type { TaxRegime } from "@/lib/tax-engine/onboarding-templates";
+
+export type { TaxRegime };
+
 export type OnboardingStep = 1 | 2 | 3 | 4 | 5;
 
 export const ONBOARDING_STEPS: { step: OnboardingStep; label: string }[] = [
   { step: 1, label: "Organização" },
-  { step: 2, label: "Template fiscal" },
+  { step: 2, label: "Regime Tributário" },
   { step: 3, label: "Catálogo" },
   { step: 4, label: "Pagamento" },
   { step: 5, label: "Snippet" },
 ];
-
-export type TaxTemplateId = "simples" | "isento" | "icms-ipi";
 
 export type CatalogMode = "upload" | "manual";
 
@@ -31,8 +33,8 @@ export type OnboardingState = {
     document: string;
     segment: string;
   };
-  taxTemplate: {
-    templateId: TaxTemplateId;
+  taxRegime: {
+    regime: TaxRegime;
     icmsRate: string;
     ipiCategoryRate: string;
     footerText: string;

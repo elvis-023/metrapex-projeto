@@ -24,6 +24,8 @@ export type SessionOrganization = {
   slug: string;
   plan: string;
   role: OrgRole;
+  /** Regime Tributário (briefing §6) — null = ainda não confirmado. */
+  taxRegime: string | null;
 };
 
 export type SessionUser = { name: string; email: string; initials: string };
@@ -69,9 +71,18 @@ export async function getUserOrganizations(): Promise<SessionOrganization[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("organization_members")
-    .select("role, organizations(id, name, slug, plan)")
+    .select("role, organizations(id, name, slug, plan, tax_regime)")
     .returns<
-      { role: OrgRole; organizations: { id: string; name: string; slug: string; plan: string } }[]
+      {
+        role: OrgRole;
+        organizations: {
+          id: string;
+          name: string;
+          slug: string;
+          plan: string;
+          tax_regime: string | null;
+        };
+      }[]
     >();
 
   if (error || !data) return [];
@@ -84,6 +95,7 @@ export async function getUserOrganizations(): Promise<SessionOrganization[]> {
       slug: row.organizations.slug,
       plan: row.organizations.plan,
       role: row.role,
+      taxRegime: row.organizations.tax_regime,
     }));
 }
 
