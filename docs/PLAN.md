@@ -6,6 +6,31 @@ Convenção de branch: `milestone/NN-slug`, criada a partir de `main`, mergeada 
 
 ---
 
+## Changelog fora de sequência
+
+Mudanças que alteram um milestone já fechado, decididas fora da ordem original deste plano.
+
+### 2026-08-01 — Regime Tributário substitui "template fiscal" no onboarding
+
+Decidida durante o Milestone 20 (relatórios), sem relação com relatórios — chegou como
+pedido externo ao plano. O passo 2 do onboarding (Milestone 4) deixa de perguntar
+"template fiscal" (Simples Nacional sem destaque, Isento, ICMS + IPI padrão) e passa a
+perguntar o **Regime Tributário** da organização — MEI, Simples Nacional, Lucro Real ou
+Lucro Presumido — com detecção automática de MEI/Simples Nacional a partir do CNPJ já
+digitado no passo 1. A configuração fiscal (Milestone 12) passa a ser derivada do
+regime escolhido, em vez de o usuário escolher o template diretamente; o preset
+"Isento" deixa de aparecer no passo 2 e vira ajuste manual em `/settings/taxes`.
+
+Nenhum dos quatro regimes exige mudança no cálculo do motor de impostos — `resolveRate`
+e `calcTax` continuam sem conhecer regime por nome (ver briefing §6 atualizado). Decisões
+de arquitetura registradas em
+`.claude/skills/decisao-pendente/references/decisoes-registradas.md`, seção "Regime
+Tributário". Afeta os checklists do Milestone 4 (passo 2) e do Milestone 12 (templates
+de onboarding fiscal), marcados abaixo como pendentes até a implementação. Plano de
+implementação: pendente.
+
+---
+
 ## Fase 0 — Setup
 
 ### Milestone 0 — Setup do projeto
@@ -69,7 +94,7 @@ Todas as telas desta fase usam dados estáticos/mockados em memória — sem Sup
 **Objetivo:** Wizard autosserviço de criação de organização, navegável ponta a ponta com dados mockados.
 
 - [x] Passo 1: criar organização (nome, dados básicos)
-- [x] Passo 2: escolher template fiscal (Simples Nacional sem destaque, Isento, ICMS + IPI padrão) e tela de ajuste
+- [ ] Passo 2: escolher Regime Tributário (MEI, Simples Nacional, Lucro Real, Lucro Presumido) — a configuração fiscal (preset de `tax_types`/`tax_rates`/`tax_settings`) é derivada do regime escolhido, com detecção automática de MEI/Simples Nacional a partir do CNPJ do passo 1 — e tela de ajuste. Substitui o passo original "escolher template fiscal" (Simples Nacional sem destaque, Isento, ICMS + IPI padrão) — mudança fora da sequência original, ver changelog no topo deste arquivo.
 - [x] Passo 3: popular catálogo (importar planilha ou cadastro manual) — UI de upload e tabela de preview
 - [x] Passo 4: confirmar condições de pagamento (sugestão-padrão pré-preenchida)
 - [x] Passo 5: instalar snippet do formulário público (tela de código para copiar)
@@ -177,6 +202,7 @@ Cada milestone desta fase pluga dados e lógica reais nas telas já construídas
 - [x] `resolveRate` (hierarquia produto > categoria > padrão) — usar skill `calculo-tributario` e agent `auditor-resolve-rate` na revisão
 - [x] `calcTax` (`inclusive`/`exclusive`) com precisão decimal (ver convenção de dinheiro no CLAUDE.md)
 - [x] Templates de onboarding fiscal (Simples Nacional sem destaque, Isento, ICMS + IPI padrão) — Milestone 4 passa a gravar de verdade
+- [ ] Derivar o preset a partir do Regime Tributário (MEI, Simples Nacional, Lucro Real, Lucro Presumido) escolhido no passo 2 reformulado do Milestone 4 — quarta entrada própria em `buildTaxTemplatePlan` para Lucro Real, não alias de "ICMS + IPI padrão" (briefing §6) — mudança fora da sequência original, ver changelog no topo deste arquivo
 - [x] Testes conforme skill `casos-teste-fiscais` (incluindo caso de override com alíquota 0)
 
 **Commit final:** `feat(tax-engine): configurable tax rules, rate resolution and calculation`
