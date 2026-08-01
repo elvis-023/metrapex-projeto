@@ -44,6 +44,10 @@ export function isValidTaxRegime(value: string): value is TaxRegime {
  * só coincidem por acaso no V1 e podem divergir quando PIS/COFINS
  * não-cumulativo entrar em escopo (briefing §8, §10).
  */
+/** Texto padrão do rodapé pros regimes sem destaque (briefing §6, §7.1). */
+export const DEFAULT_FOOTER_TEXT =
+  "Valor aproximado dos tributos incidentes conforme Lei 12.741/2012.";
+
 export function templateIdForRegime(regime: TaxRegime): TaxTemplateId {
   switch (regime) {
     case "mei":

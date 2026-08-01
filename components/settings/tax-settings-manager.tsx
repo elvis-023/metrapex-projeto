@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +42,24 @@ import type {
   TaxRateOverrideSetting,
   TaxTypeSetting,
 } from "@/lib/settings/types";
+import {
+  applyRegimeTemplateAction,
+  createTaxRateOverrideAction,
+  createTaxTypeAction,
+  deleteTaxRateOverrideAction,
+  deleteTaxTypeAction,
+  updateOrganizationRegimeAction,
+  updateTaxRateOverrideAction,
+  updateTaxSettingsAction,
+  updateTaxTypeAction,
+} from "@/lib/tax-engine/actions";
+import {
+  buildTaxTemplatePlan,
+  TAX_REGIMES,
+  TAX_REGIME_LABELS,
+  templateIdForRegime,
+  type TaxRegime,
+} from "@/lib/tax-engine/onboarding-templates";
 
 function isValidRate(value: string): boolean {
   return /^\d+([.,]\d{1,4})?$/.test(value.trim());
@@ -50,25 +69,41 @@ function parseRate(value: string): number {
   return Number(value.trim().replace(",", "."));
 }
 
+/** Regimes que, na configuração padrão, não destacam tributo (briefing §6). */
+const REGIMES_SEM_DESTAQUE = new Set<TaxRegime>(["mei", "simples_nacional"]);
+
 type TaxTypeDialogState = { mode: "create" } | { mode: "edit"; taxType: TaxTypeSetting } | null;
 type OverrideDialogState =
   { mode: "create" } | { mode: "edit"; override: TaxRateOverrideSetting } | null;
 
 export function TaxSettingsManager({
-  taxRegimeLabel,
+  taxRegime: initialTaxRegime,
   initialTaxTypes,
   initialOverrides,
+  initialDocumentFooter,
+  initialShowTaxLines,
   categories,
   products,
 }: {
-  taxRegimeLabel: string | null;
+  taxRegime: TaxRegime | null;
   initialTaxTypes: TaxTypeSetting[];
   initialOverrides: TaxRateOverrideSetting[];
+  initialDocumentFooter: string | null;
+  initialShowTaxLines: boolean;
   categories: ProductCategory[];
   products: Product[];
 }) {
+  const router = useRouter();
   const [taxTypes, setTaxTypes] = useState(initialTaxTypes);
   const [overrides, setOverrides] = useState(initialOverrides);
+  const [documentFooter, setDocumentFooter] = useState(initialDocumentFooter ?? "");
+  const [showTaxLines, setShowTaxLines] = useState(initialShowTaxLines);
+  const [taxRegime, setTaxRegime] = useState(initialTaxRegime);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isChangingRegime, setIsChangingRegime] = useState(false);
+  const [applyDialogOpen, setApplyDialogOpen] = useState(false);
+  const [applyIcmsRate, setApplyIcmsRate] = useState("18,00");
+  const [isApplyingPreset, setIsApplyingPreset] = useState(false);
 
   const [taxTypeDialog, setTaxTypeDialog] = useState<TaxTypeDialogState>(null);
   const [code, setCode] = useState("");
@@ -80,6 +115,7 @@ export function TaxSettingsManager({
     label?: string;
     rate?: string;
   }>({});
+  const [isSavingTaxType, setIsSavingTaxType] = useState(false);
 
   const [overrideDialog, setOverrideDialog] = useState<OverrideDialogState>(null);
   const [overrideTaxTypeId, setOverrideTaxTypeId] = useState("");
@@ -89,6 +125,18 @@ export function TaxSettingsManager({
   const [overrideRate, setOverrideRate] = useState("");
   const [overrideNote, setOverrideNote] = useState("");
   const [overrideErrors, setOverrideErrors] = useState<{ scope?: string; rate?: string }>({});
+  const [isSavingOverride, setIsSavingOverride] = useState(false);
+
+  const regimeSemDestaque = taxRegime !== null && REGIMES_SEM_DESTAQUE.has(taxRegime);
+  const regimeLabel = taxRegime ? TAX_REGIME_LABELS[taxRegime] : null;
+
+  const applyPreviewPlan = taxRegime
+    ? buildTaxTemplatePlan({
+        templateId: templateIdForRegime(taxRegime),
+        icmsRate: parseRate(applyIcmsRate) || 0,
+        footerText: "",
+      })
+    : null;
 
   function openCreateTaxType() {
     setTaxTypeDialog({ mode: "create" });
@@ -108,7 +156,7 @@ export function TaxSettingsManager({
     setTaxTypeErrors({});
   }
 
-  function handleSaveTaxType() {
+  async function handleSaveTaxType() {
     const trimmedCode = code.trim();
     const trimmedLabel = label.trim();
     const nextErrors: { code?: string; label?: string; rate?: string } = {};
@@ -132,38 +180,35 @@ export function TaxSettingsManager({
     setTaxTypeErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (taxTypeDialog?.mode === "edit") {
-      setTaxTypes((current) =>
-        current.map((t) =>
-          t.id === taxTypeDialog.taxType.id
-            ? {
-                ...t,
-                code: trimmedCode,
-                label: trimmedLabel,
-                mode,
-                defaultRate: parseRate(defaultRate),
-              }
-            : t,
-        ),
-      );
-      toast.success("Tributo atualizado.");
-    } else {
-      setTaxTypes((current) => [
-        ...current,
-        {
-          id: `tax_${crypto.randomUUID()}`,
-          code: trimmedCode,
-          label: trimmedLabel,
-          mode,
-          defaultRate: parseRate(defaultRate),
-        },
-      ]);
-      toast.success("Tributo criado.");
+    const input = {
+      code: trimmedCode,
+      label: trimmedLabel,
+      mode,
+      defaultRate: parseRate(defaultRate),
+    };
+    setIsSavingTaxType(true);
+    try {
+      if (taxTypeDialog?.mode === "edit") {
+        const updated = await updateTaxTypeAction(taxTypeDialog.taxType.id, input);
+        setTaxTypes((current) => current.map((t) => (t.id === updated.id ? updated : t)));
+        toast.success("Tributo atualizado.");
+      } else {
+        const created = await createTaxTypeAction(input);
+        setTaxTypes((current) => [...current, created]);
+        toast.success("Tributo criado.");
+      }
+      setTaxTypeDialog(null);
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Não foi possível salvar o tributo.";
+      if (message.toLowerCase().includes("código")) setTaxTypeErrors({ code: message });
+      else toast.error(message);
+    } finally {
+      setIsSavingTaxType(false);
     }
-    setTaxTypeDialog(null);
   }
 
-  function handleDeleteTaxType(taxType: TaxTypeSetting) {
+  async function handleDeleteTaxType(taxType: TaxTypeSetting) {
     const dependentOverrides = overrides.filter((o) => o.taxTypeId === taxType.id);
     if (dependentOverrides.length > 0) {
       toast.error(
@@ -171,8 +216,14 @@ export function TaxSettingsManager({
       );
       return;
     }
-    setTaxTypes((current) => current.filter((t) => t.id !== taxType.id));
-    toast.success("Tributo removido.");
+    try {
+      await deleteTaxTypeAction(taxType.id);
+      setTaxTypes((current) => current.filter((t) => t.id !== taxType.id));
+      toast.success("Tributo removido.");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível excluir o tributo.");
+    }
   }
 
   function openCreateOverride() {
@@ -197,18 +248,18 @@ export function TaxSettingsManager({
     setOverrideErrors({});
   }
 
-  function handleSaveOverride() {
+  async function handleSaveOverride() {
+    const isEdit = overrideDialog?.mode === "edit";
     const scopeId = overrideScope === "category" ? overrideCategoryId : overrideProductId;
     const nextErrors: { scope?: string; rate?: string } = {};
 
-    if (!scopeId) nextErrors.scope = "Selecione uma categoria ou produto.";
-    else {
+    if (!isEdit && !scopeId) nextErrors.scope = "Selecione uma categoria ou produto.";
+    else if (!isEdit) {
       const isDuplicate = overrides.some(
         (o) =>
           o.taxTypeId === overrideTaxTypeId &&
           o.scope === overrideScope &&
-          (overrideScope === "category" ? o.categoryId === scopeId : o.productId === scopeId) &&
-          !(overrideDialog?.mode === "edit" && o.id === overrideDialog.override.id),
+          (overrideScope === "category" ? o.categoryId === scopeId : o.productId === scopeId),
       );
       if (isDuplicate) {
         nextErrors.scope = "Já existe um override deste tributo para esse escopo.";
@@ -222,48 +273,221 @@ export function TaxSettingsManager({
     setOverrideErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
-    const payload: Omit<TaxRateOverrideSetting, "id"> = {
-      taxTypeId: overrideTaxTypeId,
-      scope: overrideScope,
-      categoryId: overrideScope === "category" ? overrideCategoryId : null,
-      productId: overrideScope === "product" ? overrideProductId : null,
-      rate: parseRate(overrideRate),
-      note: overrideNote.trim() || null,
-    };
-
-    if (overrideDialog?.mode === "edit") {
-      setOverrides((current) =>
-        current.map((o) => (o.id === overrideDialog.override.id ? { ...o, ...payload } : o)),
-      );
-      toast.success("Override atualizado.");
-    } else {
-      setOverrides((current) => [
-        ...current,
-        { id: `override_${crypto.randomUUID()}`, ...payload },
-      ]);
-      toast.success("Override criado.");
+    setIsSavingOverride(true);
+    try {
+      if (overrideDialog?.mode === "edit") {
+        // Só rate/note são editáveis — tributo, categoria e produto são a
+        // identidade do override (trocar de escopo é excluir e criar de novo,
+        // ver lib/tax-engine/actions.ts).
+        const updated = await updateTaxRateOverrideAction(overrideDialog.override.id, {
+          rate: parseRate(overrideRate),
+          note: overrideNote.trim() || null,
+        });
+        setOverrides((current) => current.map((o) => (o.id === updated.id ? updated : o)));
+        toast.success("Override atualizado.");
+      } else {
+        const created = await createTaxRateOverrideAction({
+          taxTypeId: overrideTaxTypeId,
+          scope: overrideScope,
+          categoryId: overrideScope === "category" ? overrideCategoryId : null,
+          productId: overrideScope === "product" ? overrideProductId : null,
+          rate: parseRate(overrideRate),
+          note: overrideNote.trim() || null,
+        });
+        setOverrides((current) => [...current, created]);
+        toast.success("Override criado.");
+      }
+      setOverrideDialog(null);
+      router.refresh();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Não foi possível salvar o override.";
+      setOverrideErrors({ scope: message });
+    } finally {
+      setIsSavingOverride(false);
     }
-    setOverrideDialog(null);
   }
 
-  function handleDeleteOverride(override: TaxRateOverrideSetting) {
-    setOverrides((current) => current.filter((o) => o.id !== override.id));
-    toast.success("Override removido.");
+  async function handleDeleteOverride(override: TaxRateOverrideSetting) {
+    try {
+      await deleteTaxRateOverrideAction(override.id);
+      setOverrides((current) => current.filter((o) => o.id !== override.id));
+      toast.success("Override removido.");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível excluir o override.");
+    }
+  }
+
+  async function handleSaveSettings() {
+    setIsSavingSettings(true);
+    try {
+      await updateTaxSettingsAction({
+        documentFooter: documentFooter.trim() || null,
+        showTaxLines,
+      });
+      toast.success("Configuração do documento salva.");
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Não foi possível salvar a configuração.",
+      );
+    } finally {
+      setIsSavingSettings(false);
+    }
+  }
+
+  /**
+   * Troca de regime é SEMPRE metadado isolado — não toca tax_types/tax_rates/
+   * tax_settings aqui. Reaplicar o preset é uma ação separada, só depois de
+   * confirmação explícita (ver handleApplyPreset), decisão registrada em
+   * decisoes-registradas.md, "Regime Tributário" #3.
+   */
+  async function handleChangeRegime(next: string) {
+    const nextRegime = next as TaxRegime;
+    setIsChangingRegime(true);
+    try {
+      await updateOrganizationRegimeAction(nextRegime);
+      setTaxRegime(nextRegime);
+      toast.success(`Regime Tributário alterado para ${TAX_REGIME_LABELS[nextRegime]}.`);
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Não foi possível gravar o regime tributário.",
+      );
+    } finally {
+      setIsChangingRegime(false);
+    }
+  }
+
+  async function handleApplyPreset() {
+    if (!taxRegime) return;
+    setIsApplyingPreset(true);
+    try {
+      const result = await applyRegimeTemplateAction(taxRegime, applyIcmsRate);
+      setTaxTypes(result.taxTypes);
+      setOverrides([]);
+      setDocumentFooter(result.documentFooter ?? "");
+      setShowTaxLines(result.showTaxLines);
+      toast.success(`Preset padrão de ${TAX_REGIME_LABELS[taxRegime]} aplicado.`);
+      setApplyDialogOpen(false);
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Não foi possível aplicar o preset do regime.",
+      );
+    } finally {
+      setIsApplyingPreset(false);
+    }
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {taxRegimeLabel ? (
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Regime Tributário:</span>
-          <Badge variant="outline">{taxRegimeLabel}</Badge>
-        </div>
-      ) : (
-        <div className="border-warning/40 bg-warning/10 text-warning-foreground rounded-lg border px-3 py-2 text-sm">
-          Regime Tributário ainda não confirmado — escolha um em Configurações ou refaça o
-          onboarding.
-        </div>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Regime Tributário</CardTitle>
+          <CardDescription>
+            Determina o preset inicial sugerido — o motor de cálculo nunca lê o regime, só a
+            configuração abaixo (briefing §6).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium">Regime atual:</span>
+            <Select
+              value={taxRegime ?? undefined}
+              onValueChange={(value) => value && handleChangeRegime(value)}
+              disabled={isChangingRegime}
+            >
+              <SelectTrigger className="w-56">
+                <SelectValue>
+                  {(value: string) => TAX_REGIME_LABELS[value as TaxRegime] ?? "Não confirmado"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {TAX_REGIMES.map((regime) => (
+                  <SelectItem key={regime} value={regime}>
+                    {TAX_REGIME_LABELS[regime]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
+              <DialogTrigger render={<Button variant="outline" size="sm" disabled={!taxRegime} />}>
+                Aplicar preset padrão deste regime
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Aplicar preset de {regimeLabel}</DialogTitle>
+                  <DialogDescription>
+                    Isso substitui os {taxTypes.length} tributo(s) e {overrides.length} override(s)
+                    configurados agora — não acumula com o que já existe. Sugestão inicial, editável
+                    depois nesta mesma tela; confirme com o contador antes de emitir orçamento com
+                    valor oficial.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {applyPreviewPlan && applyPreviewPlan.taxTypes.length > 0 ? (
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <label htmlFor="apply-icms-rate" className="text-sm font-medium">
+                        ICMS padrão (%)
+                      </label>
+                      <Input
+                        id="apply-icms-rate"
+                        inputMode="decimal"
+                        value={applyIcmsRate}
+                        onChange={(event) => setApplyIcmsRate(event.target.value)}
+                        className="tabular-nums"
+                      />
+                    </div>
+                    <div className="bg-muted/30 rounded-lg border border-dashed p-3 text-sm">
+                      <p className="text-muted-foreground mb-2 text-xs tracking-wide uppercase">
+                        Prévia do que será gravado
+                      </p>
+                      {applyPreviewPlan.taxTypes.map((taxType) => (
+                        <div key={taxType.code} className="flex items-baseline justify-between">
+                          <span>
+                            {taxType.label} (
+                            {taxType.mode === "inclusive" ? "embutido no preço" : "somado por fora"}
+                            )
+                          </span>
+                          <span className="font-mono tabular-nums">{taxType.defaultRate}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-sm">
+                    Nenhum tributo — só o rodapé informativo da Lei 12.741/2012.
+                  </p>
+                )}
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setApplyDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={handleApplyPreset}
+                    disabled={isApplyingPreset}
+                  >
+                    Substituir configuração atual
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {!taxRegime ? (
+            <div className="border-warning/40 bg-warning/10 text-warning-foreground rounded-lg border px-3 py-2 text-sm">
+              Regime Tributário ainda não confirmado — escolha um acima ou refaça o onboarding.
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
       {/* Ponto de partida editável, nunca regra travada (briefing §9): o preset
           do regime tributário sugere tributo, modo e alíquota, mas quem confirma
           se aquilo é o certo pra esta organização é o contador dela — o sistema
@@ -274,6 +498,7 @@ export function TaxSettingsManager({
         realmente incidem, o modo de cálculo e a alíquota de cada um antes de emitir orçamentos com
         valor oficial.
       </div>
+
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-3">
           <div>
@@ -301,6 +526,14 @@ export function TaxSettingsManager({
                   por fora&rdquo; soma o imposto ao preço.
                 </DialogDescription>
               </DialogHeader>
+
+              {taxTypeDialog?.mode === "create" && regimeSemDestaque ? (
+                <div className="border-warning/40 bg-warning/10 text-warning-foreground rounded-lg border px-3 py-2 text-sm">
+                  Regime {regimeLabel} normalmente não destaca tributo no orçamento — confirme com o
+                  contador que isso é necessário antes de usar em orçamento com valor oficial.
+                </div>
+              ) : null}
+
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
@@ -380,7 +613,9 @@ export function TaxSettingsManager({
                 <Button variant="outline" onClick={() => setTaxTypeDialog(null)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleSaveTaxType}>Salvar</Button>
+                <Button onClick={handleSaveTaxType} disabled={isSavingTaxType}>
+                  Salvar
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -389,7 +624,11 @@ export function TaxSettingsManager({
           {taxTypes.length === 0 ? (
             <EmptyState
               title="Nenhum tributo cadastrado"
-              description="Organização sem tributo destacado é configuração válida — crie um tributo aqui quando precisar destacar imposto no orçamento."
+              description={
+                regimeSemDestaque
+                  ? `Regime ${regimeLabel} não destaca tributo por padrão — isso é esperado, não um estado a corrigir. Adicione um tributo aqui só se sua atividade específica exigir, e confirme com o contador.`
+                  : "Organização sem tributo destacado é configuração válida — crie um tributo aqui quando precisar destacar imposto no orçamento."
+              }
             />
           ) : (
             <Table>
@@ -472,7 +711,9 @@ export function TaxSettingsManager({
                   {overrideDialog?.mode === "edit" ? "Editar override" : "Novo override"}
                 </DialogTitle>
                 <DialogDescription>
-                  Escolha exatamente um escopo — categoria ou produto — para esse tributo.
+                  {overrideDialog?.mode === "edit"
+                    ? "Tributo e escopo não mudam aqui — para outro escopo, exclua e crie um novo override."
+                    : "Escolha exatamente um escopo — categoria ou produto — para esse tributo."}
                 </DialogDescription>
               </DialogHeader>
               <div className="flex flex-col gap-3">
@@ -483,6 +724,7 @@ export function TaxSettingsManager({
                   <Select
                     value={overrideTaxTypeId}
                     onValueChange={(value) => value && setOverrideTaxTypeId(value)}
+                    disabled={overrideDialog?.mode === "edit"}
                   >
                     <SelectTrigger id="override-tax-type" className="w-full">
                       <SelectValue>
@@ -507,9 +749,10 @@ export function TaxSettingsManager({
                     <button
                       type="button"
                       aria-pressed={overrideScope === "category"}
+                      disabled={overrideDialog?.mode === "edit"}
                       onClick={() => setOverrideScope("category")}
                       className={cn(
-                        "px-2.5 py-1 text-xs font-medium transition-colors",
+                        "px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                         overrideScope === "category"
                           ? "bg-primary text-primary-foreground"
                           : "hover:bg-muted",
@@ -520,9 +763,10 @@ export function TaxSettingsManager({
                     <button
                       type="button"
                       aria-pressed={overrideScope === "product"}
+                      disabled={overrideDialog?.mode === "edit"}
                       onClick={() => setOverrideScope("product")}
                       className={cn(
-                        "border-input border-l px-2.5 py-1 text-xs font-medium transition-colors",
+                        "border-input border-l px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                         overrideScope === "product"
                           ? "bg-primary text-primary-foreground"
                           : "hover:bg-muted",
@@ -541,6 +785,7 @@ export function TaxSettingsManager({
                     <Select
                       value={overrideCategoryId}
                       onValueChange={(value) => value && setOverrideCategoryId(value)}
+                      disabled={overrideDialog?.mode === "edit"}
                     >
                       <SelectTrigger id="override-category" className="w-full">
                         <SelectValue>
@@ -566,6 +811,7 @@ export function TaxSettingsManager({
                     <Select
                       value={overrideProductId}
                       onValueChange={(value) => value && setOverrideProductId(value)}
+                      disabled={overrideDialog?.mode === "edit"}
                     >
                       <SelectTrigger id="override-product" className="w-full">
                         <SelectValue>
@@ -623,7 +869,9 @@ export function TaxSettingsManager({
                 <Button variant="outline" onClick={() => setOverrideDialog(null)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleSaveOverride}>Salvar</Button>
+                <Button onClick={handleSaveOverride} disabled={isSavingOverride}>
+                  Salvar
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -733,6 +981,65 @@ export function TaxSettingsManager({
               </TableBody>
             </Table>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Documento</CardTitle>
+          <CardDescription>
+            Rodapé informativo e se as linhas de imposto aparecem no orçamento — copiado para o
+            documento no momento da emissão.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="document-footer" className="text-sm font-medium">
+              Texto do rodapé
+            </label>
+            <textarea
+              id="document-footer"
+              rows={2}
+              value={documentFooter}
+              onChange={(event) => setDocumentFooter(event.target.value)}
+              placeholder="Ex.: Valor aproximado dos tributos incidentes conforme Lei 12.741/2012."
+              className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full resize-none rounded-lg border bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:ring-3"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">Mostrar linha de imposto no orçamento</span>
+            <div className="border-input inline-flex w-fit overflow-hidden rounded-lg border">
+              <button
+                type="button"
+                aria-pressed={showTaxLines}
+                onClick={() => setShowTaxLines(true)}
+                className={cn(
+                  "px-2.5 py-1 text-xs font-medium transition-colors",
+                  showTaxLines ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                Sim
+              </button>
+              <button
+                type="button"
+                aria-pressed={!showTaxLines}
+                onClick={() => setShowTaxLines(false)}
+                className={cn(
+                  "border-input border-l px-2.5 py-1 text-xs font-medium transition-colors",
+                  !showTaxLines ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+                )}
+              >
+                Não
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <Button size="sm" onClick={handleSaveSettings} disabled={isSavingSettings}>
+              Salvar
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

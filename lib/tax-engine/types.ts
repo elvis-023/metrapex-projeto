@@ -17,6 +17,15 @@ export type TaxType = {
 };
 
 export type TaxRateOverride = {
+  /**
+   * Opcional de propósito: `resolveRate`/`calcTax` nunca leem `id` (casam
+   * override por `taxTypeId`+`categoryId`/`productId`), então fixtures de
+   * teste não precisam preenchê-lo. `getTaxConfiguration` (lib/quotes/queries.ts)
+   * passa a incluir o `id` real de `tax_rates` — é o que a tela de
+   * configuração (Milestone 10) precisa para editar/excluir um override
+   * específico sem duplicar a query.
+   */
+  id?: string;
   taxTypeId: string;
   categoryId: string | null;
   productId: string | null;
