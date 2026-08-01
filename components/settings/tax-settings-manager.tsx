@@ -251,6 +251,16 @@ export function TaxSettingsManager({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Ponto de partida editável, nunca regra travada (briefing §9): o preset
+          do regime tributário sugere tributo, modo e alíquota, mas quem confirma
+          se aquilo é o certo pra esta organização é o contador dela — o sistema
+          não valida a legislação em si, só congela o que foi configurado. */}
+      <div className="border-warning/40 bg-warning/10 text-warning-foreground rounded-lg border px-3 py-2 text-sm">
+        Estes tributos e alíquotas são um ponto de partida sugerido pelo regime tributário da
+        organização — não são verdade fiscal. Confirme com o contador da organização quais
+        tributos realmente incidem, o modo de cálculo e a alíquota de cada um antes de emitir
+        orçamentos com valor oficial.
+      </div>
       <Card>
         <CardHeader className="flex-row items-start justify-between gap-3">
           <div>
