@@ -55,11 +55,13 @@ type OverrideDialogState =
   { mode: "create" } | { mode: "edit"; override: TaxRateOverrideSetting } | null;
 
 export function TaxSettingsManager({
+  taxRegimeLabel,
   initialTaxTypes,
   initialOverrides,
   categories,
   products,
 }: {
+  taxRegimeLabel: string | null;
   initialTaxTypes: TaxTypeSetting[];
   initialOverrides: TaxRateOverrideSetting[];
   categories: ProductCategory[];
@@ -251,6 +253,17 @@ export function TaxSettingsManager({
 
   return (
     <div className="flex flex-col gap-6">
+      {taxRegimeLabel ? (
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Regime Tributário:</span>
+          <Badge variant="outline">{taxRegimeLabel}</Badge>
+        </div>
+      ) : (
+        <div className="border-warning/40 bg-warning/10 text-warning-foreground rounded-lg border px-3 py-2 text-sm">
+          Regime Tributário ainda não confirmado — escolha um em Configurações ou refaça o
+          onboarding.
+        </div>
+      )}
       {/* Ponto de partida editável, nunca regra travada (briefing §9): o preset
           do regime tributário sugere tributo, modo e alíquota, mas quem confirma
           se aquilo é o certo pra esta organização é o contador dela — o sistema

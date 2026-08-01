@@ -1,15 +1,15 @@
-import { defaultFooterTextByTemplate } from "@/lib/onboarding/mock-data";
+import { defaultFooterTextByRegime } from "@/lib/onboarding/mock-data";
 import type {
   CatalogPreviewRow,
   OnboardingState,
   OnboardingStep,
-  TaxTemplateId,
+  TaxRegime,
 } from "@/lib/onboarding/types";
 
 export type OnboardingAction =
   | { type: "HYDRATE"; state: OnboardingState }
   | { type: "SET_ORGANIZATION"; field: keyof OnboardingState["organization"]; value: string }
-  | { type: "SET_TAX_TEMPLATE"; templateId: TaxTemplateId }
+  | { type: "SET_TAX_REGIME"; regime: TaxRegime }
   | { type: "SET_TAX_FIELD"; field: "icmsRate" | "ipiCategoryRate" | "footerText"; value: string }
   | { type: "SET_CATALOG_MODE"; mode: OnboardingState["catalog"]["mode"] }
   | { type: "UPLOAD_CATALOG_FILE"; fileName: string; rows: CatalogPreviewRow[] }
@@ -33,7 +33,7 @@ export function isStepValid(state: OnboardingState, step: OnboardingStep): boole
         state.organization.name.trim().length > 1 && state.organization.document.trim().length > 0
       );
     case 2:
-      return state.taxTemplate.templateId !== undefined;
+      return state.taxRegime.regime !== undefined;
     case 3:
       return true;
     case 4:
@@ -63,20 +63,20 @@ export function onboardingReducer(
         organization: { ...state.organization, [action.field]: action.value },
       };
 
-    case "SET_TAX_TEMPLATE":
+    case "SET_TAX_REGIME":
       return {
         ...state,
-        taxTemplate: {
-          ...state.taxTemplate,
-          templateId: action.templateId,
-          footerText: defaultFooterTextByTemplate[action.templateId],
+        taxRegime: {
+          ...state.taxRegime,
+          regime: action.regime,
+          footerText: defaultFooterTextByRegime[action.regime],
         },
       };
 
     case "SET_TAX_FIELD":
       return {
         ...state,
-        taxTemplate: { ...state.taxTemplate, [action.field]: action.value },
+        taxRegime: { ...state.taxRegime, [action.field]: action.value },
       };
 
     case "SET_CATALOG_MODE":

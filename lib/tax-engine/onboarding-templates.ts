@@ -18,6 +18,14 @@ export const TAX_REGIMES: readonly TaxRegime[] = [
   "lucro_real",
 ];
 
+/** Rótulo legível — única fonte, reaproveitada pelo onboarding e pela tela de configurações. */
+export const TAX_REGIME_LABELS: Record<TaxRegime, string> = {
+  mei: "MEI",
+  simples_nacional: "Simples Nacional",
+  lucro_presumido: "Lucro Presumido",
+  lucro_real: "Lucro Real",
+};
+
 /**
  * Validação de regime é camada de serviço, acima do motor — não um branch
  * dentro de resolveRate/calcTax (nenhum dos dois recebe regime como

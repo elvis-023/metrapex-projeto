@@ -6,12 +6,13 @@ import { toast } from "sonner";
 
 import { createOrganizationAction } from "@/lib/organizations/actions";
 import { applyPaymentDefaultsAction, applyTaxTemplateAction } from "@/lib/tax-engine/actions";
+import { templateIdForRegime } from "@/lib/tax-engine/onboarding-templates";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ProgressBar } from "@/components/onboarding/progress-bar";
 import { StepOrganization } from "@/components/onboarding/step-organization";
-import { StepTaxTemplate } from "@/components/onboarding/step-tax-template";
+import { StepTaxRegime } from "@/components/onboarding/step-tax-regime";
 import { StepCatalog } from "@/components/onboarding/step-catalog";
 import { StepPaymentTerms } from "@/components/onboarding/step-payment-terms";
 import { StepSnippet } from "@/components/onboarding/step-snippet";
@@ -64,9 +65,10 @@ export function OnboardingWizard() {
         state.organization.name,
       );
       await applyTaxTemplateAction(orgId, {
-        templateId: state.taxTemplate.templateId,
-        icmsRate: state.taxTemplate.icmsRate,
-        footerText: state.taxTemplate.footerText,
+        templateId: templateIdForRegime(state.taxRegime.regime),
+        regime: state.taxRegime.regime,
+        icmsRate: state.taxRegime.icmsRate,
+        footerText: state.taxRegime.footerText,
       });
       await applyPaymentDefaultsAction(orgId);
       dispatch({ type: "SET_CREATED_ORG", org: { orgId, slug, publicFormKey } });
@@ -96,7 +98,7 @@ export function OnboardingWizard() {
       </CardHeader>
       <CardContent className="py-2">
         {state.step === 1 ? <StepOrganization state={state} dispatch={dispatch} /> : null}
-        {state.step === 2 ? <StepTaxTemplate state={state} dispatch={dispatch} /> : null}
+        {state.step === 2 ? <StepTaxRegime state={state} dispatch={dispatch} /> : null}
         {state.step === 3 ? <StepCatalog state={state} dispatch={dispatch} /> : null}
         {state.step === 4 ? <StepPaymentTerms state={state} dispatch={dispatch} /> : null}
         {state.step === 5 ? <StepSnippet state={state} dispatch={dispatch} /> : null}

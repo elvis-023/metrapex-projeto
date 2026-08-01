@@ -1,40 +1,53 @@
-import type { CatalogPreviewRow, OnboardingState, TaxTemplateId } from "@/lib/onboarding/types";
+import type { CatalogPreviewRow, OnboardingState, TaxRegime } from "@/lib/onboarding/types";
 
 export const STORAGE_KEY = "metrapex:onboarding";
 
-export type TaxTemplateOption = {
-  id: TaxTemplateId;
+export type TaxRegimeOption = {
+  id: TaxRegime;
   label: string;
   description: string;
   helpText: string;
 };
 
-export const taxTemplateOptions: TaxTemplateOption[] = [
+/**
+ * As 4 opções do passo 2 (briefing §6). "Isento" não é regime — deixou de
+ * aparecer aqui, fica só como ajuste manual em Configurações > Impostos.
+ */
+export const taxRegimeOptions: TaxRegimeOption[] = [
   {
-    id: "simples",
-    label: "Simples Nacional (sem destaque)",
-    description: "Nenhum tributo é destacado no orçamento. Só o rodapé informativo aparece.",
-    helpText: "Ideal para MEI e Simples Nacional que não destaca imposto no documento.",
+    id: "mei",
+    label: "MEI",
+    description: "Nenhum tributo é destacado — o imposto já está dentro do DAS.",
+    helpText: "Ideal para MEI: o orçamento sai limpo, só com a nota da Lei 12.741/2012.",
   },
   {
-    id: "isento",
-    label: "Isento",
-    description: "Nenhum tributo, nenhum rodapé. Orçamento limpo, sem qualquer linha de imposto.",
-    helpText: "Serve para serviço não tributado no destaque, venda interna ou teste do produto.",
-  },
-  {
-    id: "icms-ipi",
-    label: "ICMS + IPI padrão",
-    description: "ICMS por fora no padrão da empresa, IPI embutido por categoria.",
+    id: "simples_nacional",
+    label: "Simples Nacional",
+    description: "Nenhum tributo é destacado, como no MEI.",
     helpText:
-      "Revenda no Lucro Presumido — confirme as alíquotas com seu contador antes de emitir.",
+      "Cobre a maioria das empresas do Simples. Se sua atividade destaca algum tributo específico, isso é ajuste manual depois em Configurações.",
+  },
+  {
+    id: "lucro_presumido",
+    label: "Lucro Presumido",
+    description: "ICMS por fora no padrão da empresa; IPI configurável por categoria.",
+    helpText:
+      "Revenda comum fora do Simples — confirme a alíquota de ICMS do seu estado com o contador antes de emitir.",
+  },
+  {
+    id: "lucro_real",
+    label: "Lucro Real",
+    description: "Mesmo destaque do Lucro Presumido hoje — ICMS por fora, IPI por categoria.",
+    helpText:
+      "A diferença entre os dois regimes está na apuração de impostos da empresa, não no que aparece pro cliente no orçamento — confirme com o contador.",
   },
 ];
 
-export const defaultFooterTextByTemplate: Record<TaxTemplateId, string> = {
-  simples: "Valor aproximado dos tributos incidentes conforme Lei 12.741/2012.",
-  isento: "",
-  "icms-ipi": "",
+export const defaultFooterTextByRegime: Record<TaxRegime, string> = {
+  mei: "Valor aproximado dos tributos incidentes conforme Lei 12.741/2012.",
+  simples_nacional: "Valor aproximado dos tributos incidentes conforme Lei 12.741/2012.",
+  lucro_presumido: "",
+  lucro_real: "",
 };
 
 export type PaymentConditionOption = {
@@ -102,11 +115,11 @@ export const initialOnboardingState: OnboardingState = {
     document: "",
     segment: "",
   },
-  taxTemplate: {
-    templateId: "icms-ipi",
+  taxRegime: {
+    regime: "lucro_presumido",
     icmsRate: "18,00",
     ipiCategoryRate: "5,00",
-    footerText: defaultFooterTextByTemplate["icms-ipi"],
+    footerText: defaultFooterTextByRegime.lucro_presumido,
   },
   catalog: {
     mode: "upload",
