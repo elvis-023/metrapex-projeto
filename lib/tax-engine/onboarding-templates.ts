@@ -1,6 +1,52 @@
 import type { TaxMode } from "@/lib/tax-engine/types";
 
-export type TaxTemplateId = "simples" | "isento" | "icms-ipi";
+export type TaxTemplateId = "simples" | "isento" | "icms-ipi" | "lucro-real";
+
+/**
+ * Regime Tributário (briefing §6) — metadado da organização, nunca lido por
+ * resolveRate/calcTax (decisão registrada em
+ * .claude/skills/decisao-pendente/references/decisoes-registradas.md, "Regime
+ * Tributário" #1). Mesmos 4 valores do `check` de `organizations.tax_regime`
+ * (migration 20260801000017_tax_regime.sql).
+ */
+export type TaxRegime = "mei" | "simples_nacional" | "lucro_presumido" | "lucro_real";
+
+export const TAX_REGIMES: readonly TaxRegime[] = [
+  "mei",
+  "simples_nacional",
+  "lucro_presumido",
+  "lucro_real",
+];
+
+/**
+ * Validação de regime é camada de serviço, acima do motor — não um branch
+ * dentro de resolveRate/calcTax (nenhum dos dois recebe regime como
+ * parâmetro). Chame antes de gravar `organizations.tax_regime`, para devolver
+ * mensagem amigável em vez do erro cru do `check` do banco.
+ */
+export function isValidTaxRegime(value: string): value is TaxRegime {
+  return (TAX_REGIMES as readonly string[]).includes(value);
+}
+
+/**
+ * Regime -> preset de onboarding (decisão registrada, "Regime Tributário" #2).
+ * MEI e Simples Nacional convergem no preset "simples" (nenhum tax_type, só
+ * rodapé); Lucro Presumido usa "icms-ipi"; Lucro Real tem entrada própria
+ * ("lucro-real") em buildTaxTemplatePlan, não um alias de "icms-ipi" — os dois
+ * só coincidem por acaso no V1 e podem divergir quando PIS/COFINS
+ * não-cumulativo entrar em escopo (briefing §8, §10).
+ */
+export function templateIdForRegime(regime: TaxRegime): TaxTemplateId {
+  switch (regime) {
+    case "mei":
+    case "simples_nacional":
+      return "simples";
+    case "lucro_presumido":
+      return "icms-ipi";
+    case "lucro_real":
+      return "lucro-real";
+  }
+}
 
 export type TaxTemplateInput = {
   templateId: TaxTemplateId;
@@ -60,6 +106,23 @@ export function buildTaxTemplatePlan(input: TaxTemplateInput): TaxTemplatePlan {
         settings: { documentFooter: null, showTaxLines: false },
       };
     case "icms-ipi":
+      return {
+        taxTypes: [
+          {
+            code: "ICMS",
+            label: "ICMS",
+            mode: "exclusive",
+            defaultRate: input.icmsRate,
+            displayOrder: 1,
+          },
+          { code: "IPI", label: "IPI", mode: "inclusive", defaultRate: 0, displayOrder: 2 },
+        ],
+        settings: { documentFooter: null, showTaxLines: true },
+      };
+    // Lucro Real: mesmo conteúdo inicial do "icms-ipi" hoje, mas entrada
+    // própria de propósito (não um `case "icms-ipi": case "lucro-real":`
+    // compartilhado) — ver decisão registrada citada acima do arquivo.
+    case "lucro-real":
       return {
         taxTypes: [
           {
