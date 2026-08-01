@@ -42,16 +42,34 @@ const FOOTER = "Valor aproximado dos tributos incidentes conforme Lei 12.741/201
 /** Espelha exatamente a migration 20260802000019 / buildTaxTemplatePlan. */
 async function applyRegimeTemplate(client: SupabaseClient, orgId: string, regime: Regime) {
   if (regime === "mei" || regime === "simples_nacional") {
-    await client.from("tax_settings").insert({ org_id: orgId, document_footer: FOOTER, show_tax_lines: false });
+    await client
+      .from("tax_settings")
+      .insert({ org_id: orgId, document_footer: FOOTER, show_tax_lines: false });
     return { icmsId: null as string | null };
   }
 
-  await client.from("tax_settings").insert({ org_id: orgId, document_footer: null, show_tax_lines: true });
+  await client
+    .from("tax_settings")
+    .insert({ org_id: orgId, document_footer: null, show_tax_lines: true });
   const { data: taxTypes, error } = await client
     .from("tax_types")
     .insert([
-      { org_id: orgId, code: "ICMS", label: "ICMS", mode: "exclusive", default_rate: 18, display_order: 1 },
-      { org_id: orgId, code: "IPI", label: "IPI", mode: "inclusive", default_rate: 0, display_order: 2 },
+      {
+        org_id: orgId,
+        code: "ICMS",
+        label: "ICMS",
+        mode: "exclusive",
+        default_rate: 18,
+        display_order: 1,
+      },
+      {
+        org_id: orgId,
+        code: "IPI",
+        label: "IPI",
+        mode: "inclusive",
+        default_rate: 0,
+        display_order: 2,
+      },
     ])
     .select("id, code");
   if (error || !taxTypes) throw new Error(`tax_types: ${error?.message}`);
@@ -78,7 +96,12 @@ async function setupOrg(regime: Regime, stamp: number) {
 
   const { data: product } = await client
     .from("products")
-    .insert({ org_id: orgId, external_code: "PRD-100", name: "Produto Teste R$100", price: "100.000000" })
+    .insert({
+      org_id: orgId,
+      external_code: "PRD-100",
+      name: "Produto Teste R$100",
+      price: "100.000000",
+    })
     .select("id")
     .single();
 

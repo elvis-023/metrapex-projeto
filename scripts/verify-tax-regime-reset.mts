@@ -59,7 +59,10 @@ async function signUpUser(email: string): Promise<SupabaseClient> {
   return client;
 }
 
-type TaxCodes = { icms: { mode: "exclusive" | "inclusive"; rate: number }; second: { code: string; mode: "exclusive" | "inclusive"; rate: number } };
+type TaxCodes = {
+  icms: { mode: "exclusive" | "inclusive"; rate: number };
+  second: { code: string; mode: "exclusive" | "inclusive"; rate: number };
+};
 
 async function setupOrgWithEmittedQuote(
   client: SupabaseClient,
@@ -68,7 +71,10 @@ async function setupOrgWithEmittedQuote(
   regime: string,
   codes: TaxCodes,
 ) {
-  const { data: org, error } = await client.rpc("create_organization", { org_name: label, org_slug: slug });
+  const { data: org, error } = await client.rpc("create_organization", {
+    org_name: label,
+    org_slug: slug,
+  });
   if (error || !org) throw new Error(`create_organization(${label}): ${error?.message}`);
   const orgId = (org as { id: string }).id;
 
@@ -91,7 +97,14 @@ async function setupOrgWithEmittedQuote(
   const { data: taxTypes, error: taxError } = await client
     .from("tax_types")
     .insert([
-      { org_id: orgId, code: "ICMS", label: "ICMS", mode: codes.icms.mode, default_rate: codes.icms.rate, display_order: 1 },
+      {
+        org_id: orgId,
+        code: "ICMS",
+        label: "ICMS",
+        mode: codes.icms.mode,
+        default_rate: codes.icms.rate,
+        display_order: 1,
+      },
       {
         org_id: orgId,
         code: codes.second.code,
@@ -114,7 +127,13 @@ async function setupOrgWithEmittedQuote(
 
   const { data: product } = await client
     .from("products")
-    .insert({ org_id: orgId, external_code: "PRD-001", name: "Item", price: "100.000000", category_id: category!.id })
+    .insert({
+      org_id: orgId,
+      external_code: "PRD-001",
+      name: "Item",
+      price: "100.000000",
+      category_id: category!.id,
+    })
     .select("id")
     .single();
 
@@ -215,10 +234,16 @@ type TaxSnapshotRow = {
 };
 
 async function fetchTaxSnapshot(quoteId: string): Promise<TaxSnapshotRow[]> {
-  const { data: item } = await admin.from("quote_items").select("id").eq("quote_id", quoteId).single();
+  const { data: item } = await admin
+    .from("quote_items")
+    .select("id")
+    .eq("quote_id", quoteId)
+    .single();
   const { data } = await admin
     .from("quote_item_taxes")
-    .select("id, quote_item_id, tax_code, tax_label, mode, rate_applied, rate_source, base_amount, tax_amount")
+    .select(
+      "id, quote_item_id, tax_code, tax_label, mode, rate_applied, rate_source, base_amount, tax_amount",
+    )
     .eq("quote_item_id", item!.id)
     .order("display_order")
     .returns<TaxSnapshotRow[]>();
@@ -230,17 +255,29 @@ async function main() {
 
   console.log("\n== setup: duas organizações, regimes diferentes ==");
   const clientA = await signUpUser(`presumido.${stamp}@metrapex.test`);
-  const orgA = await setupOrgWithEmittedQuote(clientA, `Presumido ${stamp}`, `presumido-${stamp}`, "lucro_presumido", {
-    icms: { mode: "exclusive", rate: 18 },
-    second: { code: "IPI", mode: "inclusive", rate: 5 },
-  });
+  const orgA = await setupOrgWithEmittedQuote(
+    clientA,
+    `Presumido ${stamp}`,
+    `presumido-${stamp}`,
+    "lucro_presumido",
+    {
+      icms: { mode: "exclusive", rate: 18 },
+      second: { code: "IPI", mode: "inclusive", rate: 5 },
+    },
+  );
   console.log(`  org A (lucro_presumido) ${orgA.orgId} — orçamento ${orgA.quoteId}`);
 
   const clientB = await signUpUser(`real.${stamp}@metrapex.test`);
-  const orgB = await setupOrgWithEmittedQuote(clientB, `Real ${stamp}`, `real-${stamp}`, "lucro_real", {
-    icms: { mode: "exclusive", rate: 12 },
-    second: { code: "ISS", mode: "exclusive", rate: 3 },
-  });
+  const orgB = await setupOrgWithEmittedQuote(
+    clientB,
+    `Real ${stamp}`,
+    `real-${stamp}`,
+    "lucro_real",
+    {
+      icms: { mode: "exclusive", rate: 12 },
+      second: { code: "ISS", mode: "exclusive", rate: 3 },
+    },
+  );
   console.log(`  org B (lucro_real) ${orgB.orgId} — orçamento ${orgB.quoteId}`);
 
   console.log("\n== ANTES do reset: captura das linhas de quote_item_taxes ==");
@@ -276,10 +313,14 @@ async function main() {
   // razão do comentário acima. Cada org só consegue apagar a PRÓPRIA
   // configuração (RLS), o que já é uma prova extra de isolamento: org A não
   // consegue tocar em tax_types de org B nem vice-versa.
-  const quotesCountBefore = (await admin.from("quotes").select("*", { count: "exact", head: true })).count!;
-  const quoteItemsCountBefore = (await admin.from("quote_items").select("*", { count: "exact", head: true })).count!;
-  const quoteItemTaxesCountBefore = (await admin.from("quote_item_taxes").select("*", { count: "exact", head: true }))
+  const quotesCountBefore = (await admin.from("quotes").select("*", { count: "exact", head: true }))
     .count!;
+  const quoteItemsCountBefore = (
+    await admin.from("quote_items").select("*", { count: "exact", head: true })
+  ).count!;
+  const quoteItemTaxesCountBefore = (
+    await admin.from("quote_item_taxes").select("*", { count: "exact", head: true })
+  ).count!;
 
   for (const c of [clientA, clientB]) {
     const del1 = await c
@@ -293,26 +334,46 @@ async function main() {
     if (del3.error) throw new Error(`delete tax_settings: ${del3.error.message}`);
   }
 
-  const quotesCountAfter = (await admin.from("quotes").select("*", { count: "exact", head: true })).count!;
-  const quoteItemsCountAfter = (await admin.from("quote_items").select("*", { count: "exact", head: true })).count!;
-  const quoteItemTaxesCountAfter = (await admin.from("quote_item_taxes").select("*", { count: "exact", head: true }))
+  const quotesCountAfter = (await admin.from("quotes").select("*", { count: "exact", head: true }))
     .count!;
+  const quoteItemsCountAfter = (
+    await admin.from("quote_items").select("*", { count: "exact", head: true })
+  ).count!;
+  const quoteItemTaxesCountAfter = (
+    await admin.from("quote_item_taxes").select("*", { count: "exact", head: true })
+  ).count!;
 
   eq("contagem global de quotes inalterada", quotesCountAfter, quotesCountBefore);
   eq("contagem global de quote_items inalterada", quoteItemsCountAfter, quoteItemsCountBefore);
-  eq("contagem global de quote_item_taxes inalterada", quoteItemTaxesCountAfter, quoteItemTaxesCountBefore);
+  eq(
+    "contagem global de quote_item_taxes inalterada",
+    quoteItemTaxesCountAfter,
+    quoteItemTaxesCountBefore,
+  );
 
   const taxTypesOrgAAfter = (
-    await admin.from("tax_types").select("*", { count: "exact", head: true }).eq("org_id", orgA.orgId)
+    await admin
+      .from("tax_types")
+      .select("*", { count: "exact", head: true })
+      .eq("org_id", orgA.orgId)
   ).count;
   const taxTypesOrgBAfter = (
-    await admin.from("tax_types").select("*", { count: "exact", head: true }).eq("org_id", orgB.orgId)
+    await admin
+      .from("tax_types")
+      .select("*", { count: "exact", head: true })
+      .eq("org_id", orgB.orgId)
   ).count;
   const taxSettingsOrgAAfter = (
-    await admin.from("tax_settings").select("*", { count: "exact", head: true }).eq("org_id", orgA.orgId)
+    await admin
+      .from("tax_settings")
+      .select("*", { count: "exact", head: true })
+      .eq("org_id", orgA.orgId)
   ).count;
   const taxSettingsOrgBAfter = (
-    await admin.from("tax_settings").select("*", { count: "exact", head: true }).eq("org_id", orgB.orgId)
+    await admin
+      .from("tax_settings")
+      .select("*", { count: "exact", head: true })
+      .eq("org_id", orgB.orgId)
   ).count;
   eq("org A: tax_types zerado", taxTypesOrgAAfter, 0);
   eq("org B: tax_types zerado", taxTypesOrgBAfter, 0);
@@ -324,7 +385,9 @@ async function main() {
   const afterB = await fetchTaxSnapshot(orgB.quoteId);
 
   console.log("\n  -- org A (Lucro Presumido) --");
-  console.log("  código  | antes (rate/base/tax)              | depois (rate/base/tax)             | idêntico?");
+  console.log(
+    "  código  | antes (rate/base/tax)              | depois (rate/base/tax)             | idêntico?",
+  );
   for (let i = 0; i < beforeA.length; i += 1) {
     const b = beforeA[i];
     const a = afterA[i];
@@ -336,7 +399,9 @@ async function main() {
     );
   }
   console.log("\n  -- org B (Lucro Real) --");
-  console.log("  código  | antes (rate/base/tax)              | depois (rate/base/tax)             | idêntico?");
+  console.log(
+    "  código  | antes (rate/base/tax)              | depois (rate/base/tax)             | idêntico?",
+  );
   for (let i = 0; i < beforeB.length; i += 1) {
     const b = beforeB[i];
     const a = afterB[i];
@@ -348,31 +413,60 @@ async function main() {
     );
   }
 
-  check("org A: linhas de tributo byte-idênticas antes/depois", JSON.stringify(beforeA) === JSON.stringify(afterA), {
-    antes: beforeA,
-    depois: afterA,
-  });
-  check("org B: linhas de tributo byte-idênticas antes/depois", JSON.stringify(beforeB) === JSON.stringify(afterB), {
-    antes: beforeB,
-    depois: afterB,
-  });
+  check(
+    "org A: linhas de tributo byte-idênticas antes/depois",
+    JSON.stringify(beforeA) === JSON.stringify(afterA),
+    {
+      antes: beforeA,
+      depois: afterA,
+    },
+  );
+  check(
+    "org B: linhas de tributo byte-idênticas antes/depois",
+    JSON.stringify(beforeB) === JSON.stringify(afterB),
+    {
+      antes: beforeB,
+      depois: afterB,
+    },
+  );
 
   const { data: quotesAfter } = await admin.from("quotes").select("id, total, tax_footer_note");
   const totalOrgAAfter = quotesAfter!.find((q) => q.id === orgA.quoteId)!;
   const totalOrgBAfter = quotesAfter!.find((q) => q.id === orgB.quoteId)!;
   eq("org A: total do orçamento inalterado", totalOrgAAfter.total, totalOrgABefore.total);
-  eq("org A: rodapé fiscal inalterado", totalOrgAAfter.tax_footer_note, totalOrgABefore.tax_footer_note);
+  eq(
+    "org A: rodapé fiscal inalterado",
+    totalOrgAAfter.tax_footer_note,
+    totalOrgABefore.tax_footer_note,
+  );
   eq("org B: total do orçamento inalterado", totalOrgBAfter.total, totalOrgBBefore.total);
-  eq("org B: rodapé fiscal inalterado", totalOrgBAfter.tax_footer_note, totalOrgBBefore.tax_footer_note);
+  eq(
+    "org B: rodapé fiscal inalterado",
+    totalOrgBAfter.tax_footer_note,
+    totalOrgBBefore.tax_footer_note,
+  );
 
   console.log("\n== org A e org B: tax_regime sobrevive ao reset (não é config, é metadado) ==");
-  const { data: orgsAfter } = await admin.from("organizations").select("id, tax_regime").in("id", [orgA.orgId, orgB.orgId]);
-  eq("org A mantém tax_regime", orgsAfter!.find((o) => o.id === orgA.orgId)!.tax_regime, "lucro_presumido");
-  eq("org B mantém tax_regime", orgsAfter!.find((o) => o.id === orgB.orgId)!.tax_regime, "lucro_real");
+  const { data: orgsAfter } = await admin
+    .from("organizations")
+    .select("id, tax_regime")
+    .in("id", [orgA.orgId, orgB.orgId]);
+  eq(
+    "org A mantém tax_regime",
+    orgsAfter!.find((o) => o.id === orgA.orgId)!.tax_regime,
+    "lucro_presumido",
+  );
+  eq(
+    "org B mantém tax_regime",
+    orgsAfter!.find((o) => o.id === orgB.orgId)!.tax_regime,
+    "lucro_real",
+  );
 
   console.log(`\n${checks - failures}/${checks} verificações passaram.`);
   console.log(`\nOrçamentos pra abrir na tela (org A / org B): ${orgA.quoteId} / ${orgB.quoteId}`);
-  console.log(`Login: presumido.${stamp}@metrapex.test / real.${stamp}@metrapex.test (senha: senha-de-teste-123)`);
+  console.log(
+    `Login: presumido.${stamp}@metrapex.test / real.${stamp}@metrapex.test (senha: senha-de-teste-123)`,
+  );
   if (failures > 0) process.exit(1);
 }
 
