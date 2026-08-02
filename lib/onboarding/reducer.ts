@@ -16,7 +16,7 @@ export type OnboardingAction =
   | { type: "SET_TAX_REGIME"; regime: TaxRegime }
   | { type: "SET_TAX_REGIME_SUGGESTION"; regime: TaxRegime }
   | { type: "SET_TAX_FIELD"; field: "icmsRate" | "ipiCategoryRate" | "footerText"; value: string }
-  | { type: "SET_PAYMENT_CONDITION"; conditionId: string }
+  | { type: "TOGGLE_PAYMENT_CONDITION"; conditionId: string }
   | { type: "SET_PAYMENT_NOTE"; value: string }
   | { type: "MARK_SNIPPET_COPIED" }
   | { type: "SET_CREATED_ORG"; org: { orgId: string; slug: string; publicFormKey: string } }
@@ -34,7 +34,7 @@ export function isStepValid(state: OnboardingState, step: OnboardingStep): boole
     case 2:
       return state.taxRegime.regime !== undefined;
     case 3:
-      return state.payment.conditionId !== "";
+      return state.payment.conditionIds.length > 0;
     case 4:
       return true;
     default:
@@ -161,8 +161,18 @@ export function onboardingReducer(
         taxRegime: { ...state.taxRegime, [action.field]: action.value },
       };
 
-    case "SET_PAYMENT_CONDITION":
-      return { ...state, payment: { ...state.payment, conditionId: action.conditionId } };
+    case "TOGGLE_PAYMENT_CONDITION": {
+      const isSelected = state.payment.conditionIds.includes(action.conditionId);
+      return {
+        ...state,
+        payment: {
+          ...state.payment,
+          conditionIds: isSelected
+            ? state.payment.conditionIds.filter((id) => id !== action.conditionId)
+            : [...state.payment.conditionIds, action.conditionId],
+        },
+      };
+    }
 
     case "SET_PAYMENT_NOTE":
       return { ...state, payment: { ...state.payment, note: action.value } };

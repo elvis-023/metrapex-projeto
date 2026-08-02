@@ -41,7 +41,8 @@ export type OnboardingState = {
     autoDetected: boolean;
   };
   payment: {
-    conditionId: string;
+    /** IDs marcados (checkbox) — só o que estiver aqui é gravado ao concluir o passo. */
+    conditionIds: string[];
     note: string;
   };
   snippet: {

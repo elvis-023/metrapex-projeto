@@ -64,7 +64,7 @@ export const initialPaymentConditions: PaymentCondition[] = [
   },
   {
     id: "cond_boleto",
-    label: "Boleto",
+    label: "Faturado para Empresas",
     kind: "boleto",
     discountPercent: 0,
     installments: 1,

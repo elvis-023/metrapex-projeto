@@ -38,7 +38,7 @@ export const defaultPaymentConditions: PaymentConditionSeed[] = [
   },
   {
     key: "boleto",
-    label: "Boleto",
+    label: "Faturado para Empresas",
     kind: "boleto",
     discountPercent: 0,
     installments: 1,

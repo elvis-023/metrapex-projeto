@@ -81,7 +81,7 @@ export function OnboardingWizard() {
         icmsRate: state.taxRegime.icmsRate,
         footerText: state.taxRegime.footerText,
       });
-      await applyPaymentDefaultsAction(orgId);
+      await applyPaymentDefaultsAction(orgId, state.payment.conditionIds);
       dispatch({ type: "SET_CREATED_ORG", org: { orgId, slug, publicFormKey } });
       dispatch({ type: nextAction });
     } catch {
