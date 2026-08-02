@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatStreet } from "@/app/api/public-quote/lookup-cnpj/route";
+import { formatStreet } from "@/lib/integrations/brasil-api";
 
 /**
  * A BrasilAPI separa o tipo do logradouro ("AVENIDA") do nome ("REPUBLICA DO

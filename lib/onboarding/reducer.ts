@@ -10,6 +10,7 @@ export type OnboardingAction =
   | { type: "HYDRATE"; state: OnboardingState }
   | { type: "SET_ORGANIZATION"; field: keyof OnboardingState["organization"]; value: string }
   | { type: "SET_TAX_REGIME"; regime: TaxRegime }
+  | { type: "SET_TAX_REGIME_SUGGESTION"; regime: TaxRegime }
   | { type: "SET_TAX_FIELD"; field: "icmsRate" | "ipiCategoryRate" | "footerText"; value: string }
   | { type: "SET_CATALOG_MODE"; mode: OnboardingState["catalog"]["mode"] }
   | { type: "UPLOAD_CATALOG_FILE"; fileName: string; rows: CatalogPreviewRow[] }
@@ -70,6 +71,18 @@ export function onboardingReducer(
           ...state.taxRegime,
           regime: action.regime,
           footerText: defaultFooterTextByRegime[action.regime],
+          autoDetected: false,
+        },
+      };
+
+    case "SET_TAX_REGIME_SUGGESTION":
+      return {
+        ...state,
+        taxRegime: {
+          ...state.taxRegime,
+          regime: action.regime,
+          footerText: defaultFooterTextByRegime[action.regime],
+          autoDetected: true,
         },
       };
 

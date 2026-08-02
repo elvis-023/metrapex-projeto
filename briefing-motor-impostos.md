@@ -295,6 +295,8 @@ O passo 2 do onboarding pergunta o **Regime Tributário** da organização — M
 
 Todas as alíquotas abaixo são **sugestão inicial**, não verdade fiscal: a organização (ou o contador dela) precisa confirmar e ajustar em `/settings/taxes` antes de emitir com valor real — §9 continua valendo integralmente, inclusive para quem chegou pelo fluxo de regime.
 
+**MEI e Simples Nacional podem chegar pré-marcados** (Bloco 7): a organização digita o CNPJ no passo 1, e se a BrasilAPI confirma `opcao_pelo_mei`/`opcao_pelo_simples`, o passo 2 já abre com a opção correspondente selecionada (badge "Detectado pelo CNPJ"), para o usuário confirmar em vez de escolher do zero. É só uma sugestão de UI — o usuário sempre pode trocar manualmente, e a detecção nunca cobre Lucro Presumido/Lucro Real (não há sinal confiável para distingui-los a partir de dado público). Ver `lib/integrations/brasil-api.ts`, `detectRegimeFromCnpj` (`lib/tax-engine/regime-detection.ts`) e a decisão "Regime Tributário" #4–#9 em `decisoes-registradas.md`.
+
 ### MEI
 
 Nenhum `tax_type`. Só o rodapé informativo — MEI não destaca tributo no documento de venda.

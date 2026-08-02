@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/supabase/types";
-import type { PublicFormAddress } from "@/lib/public-form/types";
+import { fetchCnpjData } from "@/lib/integrations/brasil-api";
 
 /**
  * Client de service_role isolado a este route handler — só usado aqui para
@@ -34,31 +34,6 @@ function clientIp(request: NextRequest): string {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
 
-type BrasilApiCnpjResponse = {
-  razao_social?: string;
-  nome_fantasia?: string;
-  cep?: string;
-  // BrasilAPI separa o tipo do logradouro ("AVENIDA") do nome ("REPUBLICA DO
-  // CHILE") em dois campos — usar só `logradouro` perde o "Rua"/"Avenida"/etc.
-  descricao_tipo_de_logradouro?: string;
-  logradouro?: string;
-  numero?: string;
-  complemento?: string;
-  bairro?: string;
-  municipio?: string;
-  uf?: string;
-  message?: string;
-};
-
-// Exportado só para o teste (route.test.ts) — a BrasilAPI devolve o tipo de
-// logradouro separado do nome, e essa junção já foi esquecida uma vez.
-export function formatStreet(
-  tipoLogradouro: string | undefined,
-  logradouro: string | undefined,
-): string {
-  return [tipoLogradouro?.trim(), logradouro?.trim()].filter(Boolean).join(" ");
-}
-
 export async function GET(request: NextRequest) {
   const cnpjDigits = onlyDigits(request.nextUrl.searchParams.get("cnpj") ?? "");
   if (cnpjDigits.length !== 14) {
@@ -80,29 +55,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // BrasilAPI recusa (403) requisições sem User-Agent — o default do fetch
-  // do Node não basta, precisa de um valor explícito.
-  const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjDigits}`, {
-    headers: { "User-Agent": "metrapex-formulario-publico/1.0" },
-  });
-  if (!response.ok) {
+  // A rota pública só expõe legalName+address ao visitante anônimo — os
+  // campos fiscais que `fetchCnpjData` também devolve (porte, opção pelo
+  // MEI/Simples) são de uso exclusivo da detecção de regime do onboarding
+  // autenticado (lib/tax-engine/actions.ts), nunca deste contrato.
+  try {
+    const { legalName, address } = await fetchCnpjData(cnpjDigits);
+    return NextResponse.json({ legalName, address });
+  } catch {
     return NextResponse.json({ error: "CNPJ não encontrado." }, { status: 404 });
   }
-
-  const data = (await response.json()) as BrasilApiCnpjResponse;
-
-  const address: PublicFormAddress = {
-    zip: onlyDigits(data.cep ?? ""),
-    street: formatStreet(data.descricao_tipo_de_logradouro, data.logradouro),
-    number: data.numero ?? "",
-    complement: data.complemento ?? "",
-    neighborhood: data.bairro ?? "",
-    city: data.municipio ?? "",
-    state: data.uf ?? "",
-  };
-
-  return NextResponse.json({
-    legalName: data.razao_social ?? data.nome_fantasia ?? "",
-    address,
-  });
 }

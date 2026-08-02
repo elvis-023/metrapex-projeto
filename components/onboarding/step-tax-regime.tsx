@@ -45,6 +45,9 @@ export function StepTaxRegime({ state, dispatch }: StepTaxRegimeProps) {
               <span className="flex items-center gap-2">
                 <span className="text-sm font-medium">{option.label}</span>
                 {isSelected ? <Badge variant="default">Selecionado</Badge> : null}
+                {isSelected && taxRegime.autoDetected ? (
+                  <Badge variant="secondary">Detectado pelo CNPJ — confirme ou altere</Badge>
+                ) : null}
               </span>
               <span className="text-muted-foreground text-xs">{option.description}</span>
             </button>

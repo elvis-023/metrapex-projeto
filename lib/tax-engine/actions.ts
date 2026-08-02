@@ -9,6 +9,7 @@ import {
   type TaxRegime,
   type TaxTemplateId,
 } from "@/lib/tax-engine/onboarding-templates";
+import { detectRegimeFromCnpj, type CnpjRegimeDetection } from "@/lib/tax-engine/regime-detection";
 import type { TaxMode } from "@/lib/tax-engine/types";
 import { defaultPaymentConditions, defaultPaymentValueBands } from "@/lib/quotes/payment-defaults";
 import { getCurrentOrganization } from "@/lib/auth/session";
@@ -91,6 +92,23 @@ export async function applyTaxTemplateAction(orgId: string, state: OnboardingTax
       throw new Error("Não foi possível configurar os tributos do template fiscal.");
     }
   }
+}
+
+/**
+ * Detecção automática de regime a partir do CNPJ do passo 1 (Bloco 7,
+ * decisão "Regime Tributário #4"). Roda sem `requireOrg()` — a organização
+ * ainda não existe neste ponto do onboarding, mesmo caso de
+ * `applyTaxTemplateAction`/`applyPaymentDefaultsAction` abaixo.
+ *
+ * Wrapper fino sobre `detectRegimeFromCnpj` (lib/tax-engine/regime-detection.ts)
+ * — só existe porque uma Server Action precisa do próprio arquivo `"use
+ * server"`, o cache/timeout/tri-estado de verdade vive lá. O gatilho que
+ * chama esta action a partir do campo de texto do passo 1 é o Bloco 8.
+ */
+export async function detectTaxRegimeFromCnpjAction(
+  cnpjDigits: string,
+): Promise<CnpjRegimeDetection> {
+  return detectRegimeFromCnpj(cnpjDigits);
 }
 
 /**

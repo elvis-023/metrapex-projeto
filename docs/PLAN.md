@@ -35,6 +35,27 @@ dashboard, relatórios, PDF/prévia) rodada e sem quebras em `feat/06-regime-reg
 (PR #35) — ver `scripts/verify-tax-regime-reset.mts` e
 `scripts/verify-regime-change-regression.mts`.
 
+### 2026-08-02 — Detecção automática de MEI/Simples Nacional por CNPJ (Bloco 7)
+
+Extensão do item acima: o passo 2 do onboarding passa a chegar com MEI ou Simples
+Nacional já pré-marcado quando a BrasilAPI confirma a opção pelo regime a partir do
+CNPJ do passo 1 (`opcao_pelo_mei`/`opcao_pelo_simples`) — Lucro Presumido/Real
+continuam exigindo escolha manual, sem detecção automática. Decisões de arquitetura em
+`.claude/skills/decisao-pendente/references/decisoes-registradas.md`, seção "Regime
+Tributário" #4 a #9.
+
+Este bloco (`feat/07-regime-detection-service`) entrega o **serviço de detecção**:
+client de BrasilAPI extraído para `lib/integrations/brasil-api.ts` (compartilhado com a
+rota pública do formulário), `detectRegimeFromCnpj`/`classifyCnpjRegime`
+(`lib/tax-engine/regime-detection.ts`, resultado de três estados — `"mei" |
+"simples_nacional" | "nao_detectado"`, cache em memória com TTL de 5 minutos, timeout de
+4s), a Server Action `detectTaxRegimeFromCnpjAction`, e o estado/UI do passo 2 para
+exibir uma sugestão pré-marcada (`taxRegime.autoDetected`, badge "Detectado pelo CNPJ").
+O **gatilho** que liga isso ao campo de texto do passo 1 (distinguir CNPJ de CPF por
+contagem de dígitos, disparar a detecção, nunca bloquear o avanço em caso de
+falha/timeout) é o **Bloco 8**, ainda não implementado — sem ele, a sugestão pré-marcada
+nunca é acionada na prática.
+
 ---
 
 ## Fase 0 — Setup
