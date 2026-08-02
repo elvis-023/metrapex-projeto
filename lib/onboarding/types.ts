@@ -3,28 +3,14 @@ import type { LookupStatus, PublicFormAddress } from "@/lib/public-form/types";
 
 export type { TaxRegime };
 
-export type OnboardingStep = 1 | 2 | 3 | 4 | 5;
+export type OnboardingStep = 1 | 2 | 3 | 4;
 
 export const ONBOARDING_STEPS: { step: OnboardingStep; label: string }[] = [
   { step: 1, label: "Organização" },
   { step: 2, label: "Regime Tributário" },
-  { step: 3, label: "Catálogo" },
-  { step: 4, label: "Pagamento" },
-  { step: 5, label: "Snippet" },
+  { step: 3, label: "Pagamento" },
+  { step: 4, label: "Snippet" },
 ];
-
-export type CatalogMode = "upload" | "manual";
-
-export type CatalogRowStatus = "ok" | "erro";
-
-export type CatalogPreviewRow = {
-  row: number;
-  code: string;
-  name: string;
-  price: string;
-  status: CatalogRowStatus;
-  error?: string;
-};
 
 export type OnboardingState = {
   step: OnboardingStep;
@@ -54,13 +40,6 @@ export type OnboardingState = {
      */
     autoDetected: boolean;
   };
-  catalog: {
-    mode: CatalogMode;
-    fileName: string | null;
-    rows: CatalogPreviewRow[];
-    manualProductName: string;
-    manualProductPrice: string;
-  };
   payment: {
     conditionId: string;
     note: string;
@@ -69,10 +48,11 @@ export type OnboardingState = {
     copied: boolean;
   };
   /**
-   * Preenchido quando o passo 4 é concluído — a organização (com tributo e
-   * pagamento padrão) já existe de verdade nesse ponto, não só na conclusão
-   * do wizard, porque o passo 5 precisa da `publicFormKey` real para montar
-   * o snippet. Ver components/onboarding/onboarding-wizard.tsx.
+   * Preenchido quando o passo 3 (Pagamento) é concluído — a organização (com
+   * tributo e pagamento padrão) já existe de verdade nesse ponto, não só na
+   * conclusão do wizard, porque o passo 4 (Snippet) precisa da
+   * `publicFormKey` real para montar o snippet. Ver
+   * components/onboarding/onboarding-wizard.tsx.
    */
   createdOrg: { orgId: string; slug: string; publicFormKey: string } | null;
 };
