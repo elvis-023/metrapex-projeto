@@ -1,11 +1,36 @@
+"use client";
+
+import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
+
 import { Card, CardDescription, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { EmptyState } from "@/components/states/empty-state";
-import { stageAccentClass } from "@/lib/pipeline/stage-colors";
+import { countFormatter } from "@/lib/dashboard/format";
+import { stageChartColorVar } from "@/lib/pipeline/stage-colors";
 import type { FunnelStage } from "@/lib/dashboard/types";
 
+/** Bar Chart — Mixed (ui.shadcn.com/charts): série única, cor por categoria — cada etapa já tinha cor própria fixa, não é uma série de um tom só. */
 export function SalesFunnelChart({ funnel }: { funnel: FunnelStage[] }) {
   const total = funnel.reduce((sum, stage) => sum + stage.count, 0);
-  const maxCount = Math.max(...funnel.map((stage) => stage.count), 1);
+
+  const chartConfig = Object.fromEntries(
+    funnel.map((stage) => [
+      stage.status,
+      { label: stage.label, color: stageChartColorVar[stage.status] },
+    ]),
+  ) satisfies ChartConfig;
+
+  const chartData = funnel.map((stage) => ({
+    status: stage.status,
+    label: stage.label,
+    count: stage.count,
+    fill: `var(--color-${stage.status})`,
+  }));
 
   return (
     <Card>
@@ -13,26 +38,49 @@ export function SalesFunnelChart({ funnel }: { funnel: FunnelStage[] }) {
         <CardTitle>Funil de vendas</CardTitle>
         <CardDescription>Orçamentos por etapa do pipeline no período</CardDescription>
       </CardHeader>
-      <CardContent className={total === 0 ? undefined : "flex flex-col gap-3"}>
+      <CardContent>
         {total === 0 ? (
           <EmptyState
             title="Nenhum orçamento no período"
             description="Ainda não há orçamentos gerados para montar o funil de vendas."
           />
         ) : (
-          funnel.map((stage) => (
-            <div key={stage.status} className="flex items-center gap-3">
-              <span className="text-muted-foreground w-32 shrink-0 text-xs">{stage.label}</span>
-              <div className="bg-muted h-6 flex-1 overflow-hidden rounded-sm">
-                <div
-                  className={`h-full ${stageAccentClass[stage.status]} flex items-center justify-end rounded-sm px-2 transition-[width]`}
-                  style={{ width: `${(stage.count / maxCount) * 100}%` }}
-                >
-                  <span className="text-xs font-medium text-white tabular-nums">{stage.count}</span>
-                </div>
-              </div>
-            </div>
-          ))
+          <ChartContainer config={chartConfig} className="aspect-auto h-64 w-full">
+            <BarChart
+              accessibilityLayer
+              data={chartData}
+              layout="vertical"
+              margin={{ left: 0, right: 16 }}
+            >
+              <CartesianGrid horizontal={false} />
+              <YAxis
+                dataKey="label"
+                type="category"
+                tickLine={false}
+                axisLine={false}
+                width={110}
+                tickMargin={8}
+              />
+              <XAxis
+                dataKey="count"
+                type="number"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                allowDecimals={false}
+                tickFormatter={(value: number) => countFormatter.format(value)}
+              />
+              <ChartTooltip
+                cursor={{ fill: "var(--muted)" }}
+                content={<ChartTooltipContent hideLabel />}
+              />
+              <Bar dataKey="count" radius={4} animationDuration={600} animationEasing="ease-out">
+                {chartData.map((entry) => (
+                  <Cell key={entry.status} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ChartContainer>
         )}
       </CardContent>
     </Card>

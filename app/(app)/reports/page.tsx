@@ -6,12 +6,7 @@ import { ReportCard } from "@/components/reports/report-card";
 import { ReportPeriodFilter } from "@/components/reports/report-period-filter";
 import { TrendBarChart } from "@/components/reports/trend-bar-chart";
 import { EmptyState } from "@/components/states/empty-state";
-import {
-  currencyFormatter,
-  countFormatter,
-  formatDuration,
-  formatRate,
-} from "@/lib/reports/format";
+import { currencyFormatter, formatDuration, formatRate } from "@/lib/reports/format";
 import { getPrebuiltReportsData } from "@/lib/reports/queries";
 import { reportPeriodOptions, resolveReportFilters, type ReportPeriod } from "@/lib/reports/types";
 
@@ -46,7 +41,7 @@ export default async function ReportsPage({
       >
         <TrendBarChart
           points={data.quotesByPeriod}
-          valueFormatter={(value) => countFormatter.format(value)}
+          valueFormat="count"
           emptyTitle="Nenhum orçamento no período"
           emptyDescription="Ainda não há orçamentos gerados nesta janela."
         />
@@ -106,7 +101,7 @@ export default async function ReportsPage({
             </p>
             <TrendBarChart
               points={data.averageTicket.trend}
-              valueFormatter={(value) => currencyFormatter.format(value)}
+              valueFormat="currency"
               emptyTitle="Nenhum orçamento emitido no período"
               emptyDescription="Ticket médio só considera orçamento já emitido."
             />
@@ -125,7 +120,7 @@ export default async function ReportsPage({
             </p>
             <TrendBarChart
               points={data.expirationRate.trend}
-              valueFormatter={(value) => formatRate(value)}
+              valueFormat="rate"
               emptyTitle="Nenhum orçamento no período"
               emptyDescription="Ainda não há orçamentos gerados nesta janela."
             />
@@ -154,7 +149,7 @@ export default async function ReportsPage({
                   label: product.productName,
                   value: product.quotedCount,
                 }))}
-                valueFormatter={(value) => countFormatter.format(value)}
+                valueFormat="count"
                 emptyTitle="Nenhum item orçado no período"
                 emptyDescription="Ainda não há orçamento emitido com itens nesta janela."
               />
@@ -167,7 +162,7 @@ export default async function ReportsPage({
                   label: product.productName,
                   value: product.convertedCount,
                 }))}
-                valueFormatter={(value) => countFormatter.format(value)}
+                valueFormat="count"
                 emptyTitle="Nenhum produto convertido no período"
                 emptyDescription="Nenhum orçamento com este produto foi convertido ainda."
               />
@@ -188,7 +183,7 @@ export default async function ReportsPage({
           </p>
           <TrendBarChart
             points={data.timeToFirstQuote.trend}
-            valueFormatter={(value) => formatDuration(value)}
+            valueFormat="duration"
             emptyTitle="Nenhum orçamento do formulário público no período"
             emptyDescription="O KPI só considera orçamento gerado pelo formulário público (origem Site)."
           />

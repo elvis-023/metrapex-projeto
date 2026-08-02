@@ -17,7 +17,7 @@ import { ReportCard } from "@/components/reports/report-card";
 import { EmptyState } from "@/components/states/empty-state";
 import { fakeCustomerSources } from "@/lib/customers/mock-data";
 import { runCustomReportAction } from "@/lib/reports/actions";
-import { countFormatter, currencyFormatter } from "@/lib/reports/format";
+import type { ChartValueFormat } from "@/lib/reports/format";
 import {
   customGroupByOptionsByObject,
   customMetricOptions,
@@ -87,8 +87,7 @@ export function CustomReportBuilder({ sellers }: { sellers: { id: string; name: 
 
   const groupByOptions = customGroupByOptionsByObject[object];
   const spec = buildSpec();
-  const valueFormatter = (value: number) =>
-    metric === "count" ? countFormatter.format(value) : currencyFormatter.format(value);
+  const valueFormat: ChartValueFormat = metric === "count" ? "count" : "currency";
 
   return (
     <div className="flex flex-col gap-6">
@@ -267,7 +266,7 @@ export function CustomReportBuilder({ sellers }: { sellers: { id: string; name: 
           ) : (
             <RankingBarChart
               rows={result.groups}
-              valueFormatter={valueFormatter}
+              valueFormat={valueFormat}
               emptyTitle="Nenhum dado no período"
               emptyDescription="Ajuste o período ou os filtros e gere de novo."
             />
