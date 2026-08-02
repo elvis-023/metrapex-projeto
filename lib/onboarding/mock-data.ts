@@ -1,3 +1,4 @@
+import { emptyAddress } from "@/lib/public-form/types";
 import type { CatalogPreviewRow, OnboardingState, TaxRegime } from "@/lib/onboarding/types";
 
 export const STORAGE_KEY = "metrapex:onboarding";
@@ -113,7 +114,9 @@ export const initialOnboardingState: OnboardingState = {
   organization: {
     name: "",
     document: "",
-    segment: "",
+    address: emptyAddress,
+    documentLookupStatus: "idle",
+    cepLookupStatus: "idle",
   },
   taxRegime: {
     regime: "lucro_presumido",

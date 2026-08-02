@@ -1,4 +1,5 @@
 import { defaultFooterTextByRegime } from "@/lib/onboarding/mock-data";
+import { emptyAddress, type PublicFormAddress } from "@/lib/public-form/types";
 import type {
   CatalogPreviewRow,
   OnboardingState,
@@ -8,7 +9,15 @@ import type {
 
 export type OnboardingAction =
   | { type: "HYDRATE"; state: OnboardingState }
-  | { type: "SET_ORGANIZATION"; field: keyof OnboardingState["organization"]; value: string }
+  | { type: "SET_ORGANIZATION_NAME"; value: string }
+  | { type: "SET_ORGANIZATION_DOCUMENT"; digits: string }
+  | { type: "LOOKUP_ORGANIZATION_DOCUMENT_START" }
+  | { type: "LOOKUP_ORGANIZATION_DOCUMENT_SUCCESS"; legalName: string; address: PublicFormAddress }
+  | { type: "LOOKUP_ORGANIZATION_DOCUMENT_ERROR" }
+  | { type: "SET_ORGANIZATION_ADDRESS_FIELD"; field: keyof PublicFormAddress; value: string }
+  | { type: "LOOKUP_ORGANIZATION_CEP_START" }
+  | { type: "LOOKUP_ORGANIZATION_CEP_SUCCESS"; address: PublicFormAddress }
+  | { type: "LOOKUP_ORGANIZATION_CEP_ERROR" }
   | { type: "SET_TAX_REGIME"; regime: TaxRegime }
   | { type: "SET_TAX_REGIME_SUGGESTION"; regime: TaxRegime }
   | { type: "SET_TAX_FIELD"; field: "icmsRate" | "ipiCategoryRate" | "footerText"; value: string }
@@ -58,10 +67,83 @@ export function onboardingReducer(
     case "HYDRATE":
       return action.state;
 
-    case "SET_ORGANIZATION":
+    case "SET_ORGANIZATION_NAME":
       return {
         ...state,
-        organization: { ...state.organization, [action.field]: action.value },
+        organization: { ...state.organization, name: action.value },
+      };
+
+    case "SET_ORGANIZATION_DOCUMENT": {
+      // Mesmo cuidado de SET_DOCUMENT (lib/public-form/reducer.ts): trocar o
+      // documento depois de um preenchimento automático invalida os dados
+      // que descreviam a empresa anterior.
+      const clearAutofilled = state.organization.documentLookupStatus === "done";
+      return {
+        ...state,
+        organization: {
+          ...state.organization,
+          document: action.digits,
+          documentLookupStatus: "idle",
+          ...(clearAutofilled ? { name: "", address: emptyAddress } : {}),
+        },
+      };
+    }
+
+    case "LOOKUP_ORGANIZATION_DOCUMENT_START":
+      return {
+        ...state,
+        organization: { ...state.organization, documentLookupStatus: "loading" },
+      };
+
+    case "LOOKUP_ORGANIZATION_DOCUMENT_SUCCESS":
+      return {
+        ...state,
+        organization: {
+          ...state.organization,
+          documentLookupStatus: "done",
+          name: action.legalName,
+          address: action.address,
+        },
+      };
+
+    case "LOOKUP_ORGANIZATION_DOCUMENT_ERROR":
+      return {
+        ...state,
+        organization: { ...state.organization, documentLookupStatus: "error" },
+      };
+
+    case "SET_ORGANIZATION_ADDRESS_FIELD":
+      return {
+        ...state,
+        organization: {
+          ...state.organization,
+          address: { ...state.organization.address, [action.field]: action.value },
+          // Mesmo desenho de SET_CEP (lib/public-form/reducer.ts): editar o
+          // CEP invalida a busca anterior, sem repetir para os demais campos.
+          ...(action.field === "zip" ? { cepLookupStatus: "idle" as const } : {}),
+        },
+      };
+
+    case "LOOKUP_ORGANIZATION_CEP_START":
+      return {
+        ...state,
+        organization: { ...state.organization, cepLookupStatus: "loading" },
+      };
+
+    case "LOOKUP_ORGANIZATION_CEP_SUCCESS":
+      return {
+        ...state,
+        organization: {
+          ...state.organization,
+          cepLookupStatus: "done",
+          address: action.address,
+        },
+      };
+
+    case "LOOKUP_ORGANIZATION_CEP_ERROR":
+      return {
+        ...state,
+        organization: { ...state.organization, cepLookupStatus: "error" },
       };
 
     case "SET_TAX_REGIME":

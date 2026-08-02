@@ -2,6 +2,76 @@ import { describe, expect, it } from "vitest";
 
 import { initialOnboardingState } from "@/lib/onboarding/mock-data";
 import { onboardingReducer } from "@/lib/onboarding/reducer";
+import { emptyAddress } from "@/lib/public-form/types";
+
+/**
+ * Passo 1 do onboarding — autofill de organização a partir do CNPJ
+ * (components/onboarding/step-organization.tsx), reaproveitando o mesmo
+ * client de consulta do formulário público. Cobre exatamente os critérios
+ * verificados manualmente: preencher, editar depois de preenchido, e o erro
+ * de CNPJ não encontrado.
+ */
+describe("onboardingReducer — autofill de organização por CNPJ", () => {
+  it("LOOKUP_ORGANIZATION_DOCUMENT_SUCCESS preenche nome e endereço, e marca status 'done'", () => {
+    const address = { ...emptyAddress, street: "Avenida Paulista", city: "São Paulo", state: "SP" };
+    const next = onboardingReducer(initialOnboardingState, {
+      type: "LOOKUP_ORGANIZATION_DOCUMENT_SUCCESS",
+      legalName: "Empresa Teste LTDA",
+      address,
+    });
+    expect(next.organization.name).toBe("Empresa Teste LTDA");
+    expect(next.organization.address).toEqual(address);
+    expect(next.organization.documentLookupStatus).toBe("done");
+  });
+
+  it("LOOKUP_ORGANIZATION_DOCUMENT_ERROR marca status 'error', sem alterar os dados já digitados", () => {
+    const withDocument = onboardingReducer(initialOnboardingState, {
+      type: "SET_ORGANIZATION_DOCUMENT",
+      digits: "11111111111111",
+    });
+    const next = onboardingReducer(withDocument, { type: "LOOKUP_ORGANIZATION_DOCUMENT_ERROR" });
+    expect(next.organization.documentLookupStatus).toBe("error");
+    expect(next.organization.document).toBe("11111111111111");
+  });
+
+  it("campos preenchidos automaticamente continuam editáveis (SET_ORGANIZATION_NAME / SET_ORGANIZATION_ADDRESS_FIELD)", () => {
+    const filled = onboardingReducer(initialOnboardingState, {
+      type: "LOOKUP_ORGANIZATION_DOCUMENT_SUCCESS",
+      legalName: "Empresa Teste LTDA",
+      address: { ...emptyAddress, street: "Avenida Paulista" },
+    });
+    const editedName = onboardingReducer(filled, {
+      type: "SET_ORGANIZATION_NAME",
+      value: "Nome ajustado pelo usuário",
+    });
+    const editedStreet = onboardingReducer(editedName, {
+      type: "SET_ORGANIZATION_ADDRESS_FIELD",
+      field: "street",
+      value: "Rua ajustada pelo usuário",
+    });
+    expect(editedStreet.organization.name).toBe("Nome ajustado pelo usuário");
+    expect(editedStreet.organization.address.street).toBe("Rua ajustada pelo usuário");
+  });
+
+  it("trocar o documento depois de um preenchimento automático limpa nome e endereço (mesmo desenho de SET_DOCUMENT)", () => {
+    const filled = onboardingReducer(initialOnboardingState, {
+      type: "LOOKUP_ORGANIZATION_DOCUMENT_SUCCESS",
+      legalName: "Empresa Teste LTDA",
+      address: { ...emptyAddress, street: "Avenida Paulista" },
+    });
+    const redocumented = onboardingReducer(filled, {
+      type: "SET_ORGANIZATION_DOCUMENT",
+      digits: "22222222222222",
+    });
+    expect(redocumented.organization.name).toBe("");
+    expect(redocumented.organization.address).toEqual(emptyAddress);
+    expect(redocumented.organization.documentLookupStatus).toBe("idle");
+  });
+
+  it("estado inicial não tem mais campo de segmento", () => {
+    expect(initialOnboardingState.organization).not.toHaveProperty("segment");
+  });
+});
 
 /**
  * Bloco 7 — sugestão de regime pré-marcada no passo 2 (detecção automática
