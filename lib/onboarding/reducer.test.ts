@@ -179,8 +179,49 @@ describe("onboardingReducer — navegação após remover o passo Catálogo", ()
   it("isStepValid: passo 3 agora é Pagamento (exige condição escolhida), passo 4 é Snippet (sempre válido)", () => {
     expect(isStepValid(initialOnboardingState, 3)).toBe(true);
     expect(
-      isStepValid({ ...initialOnboardingState, payment: { conditionId: "", note: "" } }, 3),
+      isStepValid({ ...initialOnboardingState, payment: { conditionIds: [], note: "" } }, 3),
     ).toBe(false);
     expect(isStepValid(initialOnboardingState, 4)).toBe(true);
+  });
+});
+
+/**
+ * Passo 3 (Pagamento) virou checkbox — marca/desmarca livremente, em vez da
+ * seleção única de antes. Por padrão as 3 condições vêm marcadas (decisão
+ * confirmada com o usuário: preserva o comportamento de sempre gravar as 3
+ * condições que já existia no back-end antes desta mudança).
+ */
+describe("onboardingReducer — condições de pagamento selecionáveis (checkbox)", () => {
+  it("estado inicial vem com as 3 condições marcadas", () => {
+    expect(initialOnboardingState.payment.conditionIds).toEqual(["a-vista", "cartao", "boleto"]);
+  });
+
+  it("TOGGLE_PAYMENT_CONDITION desmarca uma condição já marcada", () => {
+    const next = onboardingReducer(initialOnboardingState, {
+      type: "TOGGLE_PAYMENT_CONDITION",
+      conditionId: "boleto",
+    });
+    expect(next.payment.conditionIds).toEqual(["a-vista", "cartao"]);
+  });
+
+  it("TOGGLE_PAYMENT_CONDITION marca de novo uma condição desmarcada", () => {
+    const unmarked = onboardingReducer(initialOnboardingState, {
+      type: "TOGGLE_PAYMENT_CONDITION",
+      conditionId: "boleto",
+    });
+    const remarked = onboardingReducer(unmarked, {
+      type: "TOGGLE_PAYMENT_CONDITION",
+      conditionId: "boleto",
+    });
+    expect(remarked.payment.conditionIds).toEqual(["a-vista", "cartao", "boleto"]);
+  });
+
+  it("desmarcar todas as condições invalida o passo 3 (isStepValid)", () => {
+    let state = initialOnboardingState;
+    for (const id of ["a-vista", "cartao", "boleto"]) {
+      state = onboardingReducer(state, { type: "TOGGLE_PAYMENT_CONDITION", conditionId: id });
+    }
+    expect(state.payment.conditionIds).toEqual([]);
+    expect(isStepValid(state, 3)).toBe(false);
   });
 });

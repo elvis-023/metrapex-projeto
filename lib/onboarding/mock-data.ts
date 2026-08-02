@@ -2,11 +2,11 @@ import { emptyAddress } from "@/lib/public-form/types";
 import type { OnboardingState, TaxRegime } from "@/lib/onboarding/types";
 
 // Versionada: mudar o formato de `OnboardingState` (ex.: `organization.address`,
-// ou remover o passo Catálogo — `step`/`furthestStepReached` armazenados como
-// 5 não existem mais) exige trocar o sufixo — senão um `sessionStorage` salvo
+// remover o passo Catálogo, ou trocar `payment.conditionId` por
+// `conditionIds[]`) exige trocar o sufixo — senão um `sessionStorage` salvo
 // com o schema antigo sobrevive à mudança e quebra a tela mesmo com o merge
 // defensivo de `loadInitialState` (onboarding-wizard.tsx).
-export const STORAGE_KEY = "metrapex:onboarding:v3";
+export const STORAGE_KEY = "metrapex:onboarding:v4";
 
 export type TaxRegimeOption = {
   /** Valor gravado em `organizations.tax_regime` ao selecionar este card. */
@@ -68,6 +68,14 @@ export type PaymentConditionOption = {
   detail: string;
 };
 
+/**
+ * Passo 3 do onboarding (Pagamento) — itens marcáveis (checkbox), não mais
+ * seleção única. `id` é a chave estável usada em `payment.conditionIds` e
+ * repassada a `applyPaymentDefaultsAction` (lib/tax-engine/actions.ts) — só
+ * as opções marcadas são gravadas em `payment_conditions`. Renomear `label`
+ * aqui não muda `id`/`key` nem o `kind` (mecanismo real do pagamento,
+ * ver lib/quotes/payment-defaults.ts) — só o nome exibido.
+ */
 export const paymentConditionOptions: PaymentConditionOption[] = [
   {
     id: "a-vista",
@@ -81,13 +89,13 @@ export const paymentConditionOptions: PaymentConditionOption[] = [
   },
   {
     id: "boleto",
-    label: "Boleto",
+    label: "Faturado para Empresas",
     detail: "Sem desconto, vencimento em 15 dias. Aplica-se a partir de R$ 500,00.",
   },
 ];
 
 export const defaultPaymentNote =
-  "Faixa acima de R$ 5.000,00 libera parcelamento em até 3x no boleto, mediante aprovação de crédito.";
+  "Faixa acima de R$ 5.000,00 libera parcelamento em até 3x via Faturado para Empresas, mediante aprovação de crédito.";
 
 export const initialOnboardingState: OnboardingState = {
   step: 1,
@@ -107,7 +115,10 @@ export const initialOnboardingState: OnboardingState = {
     autoDetected: false,
   },
   payment: {
-    conditionId: "a-vista",
+    // As 3 vêm marcadas por padrão — preserva o comportamento de sempre
+    // gravar as 3 condições (antes disso não depender de fato da tela,
+    // ver applyPaymentDefaultsAction); o cliente desmarca o que não usa.
+    conditionIds: paymentConditionOptions.map((option) => option.id),
     note: defaultPaymentNote,
   },
   snippet: {

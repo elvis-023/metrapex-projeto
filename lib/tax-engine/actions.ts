@@ -112,18 +112,33 @@ export async function detectTaxRegimeFromCnpjAction(
 }
 
 /**
- * Grava a sugestão-padrão de condições de pagamento e faixas de valor
- * (passo 4 do onboarding). A partir daqui o motor de orçamento tem o que
- * aplicar no cálculo — sem nenhuma condição configurada, o orçamento sai sem
- * desconto de pagamento e sem restrição de faixa.
+ * Grava as condições de pagamento e faixas de valor marcadas no passo 3 do
+ * onboarding (checkbox, não mais seleção única — Bloco "condições
+ * selecionáveis"). `selectedConditionKeys` são as `key` de
+ * `defaultPaymentConditions` (mesmo valor que `PaymentConditionOption.id` em
+ * lib/onboarding/mock-data.ts) que o cliente deixou marcadas; só essas são
+ * gravadas — nunca confia só na validação do client (`isStepValid` já exige
+ * pelo menos uma), então recusa lista vazia aqui também.
+ *
+ * A partir daqui o motor de orçamento tem o que aplicar no cálculo — sem
+ * nenhuma condição configurada, o orçamento sai sem desconto de pagamento e
+ * sem restrição de faixa.
  */
-export async function applyPaymentDefaultsAction(orgId: string) {
+export async function applyPaymentDefaultsAction(orgId: string, selectedConditionKeys: string[]) {
+  if (selectedConditionKeys.length === 0) {
+    throw new Error("Selecione ao menos uma condição de pagamento.");
+  }
+
+  const selectedConditions = defaultPaymentConditions.filter((condition) =>
+    selectedConditionKeys.includes(condition.key),
+  );
+
   const supabase = await createClient();
 
   const { data: conditions, error: conditionsError } = await supabase
     .from("payment_conditions")
     .insert(
-      defaultPaymentConditions.map((condition) => ({
+      selectedConditions.map((condition) => ({
         org_id: orgId,
         label: condition.label,
         kind: condition.kind,
@@ -140,13 +155,23 @@ export async function applyPaymentDefaultsAction(orgId: string) {
   }
 
   const idByKey = new Map(
-    defaultPaymentConditions.map((seed) => [
+    selectedConditions.map((seed) => [
       seed.key,
       conditions.find((row) => row.label === seed.label)?.id,
     ]),
   );
 
   for (const band of defaultPaymentValueBands) {
+    const links = band.conditionKeys
+      .map((key) => idByKey.get(key))
+      .filter((id): id is string => Boolean(id))
+      .map((id) => ({ payment_condition_id: id }));
+
+    // Faixa cujas condições foram todas desmarcadas fica sem sentido (mesma
+    // regra de validação da tela de Configurações — banda precisa de ao
+    // menos uma condição) — pula em vez de gravar uma faixa vazia.
+    if (links.length === 0) continue;
+
     const { data: bandRow, error: bandError } = await supabase
       .from("payment_value_bands")
       .insert({
@@ -162,16 +187,11 @@ export async function applyPaymentDefaultsAction(orgId: string) {
       throw new Error("Não foi possível configurar as faixas de valor.");
     }
 
-    const links = band.conditionKeys
-      .map((key) => idByKey.get(key))
-      .filter((id): id is string => Boolean(id))
-      .map((id) => ({ band_id: bandRow.id, payment_condition_id: id }));
-
-    if (links.length > 0) {
-      const { error: linkError } = await supabase.from("payment_band_conditions").insert(links);
-      if (linkError) {
-        throw new Error("Não foi possível vincular as condições às faixas de valor.");
-      }
+    const { error: linkError } = await supabase
+      .from("payment_band_conditions")
+      .insert(links.map((link) => ({ ...link, band_id: bandRow.id })));
+    if (linkError) {
+      throw new Error("Não foi possível vincular as condições às faixas de valor.");
     }
   }
 }

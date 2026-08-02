@@ -18,27 +18,35 @@ export function StepPaymentTerms({ state, dispatch }: StepPaymentTermsProps) {
       <div>
         <h2 className="text-lg font-medium">Condições de pagamento</h2>
         <p className="text-muted-foreground text-sm">
-          Sugestão-padrão já pré-preenchida — ajuste ou confirme como está.
+          Marque as condições que você realmente trabalha — desmarque o que não se aplica.
         </p>
       </div>
 
       <div className="flex flex-col gap-2">
         {paymentConditionOptions.map((option) => {
-          const isSelected = payment.conditionId === option.id;
+          const isSelected = payment.conditionIds.includes(option.id);
           return (
-            <button
+            <label
               key={option.id}
-              type="button"
-              aria-pressed={isSelected}
-              onClick={() => dispatch({ type: "SET_PAYMENT_CONDITION", conditionId: option.id })}
               className={cn(
-                "flex flex-col gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors",
+                "flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors",
                 isSelected ? "border-primary bg-primary/5" : "border-border hover:bg-muted",
               )}
             >
-              <span className="text-sm font-medium">{option.label}</span>
-              <span className="text-muted-foreground text-xs">{option.detail}</span>
-            </button>
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() =>
+                  dispatch({ type: "TOGGLE_PAYMENT_CONDITION", conditionId: option.id })
+                }
+                className="accent-primary mt-0.5 size-4 rounded-[calc(var(--radius)-2px)]"
+                aria-label={option.label}
+              />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">{option.label}</span>
+                <span className="text-muted-foreground text-xs">{option.detail}</span>
+              </span>
+            </label>
           );
         })}
       </div>
