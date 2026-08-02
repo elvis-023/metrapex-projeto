@@ -2,7 +2,9 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { currencyFormatter } from "@/lib/catalog/format";
 import { taxRegimeOptions } from "@/lib/onboarding/mock-data";
+import { parseBrRate } from "@/lib/tax-engine/onboarding-templates";
 import type { OnboardingAction } from "@/lib/onboarding/reducer";
 import type { OnboardingState } from "@/lib/onboarding/types";
 
@@ -14,10 +16,27 @@ type StepTaxRegimeProps = {
 /** MEI e Simples Nacional não têm alíquota a configurar — mesma tela de ajuste pros dois. */
 const REGIMES_SEM_DESTAQUE = new Set(["mei", "simples_nacional"]);
 
+/**
+ * Exemplo ILUSTRATIVO da comparação indústria x revenda (ICMS-ST) — número
+ * fixo/mockado só pra ilustrar o conceito nesta tela, sem nenhuma ligação com
+ * o motor de impostos real (resolveRate/calcTax nunca são chamados aqui).
+ * A alíquota de ICMS usada no exemplo é fixa de propósito: o campo de ICMS
+ * foi removido desta tela (simplificação do onboarding — a configuração real
+ * de ICMS continua em Configurações > Impostos).
+ */
+const EXAMPLE_BASE_PRICE = 100;
+const EXAMPLE_ICMS_RATE = 18;
+
 export function StepTaxRegime({ state, dispatch }: StepTaxRegimeProps) {
   const { taxRegime } = state;
-  const selectedOption = taxRegimeOptions.find((option) => option.id === taxRegime.regime);
+  const selectedOption = taxRegimeOptions.find((option) =>
+    option.matches.includes(taxRegime.regime),
+  );
   const semDestaque = REGIMES_SEM_DESTAQUE.has(taxRegime.regime);
+
+  const ipiRate = parseBrRate(taxRegime.ipiCategoryRate);
+  const industriaPrice = EXAMPLE_BASE_PRICE * (1 + EXAMPLE_ICMS_RATE / 100 + ipiRate / 100);
+  const revendaPrice = EXAMPLE_BASE_PRICE * (1 + ipiRate / 100);
 
   return (
     <div className="flex flex-col gap-4">
@@ -30,7 +49,7 @@ export function StepTaxRegime({ state, dispatch }: StepTaxRegimeProps) {
 
       <div className="flex flex-col gap-2">
         {taxRegimeOptions.map((option) => {
-          const isSelected = taxRegime.regime === option.id;
+          const isSelected = option.matches.includes(taxRegime.regime);
           return (
             <button
               key={option.id}
@@ -103,24 +122,7 @@ export function StepTaxRegime({ state, dispatch }: StepTaxRegimeProps) {
             </div>
           </>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="icms-rate" className="text-sm font-medium">
-                ICMS padrão (%)
-              </label>
-              <input
-                id="icms-rate"
-                value={taxRegime.icmsRate}
-                onChange={(event) =>
-                  dispatch({ type: "SET_TAX_FIELD", field: "icmsRate", value: event.target.value })
-                }
-                className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 h-8 w-full rounded-lg border bg-transparent px-2.5 py-1 text-sm tabular-nums outline-none focus-visible:ring-3"
-              />
-              <p className="text-muted-foreground text-xs">
-                Aplicado por fora, exceto override por produto. Confirme com o contador antes de
-                emitir orçamento com valor oficial.
-              </p>
-            </div>
+          <>
             <div className="flex flex-col gap-1.5">
               <label htmlFor="ipi-rate" className="text-sm font-medium">
                 IPI — categoria industrializados (%)
@@ -141,10 +143,49 @@ export function StepTaxRegime({ state, dispatch }: StepTaxRegimeProps) {
                 Valor de referência — o IPI é criado com 0% e sem categoria vinculada, porque o
                 catálogo ainda não existe neste passo. Aplique esta alíquota na categoria de
                 produtos industrializados depois, em Configurações &gt; Impostos, e confirme com o
-                contador antes de emitir orçamento com valor oficial.
+                contador antes de emitir orçamento com valor oficial. A alíquota de ICMS também fica
+                para lá — cada estado tem a sua, então o ajuste fino não faz sentido aqui no
+                onboarding.
               </p>
             </div>
-          </div>
+
+            {/* Exemplo ilustrativo, não ligado ao motor de cálculo (ver
+                comentário de EXAMPLE_BASE_PRICE acima) — só pra o usuário
+                entender, antes de configurar o catálogo, por que o mesmo
+                produto pode sair com preço diferente pra revenda. */}
+            <div className="bg-background rounded-md border px-3 py-2">
+              <p className="text-muted-foreground mb-1.5 text-[0.65rem] tracking-wide uppercase">
+                Exemplo ilustrativo — valores fixos, não é o cálculo do seu orçamento
+              </p>
+              <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium">Preço para Indústria (Consumidor Final)</span>
+                  <div className="flex items-baseline justify-between">
+                    <span>Produto exemplo</span>
+                    <span className="font-mono tabular-nums">
+                      {currencyFormatter.format(industriaPrice)}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    ICMS {EXAMPLE_ICMS_RATE}% + IPI {taxRegime.ipiCategoryRate || "0"}% por fora.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium">Preço para Comercialização (Revenda)</span>
+                  <div className="flex items-baseline justify-between">
+                    <span>Produto exemplo</span>
+                    <span className="font-mono tabular-nums">
+                      {currencyFormatter.format(revendaPrice)}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    ICMS 0% — ICMS-ST recolhido pelo fabricante. IPI{" "}
+                    {taxRegime.ipiCategoryRate || "0"}% por fora.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
