@@ -23,3 +23,20 @@ export const stageHoverClass: Record<FakeQuoteStatus, string> = {
   convertido: "hover:border-success hover:shadow-md hover:shadow-success/25",
   expirado: "hover:border-danger hover:shadow-md hover:shadow-danger/25",
 };
+
+/**
+ * Mesma paleta acima, como valor de CSS var em vez de classe Tailwind —
+ * `fill`/`ChartConfig.color` do Recharts não aceitam classe, só cor
+ * resolvida. `chart-2/3/4` são numericamente idênticos a
+ * `success`/`warning`/`danger` (ver app/globals.css) — usar os tokens
+ * `chart-N` aqui deixa as 5 etapas na mesma família de variável que o
+ * `ChartConfig` do shadcn já espera, sem introduzir uma segunda convenção
+ * de cor só para gráfico.
+ */
+export const stageChartColorVar: Record<FakeQuoteStatus, string> = {
+  gerado: "var(--chart-5)",
+  enviado: "var(--chart-1)",
+  negociacao: "var(--chart-3)",
+  convertido: "var(--chart-2)",
+  expirado: "var(--chart-4)",
+};

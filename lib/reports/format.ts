@@ -1,11 +1,37 @@
 import type { BucketUnit } from "@/lib/reports/types";
 
-export {
+import {
   currencyFormatter,
   countFormatter,
   formatRate,
   formatDuration,
 } from "@/lib/dashboard/format";
+
+export { currencyFormatter, countFormatter, formatRate, formatDuration };
+
+/**
+ * As páginas de relatório que montam `<TrendBarChart>`/`<RankingBarChart>`
+ * são Server Component (`app/(app)/reports/page.tsx`) — não dá para passar
+ * uma função de formatação como prop pra um componente `"use client"`
+ * (Recharts exige client), o RSC rejeita função não-serializável cruzando
+ * essa fronteira. Por isso o formatador vai como identificador plano
+ * (`ChartValueFormat`), resolvido aqui dentro do componente client, nunca
+ * como closure vinda de fora.
+ */
+export type ChartValueFormat = "count" | "currency" | "rate" | "duration";
+
+export function formatChartValue(format: ChartValueFormat, value: number): string {
+  switch (format) {
+    case "count":
+      return countFormatter.format(value);
+    case "currency":
+      return currencyFormatter.format(value);
+    case "rate":
+      return formatRate(value);
+    case "duration":
+      return formatDuration(value);
+  }
+}
 
 /**
  * Quantidade em pt-BR (vírgula decimal) — colunas de export que ficam sem
