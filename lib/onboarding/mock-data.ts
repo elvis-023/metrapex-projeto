@@ -79,23 +79,20 @@ export type PaymentConditionOption = {
 export const paymentConditionOptions: PaymentConditionOption[] = [
   {
     id: "a-vista",
-    label: "À vista (PIX ou dinheiro)",
-    detail: "5% de desconto, sem parcelamento.",
+    label: "À vista antecipado",
+    detail: "Com desconto",
   },
   {
     id: "cartao",
     label: "Cartão de crédito",
-    detail: "Sem desconto, parcelamento em até 3x sem juros.",
+    detail: "Parcelamento em até x vezes com juros ou sem",
   },
   {
     id: "boleto",
     label: "Faturado para Empresas",
-    detail: "Sem desconto, vencimento em 15 dias. Aplica-se a partir de R$ 500,00.",
+    detail: "Após a aprovação do cadastro",
   },
 ];
-
-export const defaultPaymentNote =
-  "Faixa acima de R$ 5.000,00 libera parcelamento em até 3x via Faturado para Empresas, mediante aprovação de crédito.";
 
 export const initialOnboardingState: OnboardingState = {
   step: 1,
@@ -119,7 +116,6 @@ export const initialOnboardingState: OnboardingState = {
     // gravar as 3 condições (antes disso não depender de fato da tela,
     // ver applyPaymentDefaultsAction); o cliente desmarca o que não usa.
     conditionIds: paymentConditionOptions.map((option) => option.id),
-    note: defaultPaymentNote,
   },
   snippet: {
     copied: false,
