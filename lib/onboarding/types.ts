@@ -1,4 +1,5 @@
 import type { TaxRegime } from "@/lib/tax-engine/onboarding-templates";
+import type { LookupStatus, PublicFormAddress } from "@/lib/public-form/types";
 
 export type { TaxRegime };
 
@@ -31,7 +32,14 @@ export type OnboardingState = {
   organization: {
     name: string;
     document: string;
-    segment: string;
+    address: PublicFormAddress;
+    /**
+     * Estado da consulta automática de CNPJ (BrasilAPI) que preenche `name`
+     * (razão social) e `address` — mesmo client de
+     * lib/public-form/lookup.ts, reaproveitado aqui (Bloco de onboarding).
+     */
+    documentLookupStatus: LookupStatus;
+    cepLookupStatus: LookupStatus;
   };
   taxRegime: {
     regime: TaxRegime;
