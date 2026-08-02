@@ -1,7 +1,12 @@
 import { emptyAddress } from "@/lib/public-form/types";
-import type { CatalogPreviewRow, OnboardingState, TaxRegime } from "@/lib/onboarding/types";
+import type { OnboardingState, TaxRegime } from "@/lib/onboarding/types";
 
-export const STORAGE_KEY = "metrapex:onboarding";
+// Versionada: mudar o formato de `OnboardingState` (ex.: `organization.address`,
+// ou remover o passo Catálogo — `step`/`furthestStepReached` armazenados como
+// 5 não existem mais) exige trocar o sufixo — senão um `sessionStorage` salvo
+// com o schema antigo sobrevive à mudança e quebra a tela mesmo com o merge
+// defensivo de `loadInitialState` (onboarding-wizard.tsx).
+export const STORAGE_KEY = "metrapex:onboarding:v3";
 
 export type TaxRegimeOption = {
   /** Valor gravado em `organizations.tax_regime` ao selecionar este card. */
@@ -84,36 +89,6 @@ export const paymentConditionOptions: PaymentConditionOption[] = [
 export const defaultPaymentNote =
   "Faixa acima de R$ 5.000,00 libera parcelamento em até 3x no boleto, mediante aprovação de crédito.";
 
-export const sampleUploadRows: CatalogPreviewRow[] = [
-  { row: 2, code: "PRD-001", name: "Cimento CP-II 50kg", price: "R$ 34,90", status: "ok" },
-  { row: 3, code: "PRD-002", name: "Argamassa ACIII 20kg", price: "R$ 22,50", status: "ok" },
-  { row: 4, code: "PRD-003", name: "Vergalhão 10mm 12m", price: "R$ 58,00", status: "ok" },
-  {
-    row: 5,
-    code: "PRD-003",
-    name: "Vergalhão 10mm 12m (duplicado)",
-    price: "R$ 58,00",
-    status: "erro",
-    error: "Código externo duplicado na planilha.",
-  },
-  {
-    row: 6,
-    code: "PRD-004",
-    name: "Telha cerâmica",
-    price: "1250",
-    status: "erro",
-    error: "Preço mal formatado — use vírgula para centavos (ex.: 12,50).",
-  },
-  {
-    row: 7,
-    code: "",
-    name: "Tijolo baiano 9 furos",
-    price: "R$ 1,20",
-    status: "erro",
-    error: "Código externo obrigatório.",
-  },
-];
-
 export const initialOnboardingState: OnboardingState = {
   step: 1,
   furthestStepReached: 1,
@@ -130,13 +105,6 @@ export const initialOnboardingState: OnboardingState = {
     ipiCategoryRate: "5,00",
     footerText: defaultFooterTextByRegime.lucro_presumido,
     autoDetected: false,
-  },
-  catalog: {
-    mode: "upload",
-    fileName: null,
-    rows: [],
-    manualProductName: "",
-    manualProductPrice: "",
   },
   payment: {
     conditionId: "a-vista",

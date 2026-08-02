@@ -1,11 +1,6 @@
 import { defaultFooterTextByRegime } from "@/lib/onboarding/mock-data";
 import { emptyAddress, type PublicFormAddress } from "@/lib/public-form/types";
-import type {
-  CatalogPreviewRow,
-  OnboardingState,
-  OnboardingStep,
-  TaxRegime,
-} from "@/lib/onboarding/types";
+import type { OnboardingState, OnboardingStep, TaxRegime } from "@/lib/onboarding/types";
 
 export type OnboardingAction =
   | { type: "HYDRATE"; state: OnboardingState }
@@ -21,12 +16,6 @@ export type OnboardingAction =
   | { type: "SET_TAX_REGIME"; regime: TaxRegime }
   | { type: "SET_TAX_REGIME_SUGGESTION"; regime: TaxRegime }
   | { type: "SET_TAX_FIELD"; field: "icmsRate" | "ipiCategoryRate" | "footerText"; value: string }
-  | { type: "SET_CATALOG_MODE"; mode: OnboardingState["catalog"]["mode"] }
-  | { type: "UPLOAD_CATALOG_FILE"; fileName: string; rows: CatalogPreviewRow[] }
-  | { type: "CLEAR_CATALOG_FILE" }
-  | { type: "SET_MANUAL_PRODUCT"; field: "manualProductName" | "manualProductPrice"; value: string }
-  | { type: "ADD_MANUAL_PRODUCT" }
-  | { type: "REMOVE_CATALOG_ROW"; row: number }
   | { type: "SET_PAYMENT_CONDITION"; conditionId: string }
   | { type: "SET_PAYMENT_NOTE"; value: string }
   | { type: "MARK_SNIPPET_COPIED" }
@@ -45,10 +34,8 @@ export function isStepValid(state: OnboardingState, step: OnboardingStep): boole
     case 2:
       return state.taxRegime.regime !== undefined;
     case 3:
-      return true;
-    case 4:
       return state.payment.conditionId !== "";
-    case 5:
+    case 4:
       return true;
     default:
       return true;
@@ -56,7 +43,7 @@ export function isStepValid(state: OnboardingState, step: OnboardingStep): boole
 }
 
 function clampStep(step: number): OnboardingStep {
-  return Math.min(5, Math.max(1, step)) as OnboardingStep;
+  return Math.min(4, Math.max(1, step)) as OnboardingStep;
 }
 
 export function onboardingReducer(
@@ -172,57 +159,6 @@ export function onboardingReducer(
       return {
         ...state,
         taxRegime: { ...state.taxRegime, [action.field]: action.value },
-      };
-
-    case "SET_CATALOG_MODE":
-      return { ...state, catalog: { ...state.catalog, mode: action.mode } };
-
-    case "UPLOAD_CATALOG_FILE":
-      return {
-        ...state,
-        catalog: { ...state.catalog, fileName: action.fileName, rows: action.rows },
-      };
-
-    case "CLEAR_CATALOG_FILE":
-      return { ...state, catalog: { ...state.catalog, fileName: null, rows: [] } };
-
-    case "SET_MANUAL_PRODUCT":
-      return {
-        ...state,
-        catalog: { ...state.catalog, [action.field]: action.value },
-      };
-
-    case "ADD_MANUAL_PRODUCT": {
-      const name = state.catalog.manualProductName.trim();
-      const price = state.catalog.manualProductPrice.trim();
-      if (!name || !price) return state;
-
-      const nextRow: CatalogPreviewRow = {
-        row: state.catalog.rows.length + 2,
-        code: `MAN-${String(state.catalog.rows.length + 1).padStart(3, "0")}`,
-        name,
-        price,
-        status: "ok",
-      };
-
-      return {
-        ...state,
-        catalog: {
-          ...state.catalog,
-          rows: [...state.catalog.rows, nextRow],
-          manualProductName: "",
-          manualProductPrice: "",
-        },
-      };
-    }
-
-    case "REMOVE_CATALOG_ROW":
-      return {
-        ...state,
-        catalog: {
-          ...state.catalog,
-          rows: state.catalog.rows.filter((row) => row.row !== action.row),
-        },
       };
 
     case "SET_PAYMENT_CONDITION":

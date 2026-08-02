@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { initialOnboardingState } from "@/lib/onboarding/mock-data";
-import { onboardingReducer } from "@/lib/onboarding/reducer";
+import { isStepValid, onboardingReducer } from "@/lib/onboarding/reducer";
+import { ONBOARDING_STEPS, type OnboardingState } from "@/lib/onboarding/types";
 import { emptyAddress } from "@/lib/public-form/types";
 
 /**
@@ -119,5 +120,67 @@ describe("onboardingReducer — SET_TAX_REGIME_SUGGESTION / SET_TAX_REGIME", () 
     expect(next.taxRegime.footerText).toBe(
       "Valor aproximado dos tributos incidentes conforme Lei 12.741/2012.",
     );
+  });
+});
+
+/**
+ * Passo Catálogo removido do wizard por completo — sobram 4 passos:
+ * Organização, Regime Tributário, Pagamento (era 4, agora 3) e Snippet (era
+ * 5, agora 4). Cobre exatamente o que foi verificado manualmente: a barra de
+ * progresso bate com o número real de passos, e navegar (NEXT/BACK/SKIP/
+ * JUMP_TO) funciona do primeiro ao último passo sem "buraco" no lugar do
+ * catálogo removido.
+ */
+describe("onboardingReducer — navegação após remover o passo Catálogo", () => {
+  it("ONBOARDING_STEPS tem 4 passos, sem 'Catálogo'", () => {
+    expect(ONBOARDING_STEPS).toHaveLength(4);
+    expect(ONBOARDING_STEPS.map((s) => s.label)).toEqual([
+      "Organização",
+      "Regime Tributário",
+      "Pagamento",
+      "Snippet",
+    ]);
+  });
+
+  it("NEXT avança do passo 1 até o passo 4 (último), sem passar por um 5º passo", () => {
+    let state = initialOnboardingState;
+    for (let i = 0; i < 5; i++) {
+      state = onboardingReducer(state, { type: "NEXT" });
+    }
+    expect(state.step).toBe(4);
+    expect(state.furthestStepReached).toBe(4);
+  });
+
+  it("BACK volta do último passo (4) até o primeiro, sem passar de 1", () => {
+    let state: OnboardingState = { ...initialOnboardingState, step: 4, furthestStepReached: 4 };
+    for (let i = 0; i < 5; i++) {
+      state = onboardingReducer(state, { type: "BACK" });
+    }
+    expect(state.step).toBe(1);
+  });
+
+  it("SKIP também respeita o novo limite de 4 passos", () => {
+    let state = initialOnboardingState;
+    for (let i = 0; i < 5; i++) {
+      state = onboardingReducer(state, { type: "SKIP" });
+    }
+    expect(state.step).toBe(4);
+  });
+
+  it("JUMP_TO só permite ir a um passo já alcançado, dentro do 1..4", () => {
+    const state: OnboardingState = { ...initialOnboardingState, step: 1, furthestStepReached: 2 };
+    const jumpedAhead = onboardingReducer(state, { type: "JUMP_TO", step: 4 });
+    expect(jumpedAhead.step).toBe(1);
+
+    const jumpedBack = onboardingReducer(state, { type: "JUMP_TO", step: 2 });
+    expect(jumpedBack.step).toBe(2);
+  });
+
+  it("isStepValid: passo 3 agora é Pagamento (exige condição escolhida), passo 4 é Snippet (sempre válido)", () => {
+    expect(isStepValid(initialOnboardingState, 3)).toBe(true);
+    expect(
+      isStepValid({ ...initialOnboardingState, payment: { conditionId: "", note: "" } }, 3),
+    ).toBe(false);
+    expect(isStepValid(initialOnboardingState, 4)).toBe(true);
   });
 });

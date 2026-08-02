@@ -13,7 +13,6 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { ProgressBar } from "@/components/onboarding/progress-bar";
 import { StepOrganization } from "@/components/onboarding/step-organization";
 import { StepTaxRegime } from "@/components/onboarding/step-tax-regime";
-import { StepCatalog } from "@/components/onboarding/step-catalog";
 import { StepPaymentTerms } from "@/components/onboarding/step-payment-terms";
 import { StepSnippet } from "@/components/onboarding/step-snippet";
 import { STORAGE_KEY, initialOnboardingState } from "@/lib/onboarding/mock-data";
@@ -26,7 +25,19 @@ function loadInitialState(): OnboardingState {
   try {
     const stored = window.sessionStorage.getItem(STORAGE_KEY);
     if (!stored) return initialOnboardingState;
-    return { ...initialOnboardingState, ...JSON.parse(stored) } as OnboardingState;
+    const parsed = JSON.parse(stored) as Partial<OnboardingState>;
+    // Merge um nível a mais em cada slice aninhado — um `sessionStorage`
+    // salvo antes de um campo novo ser adicionado (ex.: `organization.address`,
+    // Bloco 10) não pode sobrescrever o slice inteiro e derrubar a tela com
+    // um campo `undefined`.
+    return {
+      ...initialOnboardingState,
+      ...parsed,
+      organization: { ...initialOnboardingState.organization, ...parsed.organization },
+      taxRegime: { ...initialOnboardingState.taxRegime, ...parsed.taxRegime },
+      payment: { ...initialOnboardingState.payment, ...parsed.payment },
+      snippet: { ...initialOnboardingState.snippet, ...parsed.snippet },
+    };
   } catch {
     return initialOnboardingState;
   }
@@ -42,16 +53,16 @@ export function OnboardingWizard() {
   }, [state]);
 
   const currentStepValid = isStepValid(state, state.step);
-  const isLastStep = state.step === 5;
+  const isLastStep = state.step === 4;
   const [isCreatingOrg, setIsCreatingOrg] = useState(false);
 
   /**
    * A organização (com template fiscal e condições de pagamento) é criada
-   * aqui — na saída do passo 4, não na conclusão do wizard — porque o passo
-   * 5 mostra o snippet real de incorporação, e o snippet precisa da
-   * `public_form_key` de uma organização que já existe (Milestone 15). Se o
-   * usuário voltar e avançar de novo, `state.createdOrg` já está preenchido
-   * e a criação não roda duas vezes.
+   * aqui — na saída do passo 3 (Pagamento), não na conclusão do wizard —
+   * porque o passo 4 (Snippet) mostra o snippet real de incorporação, e o
+   * snippet precisa da `public_form_key` de uma organização que já existe
+   * (Milestone 15). Se o usuário voltar e avançar de novo, `state.createdOrg`
+   * já está preenchido e a criação não roda duas vezes.
    */
   async function advancePastPaymentStep(nextAction: "NEXT" | "SKIP") {
     if (state.createdOrg) {
@@ -99,9 +110,8 @@ export function OnboardingWizard() {
       <CardContent className="py-2">
         {state.step === 1 ? <StepOrganization state={state} dispatch={dispatch} /> : null}
         {state.step === 2 ? <StepTaxRegime state={state} dispatch={dispatch} /> : null}
-        {state.step === 3 ? <StepCatalog state={state} dispatch={dispatch} /> : null}
-        {state.step === 4 ? <StepPaymentTerms state={state} dispatch={dispatch} /> : null}
-        {state.step === 5 ? <StepSnippet state={state} dispatch={dispatch} /> : null}
+        {state.step === 3 ? <StepPaymentTerms state={state} dispatch={dispatch} /> : null}
+        {state.step === 4 ? <StepSnippet state={state} dispatch={dispatch} /> : null}
       </CardContent>
       <CardFooter className="justify-between">
         <Button
@@ -119,7 +129,7 @@ export function OnboardingWizard() {
               variant="ghost"
               disabled={isCreatingOrg}
               onClick={() =>
-                state.step === 4 ? advancePastPaymentStep("SKIP") : dispatch({ type: "SKIP" })
+                state.step === 3 ? advancePastPaymentStep("SKIP") : dispatch({ type: "SKIP" })
               }
             >
               Pular
@@ -134,10 +144,10 @@ export function OnboardingWizard() {
               type="button"
               disabled={!currentStepValid || isCreatingOrg}
               onClick={() =>
-                state.step === 4 ? advancePastPaymentStep("NEXT") : dispatch({ type: "NEXT" })
+                state.step === 3 ? advancePastPaymentStep("NEXT") : dispatch({ type: "NEXT" })
               }
             >
-              {state.step === 4 && isCreatingOrg ? "Criando organização..." : "Avançar"}
+              {state.step === 3 && isCreatingOrg ? "Criando organização..." : "Avançar"}
             </Button>
           )}
         </div>
