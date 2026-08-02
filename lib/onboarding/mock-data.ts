@@ -120,6 +120,7 @@ export const initialOnboardingState: OnboardingState = {
     icmsRate: "18,00",
     ipiCategoryRate: "5,00",
     footerText: defaultFooterTextByRegime.lucro_presumido,
+    autoDetected: false,
   },
   catalog: {
     mode: "upload",

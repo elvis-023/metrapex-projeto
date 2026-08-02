@@ -114,3 +114,124 @@ contrato de resposta. Descartado duplicar a chamada fetch em dois lugares.
 Impacto: novo arquivo em `lib/integrations/` (ex.: `lib/integrations/brasil-api.ts`),
 `app/api/public-quote/lookup-cnpj/route.ts` (passa a chamar a função em vez do fetch
 inline), novo ponto de consumo no onboarding (Bloco 7).
+
+### Regime Tributário #5 — schema real dos campos de detecção (BrasilAPI) — confirmado em 2026-08-02
+
+Decisão: os campos usados na detecção automática de MEI/Simples são
+`opcao_pelo_simples: boolean | null`, `data_opcao_pelo_simples: string | null`,
+`opcao_pelo_mei: boolean | null`, `data_opcao_pelo_mei: string | null` e
+`porte: string` (acompanhado de `codigo_porte: number`) — **nuláveis, não
+`boolean` puro** como a suposição inicial (ver conversa anterior, resposta à
+pergunta 2 do usuário). `data_exclusao_do_mei`/`data_exclusao_do_simples` também
+existem na resposta (nuláveis) e não são usados na detecção — servem para uma
+empresa que já foi MEI/Simples e saiu, fora de escopo do Bloco 7.
+Porquê: chamada de teste controlada à BrasilAPI (`GET /api/cnpj/v1/33000167000101`,
+Petrobras — Lucro Real, nunca MEI nem Simples) confirmada em 2026-08-02.
+Payload real (subconjunto relevante):
+```json
+{
+  "porte": "DEMAIS",
+  "codigo_porte": 5,
+  "opcao_pelo_mei": null,
+  "data_opcao_pelo_mei": null,
+  "data_exclusao_do_mei": null,
+  "opcao_pelo_simples": null,
+  "data_opcao_pelo_simples": null,
+  "data_exclusao_do_simples": null
+}
+```
+Para uma empresa fora de MEI/Simples, os quatro campos vêm `null` — **não** `false`.
+O tipo definitivo em `lib/integrations/brasil-api.ts` precisa tratar `null` como "não
+optante" (equivalente a `false` para fins de detecção), nunca lançar/quebrar em cima de
+um campo ausente. Ainda não confirmado empiricamente o formato do payload para uma
+empresa que É MEI ou É optante do Simples (`opcao_pelo_mei: true`?) — o dado real deste
+teste só prova o caso negativo. Antes de fechar o tipo de teste/fixture que cubra o
+caso positivo, rodar uma segunda chamada controlada com um CNPJ real conhecido de
+empresa MEI/Simples, ou tratar como suposição razoável (mas não confirmada) que o campo
+vira `true` no caso positivo.
+Impacto: `lib/integrations/brasil-api.ts` (tipo `BrasilApiCnpjResponse` e a função de
+detecção), `lib/tax-engine/onboarding-templates.ts` (mapeamento detecção → `TaxRegime`).
+
+### Regime Tributário #6 — gatilho da detecção por contagem de dígitos, sem validação de DV — decidido em 2026-08-02
+
+Decisão: a detecção automática de regime só dispara quando `organization.document`
+(passo 1) tiver exatamente 14 dígitos após remover não-dígitos. Com 11 dígitos (CPF),
+a detecção é pulada silenciosamente — nenhuma chamada de rede, nenhuma mensagem de
+erro ou aviso. Nenhuma outra contagem de dígitos dispara nada. Não valida dígito
+verificador de CNPJ nesta etapa — só contagem.
+Porquê: o passo 1 aceita "CNPJ ou CPF" no mesmo campo de texto livre (persona
+freelancer solo, briefing → Personas), sem máscara nem validação hoje
+(`components/onboarding/step-organization.tsx`). Validar dígito verificador
+adicionaria uma camada de validação nova ao campo que não existe hoje e não é
+necessária para decidir se dispara a consulta — a própria BrasilAPI já rejeita CNPJ
+inválido (a rota pública trata isso como 404, "CNPJ não encontrado").
+Impacto: novo trecho de lógica no passo 1 do onboarding (Bloco 8), não em
+`lib/public-form/cpf-cnpj.ts` (aquele módulo é do formulário público, valida dígito
+verificador para um propósito diferente — antispam do endpoint público — e não deve
+ganhar um uso novo aqui sem necessidade).
+
+### Regime Tributário #7 — falha/timeout degrada silenciosamente, nunca bloqueia o avanço — decidido em 2026-08-02
+
+Decisão: falha de rede, timeout ou resposta de erro da BrasilAPI durante a detecção
+degrada para "nenhuma sugestão automática" (passo 2 abre sem regime pré-marcado,
+usuário escolhe manualmente) e **nunca** bloqueia o avanço do passo 1 para o passo 2.
+Porquê: o único precedente de fluxo assíncrono no wizard hoje é a saída do passo 4
+(`advancePastPaymentStep`, `components/onboarding/onboarding-wizard.tsx`), que bloqueia
+o avanço em erro (`toast.error` + permanece no passo) — esse padrão foi avaliado e
+descartado explicitamente para a detecção de CNPJ: lá o bloqueio é correto porque a
+organização está sendo criada de verdade (efeito colateral que não pode falhar
+silenciosamente); aqui a consulta é só uma sugestão de UX sobre um campo que o usuário
+sempre pode preencher manualmente no passo 2 — bloquear o onboarding por causa de uma
+API de terceiro indisponível não se justifica.
+Impacto: novo trecho de lógica no passo 1 do onboarding (Bloco 8) — timeout explícito
+na chamada (a chamada não deve ficar pendurada sem prazo), catch silencioso sem toast
+de erro voltado ao usuário.
+
+### Regime Tributário #8 — escopo do gatilho (contagem de dígitos + disparo) é Bloco 8, não Bloco 7 — decidido em 2026-08-02
+
+Decisão: a distinção CNPJ/CPF por contagem de dígitos e o gatilho da detecção no passo
+1 (decisões #6 e #7 acima) entram no escopo do **Bloco 8**. O Bloco 7 cobre o serviço de
+detecção em si (client de BrasilAPI extraído — decisão #4 — mapeamento
+`porte`/`opcao_pelo_simples`/`opcao_pelo_mei` → `TaxRegime` sugerido, e o pré-marcar da
+opção no passo 2). O Bloco 8 é quem liga esse serviço ao campo de texto livre do passo 1
+que hoje não dispara nada.
+Porquê: é trabalho novo no passo 1 (que hoje não tem nenhuma lógica de CNPJ/CPF, nem
+máscara, nem chamada de rede — ver investigação anterior), não uma religação de algo
+existente; separar do Bloco 7 mantém o serviço de detecção testável isoladamente antes
+de acoplá-lo ao trigger de UI.
+Impacto: escopo do Bloco 7 vs. Bloco 8 no plano de execução (a confirmar em
+`docs/PLAN.md` quando os blocos forem abertos).
+
+### Regime Tributário #9 — serviço final: tri-estado, status atual (sem checar exclusão), cache com TTL — decidido em 2026-08-02
+
+Decisão: `lib/tax-engine/regime-detection.ts` (novo arquivo, separado de
+`onboarding-templates.ts`) concentra o serviço de detecção:
+- `classifyCnpjRegime`/`detectRegimeFromCnpj` devolvem um tipo de **três estados**
+  (`"mei" | "simples_nacional" | "nao_detectado"`), nunca `TaxRegime | null` — Lucro
+  Presumido/Lucro Real nunca são um resultado possível desta função.
+- A classificação usa só `opcao_pelo_mei`/`opcao_pelo_simples` **atuais** —
+  `data_exclusao_do_mei`/`data_exclusao_do_simples` deliberadamente NÃO entram na
+  regra, mesmo existindo no tipo. Decisão explícita do usuário: o booleano da
+  BrasilAPI já reflete o status corrente: não cruzar com data de exclusão.
+- `detectRegimeFromCnpj` nunca lança — qualquer falha (rede, timeout, HTTP não-2xx) é
+  capturada, logada via `console.error` e vira `"nao_detectado"`, o mesmo valor do caso
+  "consultei e não é nem MEI nem Simples". A tela nunca recebe `undefined` nem uma
+  exceção não tratada.
+- Cache em memória por processo, chave = CNPJ (só dígitos), TTL de 5 minutos —
+  cobre tanto resultado positivo quanto falha (evita martelar uma API fora do ar
+  dentro da janela). Best-effort: não sobrevive a reinício do processo nem é
+  compartilhado entre instâncias em deploy multi-instância — aceitável por ser só
+  sugestão de UX. Chave por valor (não por tempo de navegação no wizard): voltar ao
+  passo 1 sem mudar o CNPJ não gera nova chamada; mudar o CNPJ gera uma chave nova,
+  então sempre consulta.
+- Timeout de `fetch` (`lib/integrations/brasil-api.ts`, `CNPJ_LOOKUP_TIMEOUT_MS`) em
+  4000ms — valor inicial conservador, número exato a revisar depois (pedido explícito
+  do usuário, ainda não fechado).
+Porquê: registrado em resposta às perguntas 2–6 do usuário sobre o plano do serviço de
+detecção (não confundir MEI com Simples genérico — MEI é SIMEI, subconjunto com regras
+próprias; usar status atual, não histórico de exclusão; cache por TTL para não
+reconsultar a cada tecla).
+Impacto: `lib/tax-engine/regime-detection.ts` (novo), `lib/integrations/brasil-api.ts`
+(`CNPJ_LOOKUP_TIMEOUT_MS`), `lib/tax-engine/actions.ts` (`detectTaxRegimeFromCnpjAction`
+vira wrapper fino), `lib/tax-engine/onboarding-templates.ts` (a função de mapeamento
+que vivia aqui foi removida — superada pela de `regime-detection.ts`).

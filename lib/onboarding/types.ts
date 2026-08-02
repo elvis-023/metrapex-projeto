@@ -38,6 +38,13 @@ export type OnboardingState = {
     icmsRate: string;
     ipiCategoryRate: string;
     footerText: string;
+    /**
+     * `true` quando `regime` veio de `SET_TAX_REGIME_SUGGESTION` (detecção
+     * automática por CNPJ, Bloco 7) e o usuário ainda não confirmou/trocou
+     * manualmente — controla o badge "Detectado automaticamente" no passo 2.
+     * Qualquer escolha manual (`SET_TAX_REGIME`) zera este campo.
+     */
+    autoDetected: boolean;
   };
   catalog: {
     mode: CatalogMode;
