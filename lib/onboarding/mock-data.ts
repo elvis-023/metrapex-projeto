@@ -4,25 +4,37 @@ import type { CatalogPreviewRow, OnboardingState, TaxRegime } from "@/lib/onboar
 export const STORAGE_KEY = "metrapex:onboarding";
 
 export type TaxRegimeOption = {
+  /** Valor gravado em `organizations.tax_regime` ao selecionar este card. */
   id: TaxRegime;
+  /**
+   * Todo valor de `tax_regime` que conta como "este card selecionado" — usado
+   * pra destacar o card e pro badge de detecção automática. Lucro Presumido e
+   * Lucro Real são um único card na tela (decisão "Regime Tributário
+   * unificação onboarding": banco continua com os 2 valores, ver
+   * lib/tax-engine/onboarding-templates.ts; a tela só une visualmente e
+   * sempre grava `id`, nunca `lucro_real`, diretamente).
+   */
+  matches: TaxRegime[];
   label: string;
   description: string;
   helpText: string;
 };
 
 /**
- * As 4 opções do passo 2 (briefing §6). "Isento" não é regime — deixou de
+ * As 3 opções do passo 2 (briefing §6). "Isento" não é regime — deixou de
  * aparecer aqui, fica só como ajuste manual em Configurações > Impostos.
  */
 export const taxRegimeOptions: TaxRegimeOption[] = [
   {
     id: "mei",
+    matches: ["mei"],
     label: "MEI",
     description: "Nenhum tributo é destacado — o imposto já está dentro do DAS.",
     helpText: "Ideal para MEI: o orçamento sai limpo, só com a nota da Lei 12.741/2012.",
   },
   {
     id: "simples_nacional",
+    matches: ["simples_nacional"],
     label: "Simples Nacional",
     description: "Nenhum tributo é destacado, como no MEI.",
     helpText:
@@ -30,17 +42,11 @@ export const taxRegimeOptions: TaxRegimeOption[] = [
   },
   {
     id: "lucro_presumido",
-    label: "Lucro Presumido",
+    matches: ["lucro_presumido", "lucro_real"],
+    label: "Lucro Presumido ou Lucro Real",
     description: "ICMS por fora no padrão da empresa; IPI configurável por categoria.",
     helpText:
-      "Revenda comum fora do Simples — confirme a alíquota de ICMS do seu estado com o contador antes de emitir.",
-  },
-  {
-    id: "lucro_real",
-    label: "Lucro Real",
-    description: "Mesmo destaque do Lucro Presumido hoje — ICMS por fora, IPI por categoria.",
-    helpText:
-      "A diferença entre os dois regimes está na apuração de impostos da empresa, não no que aparece pro cliente no orçamento — confirme com o contador.",
+      "Revenda comum fora do Simples — a diferença entre os dois está na apuração de impostos da empresa, não no que aparece pro cliente no orçamento. Confirme com o contador qual dos dois é o seu caso; o ajuste fino de ICMS por estado fica em Configurações > Impostos.",
   },
 ];
 
