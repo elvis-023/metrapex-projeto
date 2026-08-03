@@ -43,8 +43,7 @@ function daysAgoIso(days: number): string {
 
 const QUOTE_METRICS_COLUMNS =
   "id, sequence, status, owner_id, customer_name, customer_source_id, discount_type, " +
-  "discount_value, payment_condition_id, tax_snapshot_at, total, expires_at, " +
-  "requested_at, delivered_at, created_at";
+  "discount_value, payment_condition_id, tax_snapshot_at, total, expires_at, created_at";
 
 type QuoteMetricsRow = Pick<
   QuoteRow,
@@ -60,8 +59,6 @@ type QuoteMetricsRow = Pick<
   | "tax_snapshot_at"
   | "total"
   | "expires_at"
-  | "requested_at"
-  | "delivered_at"
   | "created_at"
 >;
 
@@ -111,7 +108,6 @@ const EMPTY_METRICS: DashboardMetrics = {
   quotesGenerated: { count: 0, previousCount: 0 },
   pipelineValue: { amount: 0, openQuotesCount: 0 },
   conversionRate: { rate: 0, previousRate: 0 },
-  avgTimeToFirstQuoteSeconds: 0,
   funnel: [],
   expiringQuotes: [],
   sourceBreakdown: [],
@@ -174,23 +170,6 @@ export async function getDashboardMetrics(period: DashboardPeriod): Promise<Dash
     }),
   );
 
-  // KPI central: só orçamentos do formulário público (`site`) com as duas
-  // marcas de tempo gravadas (Milestone 19 — orçamento manual não tem um
-  // instante de "cliente pediu" distinto da ação do vendedor, ver migration
-  // 20260727000015_dashboard_metrics.sql).
-  const deliveryDurations = currentRows
-    .filter(
-      (row): row is QuoteMetricsRow & { requested_at: string; delivered_at: string } =>
-        row.customer_source_id === "site" && row.requested_at !== null && row.delivered_at !== null,
-    )
-    .map(
-      (row) => (new Date(row.delivered_at).getTime() - new Date(row.requested_at).getTime()) / 1000,
-    );
-  const avgTimeToFirstQuoteSeconds =
-    deliveryDurations.length === 0
-      ? 0
-      : deliveryDurations.reduce((sum, seconds) => sum + seconds, 0) / deliveryDurations.length;
-
   const expiringQuotes: FakeQuote[] = expiringRows.map((row) => ({
     id: row.id,
     number: formatQuoteNumber(row.sequence),
@@ -211,7 +190,6 @@ export async function getDashboardMetrics(period: DashboardPeriod): Promise<Dash
       rate: conversionRate(currentRows),
       previousRate: conversionRate(previousRows),
     },
-    avgTimeToFirstQuoteSeconds,
     funnel,
     expiringQuotes,
     sourceBreakdown,

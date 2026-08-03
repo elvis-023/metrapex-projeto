@@ -4,7 +4,6 @@ import type { DashboardMetrics } from "@/lib/dashboard/types";
 import {
   countFormatter,
   currencyFormatter,
-  formatDuration,
   formatPercentChange,
   formatPercentPointsChange,
   formatRate,
@@ -27,15 +26,10 @@ export function KpiCards({ metrics }: { metrics: DashboardMetrics }) {
       value: formatRate(metrics.conversionRate.rate),
       hint: `${formatPercentPointsChange(metrics.conversionRate.rate, metrics.conversionRate.previousRate)} vs. período anterior`,
     },
-    {
-      label: "Tempo até o 1º orçamento",
-      value: formatDuration(metrics.avgTimeToFirstQuoteSeconds),
-      hint: "do pedido do cliente ao PDF",
-    },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       {kpis.map((kpi, index) => (
         <AnimateOnScroll key={kpi.label} delayMs={index * 100}>
           <Card className="glass-card">
