@@ -14,7 +14,7 @@ function toPipelineQuote(entry: QuoteListEntry): PipelineQuote {
     sourceId: entry.customerSourceId ?? "site",
     total: entry.total,
     status: entry.status,
-    expiresAt: entry.expiresAt ?? "",
+    expiresAt: entry.expiresAt,
     assigneeId: entry.ownerId ?? "",
     assigneeName: entry.ownerName,
     revision: entry.revision,

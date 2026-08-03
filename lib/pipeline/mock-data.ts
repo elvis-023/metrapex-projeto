@@ -25,7 +25,16 @@ export const fakeSalespeople: Salesperson[] = [
   { id: "user_3", name: "Rafael Nunes", initials: "RN" },
 ];
 
-export type PipelineQuote = FakeQuote & {
+export type PipelineQuote = Omit<FakeQuote, "expiresAt"> & {
+  /**
+   * Ao contrário de `FakeQuote.expiresAt` (sempre presente nos cards
+   * mockados), o orçamento real pode não ter validade definida
+   * (`quotes.expires_at` é `date` nullable — Milestone 14). Todo consumidor
+   * deste campo precisa tratar `null` explicitamente, nunca assumir string
+   * e passar direto para `parseDateOnly`/`dateFormatter.format` (que lançam
+   * `RangeError: Invalid time value` em data inválida).
+   */
+  expiresAt: string | null;
   assigneeId: string;
   /**
    * Nome real do responsável quando o orçamento vem do banco (Milestone 14).
