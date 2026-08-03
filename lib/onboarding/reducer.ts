@@ -17,7 +17,6 @@ export type OnboardingAction =
   | { type: "SET_TAX_REGIME_SUGGESTION"; regime: TaxRegime }
   | { type: "SET_TAX_FIELD"; field: "icmsRate" | "ipiCategoryRate" | "footerText"; value: string }
   | { type: "TOGGLE_PAYMENT_CONDITION"; conditionId: string }
-  | { type: "SET_PAYMENT_NOTE"; value: string }
   | { type: "MARK_SNIPPET_COPIED" }
   | { type: "SET_CREATED_ORG"; org: { orgId: string; slug: string; publicFormKey: string } }
   | { type: "NEXT" }
@@ -173,9 +172,6 @@ export function onboardingReducer(
         },
       };
     }
-
-    case "SET_PAYMENT_NOTE":
-      return { ...state, payment: { ...state.payment, note: action.value } };
 
     case "MARK_SNIPPET_COPIED":
       return { ...state, snippet: { copied: true } };

@@ -178,9 +178,9 @@ describe("onboardingReducer — navegação após remover o passo Catálogo", ()
 
   it("isStepValid: passo 3 agora é Pagamento (exige condição escolhida), passo 4 é Snippet (sempre válido)", () => {
     expect(isStepValid(initialOnboardingState, 3)).toBe(true);
-    expect(
-      isStepValid({ ...initialOnboardingState, payment: { conditionIds: [], note: "" } }, 3),
-    ).toBe(false);
+    expect(isStepValid({ ...initialOnboardingState, payment: { conditionIds: [] } }, 3)).toBe(
+      false,
+    );
     expect(isStepValid(initialOnboardingState, 4)).toBe(true);
   });
 });

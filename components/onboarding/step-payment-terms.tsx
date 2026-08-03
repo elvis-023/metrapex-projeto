@@ -50,19 +50,6 @@ export function StepPaymentTerms({ state, dispatch }: StepPaymentTermsProps) {
           );
         })}
       </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="payment-note" className="text-sm font-medium">
-          Faixa de valor e observações
-        </label>
-        <textarea
-          id="payment-note"
-          rows={2}
-          value={payment.note}
-          onChange={(event) => dispatch({ type: "SET_PAYMENT_NOTE", value: event.target.value })}
-          className="border-input focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full resize-none rounded-lg border bg-transparent px-2.5 py-1.5 text-sm outline-none focus-visible:ring-3"
-        />
-      </div>
     </div>
   );
 }

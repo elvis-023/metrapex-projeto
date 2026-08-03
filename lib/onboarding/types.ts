@@ -43,7 +43,6 @@ export type OnboardingState = {
   payment: {
     /** IDs marcados (checkbox) — só o que estiver aqui é gravado ao concluir o passo. */
     conditionIds: string[];
-    note: string;
   };
   snippet: {
     copied: boolean;
