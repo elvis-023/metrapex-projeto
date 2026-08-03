@@ -27,7 +27,6 @@ export type DashboardMetrics = {
   quotesGenerated: { count: number; previousCount: number };
   pipelineValue: { amount: number; openQuotesCount: number };
   conversionRate: { rate: number; previousRate: number };
-  avgTimeToFirstQuoteSeconds: number;
   funnel: FunnelStage[];
   expiringQuotes: FakeQuote[];
   sourceBreakdown: SourceBreakdown[];
