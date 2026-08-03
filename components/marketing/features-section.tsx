@@ -31,10 +31,7 @@ export function FeaturesSection() {
   return (
     <section id="features" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
       <div className="max-w-2xl">
-        <p className="text-muted-foreground font-mono text-xs tracking-[0.14em] uppercase">
-          O que carimba cada orçamento
-        </p>
-        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-balance">
+        <h2 className="text-3xl font-semibold tracking-tight text-balance">
           Tudo entre o pedido e o orçamento na mão do cliente
         </h2>
         <p className="text-muted-foreground mt-3 text-balance">
