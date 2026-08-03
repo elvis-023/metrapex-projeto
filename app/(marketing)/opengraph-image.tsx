@@ -45,17 +45,6 @@ export default function OpengraphImage() {
         <div
           style={{
             display: "flex",
-            fontSize: 22,
-            letterSpacing: 4,
-            textTransform: "uppercase",
-            color: inkMuted,
-          }}
-        >
-          Nº 1 → Nº ∞, sem parar de carimbar
-        </div>
-        <div
-          style={{
-            display: "flex",
             fontSize: 60,
             fontWeight: 600,
             color: ink,
@@ -63,7 +52,7 @@ export default function OpengraphImage() {
             maxWidth: 920,
           }}
         >
-          Do pedido do cliente ao orçamento carimbado, em segundos.
+          Do pedido do cliente ao envio do orçamento, em segundos.
         </div>
       </div>
 

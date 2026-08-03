@@ -26,12 +26,8 @@ export function Hero() {
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8">
         <div className="flex flex-col items-start gap-6 text-left">
-          <p className="text-muted-foreground font-mono text-xs tracking-[0.14em] uppercase">
-            Talão de orçamento nº 1 → nº ∞, sem parar de carimbar
-          </p>
-
           <h1 className="max-w-xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
-            Do pedido do cliente ao orçamento carimbado, em segundos.
+            Do pedido do cliente ao envio do orçamento, em segundos.
           </h1>
 
           <p className="text-muted-foreground max-w-lg text-lg text-balance">
