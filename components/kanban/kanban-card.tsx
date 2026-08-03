@@ -11,12 +11,22 @@ import { currencyFormatter, dateFormatter, parseDateOnly } from "@/lib/dashboard
 import { resolveAssignee, type PipelineQuote } from "@/lib/pipeline/mock-data";
 import { stageHoverClass } from "@/lib/pipeline/stage-colors";
 
-function expiryTone(expiresAt: string, status: PipelineQuote["status"]): string {
+// Exportadas só para o teste (kanban-card.test.ts) — `quotes.expires_at` é
+// nullable (Milestone 14) e já quebrou a página inteira do pipeline uma vez
+// (RangeError: Invalid time value ao formatar data nula); cobrir o caso
+// `null` aqui evita a regressão voltar despercebida.
+export function expiryTone(expiresAt: string | null, status: PipelineQuote["status"]): string {
   if (status === "expirado") return "text-danger";
-  if (status === "convertido") return "text-muted-foreground";
+  if (status === "convertido" || !expiresAt) return "text-muted-foreground";
   const daysLeft = Math.ceil((parseDateOnly(expiresAt).getTime() - Date.now()) / 86_400_000);
   if (daysLeft <= 2) return "text-warning";
   return "text-muted-foreground";
+}
+
+/** `quotes.expires_at` é opcional (Milestone 14) — sem validade definida, o card mostra um rótulo fixo em vez de tentar formatar uma data que não existe. */
+export function expiryLabel(expiresAt: string | null): string {
+  if (!expiresAt) return "Sem prazo";
+  return dateFormatter.format(parseDateOnly(expiresAt));
 }
 
 export function KanbanCard({
@@ -60,7 +70,7 @@ export function KanbanCard({
             <span className="text-muted-foreground text-xs">{assignee.name}</span>
           </div>
           <span className={cn("text-xs tabular-nums", expiryTone(quote.expiresAt, quote.status))}>
-            {dateFormatter.format(parseDateOnly(quote.expiresAt))}
+            {expiryLabel(quote.expiresAt)}
           </span>
         </div>
       </Card>

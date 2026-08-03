@@ -391,6 +391,7 @@ export type QuoteListEntry = {
   total: number;
   expiresAt: string | null;
   issuedAt: string | null;
+  createdAt: string;
 };
 
 export type DraftQuoteInput = Pick<
@@ -508,5 +509,6 @@ export async function getQuotes(): Promise<QuoteListEntry[]> {
         : round2(new Decimal(quote.total)).toNumber(),
     expiresAt: quote.expires_at,
     issuedAt: quote.tax_snapshot_at,
+    createdAt: quote.created_at,
   }));
 }

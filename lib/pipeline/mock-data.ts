@@ -25,7 +25,18 @@ export const fakeSalespeople: Salesperson[] = [
   { id: "user_3", name: "Rafael Nunes", initials: "RN" },
 ];
 
-export type PipelineQuote = FakeQuote & {
+export type PipelineQuote = Omit<FakeQuote, "expiresAt"> & {
+  /**
+   * Ao contrário de `FakeQuote.expiresAt` (sempre presente nos cards
+   * mockados), o orçamento real pode não ter validade definida
+   * (`quotes.expires_at` é `date` nullable — Milestone 14). Todo consumidor
+   * deste campo precisa tratar `null` explicitamente, nunca assumir string
+   * e passar direto para `parseDateOnly`/`dateFormatter.format` (que lançam
+   * `RangeError: Invalid time value` em data inválida).
+   */
+  expiresAt: string | null;
+  /** `quotes.created_at`, sempre presente — usado pelo filtro de período do board. */
+  createdAt: string;
   assigneeId: string;
   /**
    * Nome real do responsável quando o orçamento vem do banco (Milestone 14).
@@ -74,6 +85,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 4280.5,
     status: "convertido",
     expiresAt: "2026-07-30",
+    createdAt: "2026-07-15",
     assigneeId: "user_1",
     revision: 1,
   },
@@ -85,6 +97,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 1150,
     status: "enviado",
     expiresAt: "2026-07-27",
+    createdAt: "2026-07-12",
     assigneeId: "user_2",
     revision: 1,
   },
@@ -96,6 +109,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 890.9,
     status: "negociacao",
     expiresAt: "2026-07-26",
+    createdAt: "2026-07-11",
     assigneeId: "user_1",
     revision: 1,
   },
@@ -107,6 +121,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 6320,
     status: "gerado",
     expiresAt: "2026-07-25",
+    createdAt: "2026-07-10",
     assigneeId: "user_3",
     revision: 1,
   },
@@ -118,6 +133,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 430,
     status: "expirado",
     expiresAt: "2026-07-18",
+    createdAt: "2026-07-03",
     assigneeId: "user_2",
     revision: 1,
   },
@@ -129,6 +145,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 2140,
     status: "enviado",
     expiresAt: "2026-07-25",
+    createdAt: "2026-07-10",
     assigneeId: "user_1",
     revision: 1,
   },
@@ -140,6 +157,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 5870.4,
     status: "negociacao",
     expiresAt: "2026-07-26",
+    createdAt: "2026-07-11",
     assigneeId: "user_3",
     revision: 1,
   },
@@ -151,6 +169,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 780,
     status: "gerado",
     expiresAt: "2026-07-29",
+    createdAt: "2026-07-14",
     assigneeId: "user_2",
     revision: 1,
   },
@@ -162,6 +181,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 3210.75,
     status: "convertido",
     expiresAt: "2026-07-20",
+    createdAt: "2026-07-05",
     assigneeId: "user_3",
     revision: 1,
   },
@@ -173,6 +193,7 @@ export const fakePipelineQuotes: PipelineQuote[] = [
     total: 12450,
     status: "expirado",
     expiresAt: "2026-07-15",
+    createdAt: "2026-06-30",
     assigneeId: "user_1",
     revision: 1,
   },

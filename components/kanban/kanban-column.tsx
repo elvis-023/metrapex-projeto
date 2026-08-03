@@ -32,11 +32,11 @@ export function KanbanColumn({
       onDragLeave={onDragLeave}
       onDrop={(event) => onDrop(event, stage.status)}
       className={cn(
-        "bg-muted/40 flex w-72 shrink-0 flex-col gap-3 rounded-lg border border-transparent p-2.5 transition-colors",
+        "bg-muted/40 flex max-h-[calc(100vh-16rem)] w-72 shrink-0 flex-col gap-3 rounded-lg border border-transparent p-2.5 transition-colors",
         isDropTarget && "border-primary/40 bg-primary/5",
       )}
     >
-      <div className="flex items-center justify-between px-1">
+      <div className="flex shrink-0 items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <span className={cn("size-2 shrink-0 rounded-full", stageAccentClass[stage.status])} />
           <span className="text-sm font-medium">{stage.label}</span>
@@ -44,7 +44,7 @@ export function KanbanColumn({
         <Badge variant="outline">{quotes.length}</Badge>
       </div>
 
-      <div className="flex min-h-24 flex-col gap-2">
+      <div className="flex min-h-24 flex-col gap-2 overflow-y-auto">
         {quotes.length === 0 ? (
           <EmptyState title="Sem orçamentos" className="border-none px-2 py-8 text-xs" />
         ) : (
