@@ -15,11 +15,28 @@ import { pipelineStages, resolveAssignee, type Salesperson } from "@/lib/pipelin
 import { usePipelineQuotes } from "@/lib/pipeline/pipeline-context";
 import { moveQuoteStageAction } from "@/lib/pipeline/actions";
 
+/**
+ * `quote.createdAt` é timestamptz; o filtro de período compara por dia
+ * civil local (não UTC), então converte pra `yyyy-mm-dd` antes de comparar
+ * com os inputs `<input type="date">`, que já entregam a string nesse
+ * formato — comparação lexicográfica funciona porque o formato é
+ * zero-padded.
+ */
+function toLocalDateKey(iso: string): string {
+  const date = new Date(iso);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function KanbanBoard() {
   const { quotes, moveQuote } = usePipelineQuotes();
   const router = useRouter();
   const [, startMoving] = useTransition();
   const [assigneeId, setAssigneeId] = useState(ALL_SALESPEOPLE);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [dropTarget, setDropTarget] = useState<FakeQuoteStatus | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
@@ -44,10 +61,18 @@ export function KanbanBoard() {
     // orçamento ocupa uma etapa do funil; o histórico continua acessível
     // pela página de detalhe (`QuoteDetail`).
     const currentRevisions = quotes.filter((quote) => !quote.supersededByRevisionId);
-    return assigneeId === ALL_SALESPEOPLE
-      ? currentRevisions
-      : currentRevisions.filter((quote) => quote.assigneeId === assigneeId);
-  }, [quotes, assigneeId]);
+    const byAssignee =
+      assigneeId === ALL_SALESPEOPLE
+        ? currentRevisions
+        : currentRevisions.filter((quote) => quote.assigneeId === assigneeId);
+    if (!dateFrom && !dateTo) return byAssignee;
+    return byAssignee.filter((quote) => {
+      const createdDateKey = toLocalDateKey(quote.createdAt);
+      if (dateFrom && createdDateKey < dateFrom) return false;
+      if (dateTo && createdDateKey > dateTo) return false;
+      return true;
+    });
+  }, [quotes, assigneeId, dateFrom, dateTo]);
 
   function handleDragStart(event: DragEvent<HTMLAnchorElement>, quoteId: string) {
     event.dataTransfer.setData("text/plain", quoteId);
@@ -90,11 +115,15 @@ export function KanbanBoard() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <PipelineFilters
           salespeople={salespeople}
           assigneeId={assigneeId}
           onAssigneeChange={setAssigneeId}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          onDateFromChange={setDateFrom}
+          onDateToChange={setDateTo}
         />
         <Button
           size="sm"
