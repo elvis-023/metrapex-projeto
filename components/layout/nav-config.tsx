@@ -1,6 +1,7 @@
 import {
   BarChart3,
   FilePlus2,
+  FileText,
   Kanban,
   LayoutDashboard,
   Package,
@@ -17,6 +18,7 @@ export type NavItem = {
 export const navItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Criar Orçamento", href: "/quotes/new", icon: FilePlus2 },
+  { title: "Orçamentos", href: "/quotes", icon: FileText },
   { title: "Pipeline", href: "/pipeline", icon: Kanban },
   { title: "Catálogo", href: "/catalog", icon: Package },
   { title: "Clientes", href: "/customers", icon: Users },
