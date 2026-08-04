@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2Icon, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { upsertCustomerAction } from "@/lib/customers/actions";
 import { cn } from "@/lib/utils";
+import { isValidCnpj } from "@/lib/public-form/cpf-cnpj";
+import { lookupCnpj } from "@/lib/public-form/lookup";
+import { formatDocument, onlyDigits } from "@/lib/public-form/mock-data";
+import type { LookupStatus } from "@/lib/public-form/types";
 import type { Customer } from "@/lib/customers/types";
+
+/** Espera o vendedor parar de digitar — mesmo desenho de components/public-form/step-document.tsx e components/quotes/customer-picker.tsx. */
+const LOOKUP_DEBOUNCE_MS = 500;
 
 type CustomerFormValues = {
   name: string;
@@ -46,10 +54,64 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
   const [values, setValues] = useState<CustomerFormValues>(() => toFormValues(customer));
   const [errors, setErrors] = useState<Partial<Record<"name" | "document", string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [documentLookupStatus, setDocumentLookupStatus] = useState<LookupStatus>("idle");
   const isEditing = Boolean(customer);
 
   function setField<K extends keyof CustomerFormValues>(field: K, value: CustomerFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
+  }
+
+  /**
+   * Mesma lógica de identificação por CNPJ do formulário público
+   * (lib/public-form/lookup.ts) e do CustomerPicker do construtor de
+   * orçamento — só a parte de dados do cliente (razão social + endereço),
+   * sem seleção de produto, que não existe nesta tela. A dedupe por
+   * documento (Milestone 17) continua inteiramente no servidor
+   * (upsert_customer, lib/customers/actions.ts) — esta consulta só
+   * preenche o formulário, nunca decide se o cliente já existe.
+   */
+  const requestedDocumentRef = useRef<string | null>(null);
+
+  const runDocumentLookup = useCallback(async (digits: string) => {
+    requestedDocumentRef.current = digits;
+    setDocumentLookupStatus("loading");
+    try {
+      const result = await lookupCnpj(digits);
+      if (requestedDocumentRef.current !== digits) return;
+      setValues((current) => ({
+        ...current,
+        name: result.legalName,
+        zip: result.address.zip,
+        street: result.address.street,
+        number: result.address.number,
+        complement: result.address.complement,
+        neighborhood: result.address.neighborhood,
+        city: result.address.city,
+        state: result.address.state,
+      }));
+      setDocumentLookupStatus("done");
+    } catch {
+      if (requestedDocumentRef.current !== digits) return;
+      requestedDocumentRef.current = null;
+      setDocumentLookupStatus("error");
+    }
+  }, []);
+
+  // Só dispara ao CADASTRAR — em edição o cliente já tem dados reais
+  // salvos, e reeditar o documento não deve sobrescrever nome/endereço já
+  // ajustados manualmente pelo vendedor.
+  useEffect(() => {
+    if (isEditing) return;
+    if (!isValidCnpj(values.document)) return;
+    if (requestedDocumentRef.current === values.document) return;
+
+    const digits = values.document;
+    const timer = setTimeout(() => runDocumentLookup(digits), LOOKUP_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [isEditing, values.document, runDocumentLookup]);
+
+  function handleDocumentChange(rawValue: string) {
+    setField("document", onlyDigits(rawValue).slice(0, 14));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -113,12 +175,42 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
             </label>
             <Input
               id="document"
-              value={values.document}
-              onChange={(event) => setField("document", event.target.value)}
+              inputMode="numeric"
+              value={formatDocument(values.document)}
+              onChange={(event) => handleDocumentChange(event.target.value)}
               aria-invalid={Boolean(errors.document)}
               className={cn("tabular-nums", errors.document && "border-destructive")}
             />
             {errors.document ? <p className="text-destructive text-sm">{errors.document}</p> : null}
+            {!isEditing ? (
+              <div aria-live="polite">
+                {documentLookupStatus === "loading" ? (
+                  <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                    <Loader2Icon className="size-3 animate-spin" aria-hidden="true" />
+                    Consultando o CNPJ e preenchendo os dados…
+                  </p>
+                ) : null}
+                {documentLookupStatus === "done" ? (
+                  <p className="text-muted-foreground text-xs">
+                    Dados preenchidos automaticamente. Confira e ajuste se precisar.
+                  </p>
+                ) : null}
+                {documentLookupStatus === "error" ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-destructive text-sm">Não encontramos esse CNPJ.</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => runDocumentLookup(values.document)}
+                    >
+                      <SearchIcon />
+                      Tentar novamente
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>
