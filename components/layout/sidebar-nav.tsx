@@ -6,13 +6,26 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { navItems } from "@/components/layout/nav-config";
 
+/**
+ * "Criar Orçamento" (`/quotes/new`) e "Orçamentos" (`/quotes`) compartilham
+ * prefixo — sem escolher o item de href MAIS ESPECÍFICO que casa com a rota
+ * atual, os dois acenderiam como ativos ao mesmo tempo em `/quotes/new`.
+ */
+export function bestMatchHref(pathname: string): string | undefined {
+  return navItems
+    .map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
+}
+
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const activeHref = bestMatchHref(pathname);
 
   return (
     <nav className="flex flex-col gap-0.5 p-2">
       {navItems.map((item) => {
-        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const isActive = item.href === activeHref;
         const Icon = item.icon;
         return (
           <Link
