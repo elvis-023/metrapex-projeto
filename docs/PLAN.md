@@ -56,6 +56,34 @@ contagem de dígitos, disparar a detecção, nunca bloquear o avanço em caso de
 falha/timeout) é o **Bloco 8**, ainda não implementado — sem ele, a sugestão pré-marcada
 nunca é acionada na prática.
 
+### 2026-08-05 — Reversão de duas exclusões do V1 do motor de impostos: NCM obrigatório por categoria e ICMS-ST por UF
+
+Decidida fora da sequência original do plano, sem relação com o milestone corrente —
+pedido externo, mesmo padrão das duas entradas acima. Reverte duas exclusões
+deliberadas do V1 registradas no briefing original (`briefing-motor-impostos.md` §8):
+NCM deixa de ser opcional e passa a ser obrigatório por categoria (`product_categories.ncm`),
+e ICMS-ST volta a ser suportado no motor — não como cálculo automático de MVA (isso
+continua fora de escopo), mas como **configuração manual da alíquota por UF**, em
+tabela própria (`tax_state_rates`), sem alterar `resolveRate`/`tax_rates`. DIFAL
+continua fora de escopo, mesma linha do briefing original, agora com o motivo prático
+explícito (não é destacado no orçamento na prática, só na emissão fiscal).
+
+Diagnóstico prévio (schema de categoria/cliente, dado real de dev, reuso do client de
+BrasilAPI) e leitura de trade-off de schema (tabela nova vs. estender `tax_rates`)
+conferida pelo agent `consultor-briefing` antes de fechar. Decisões de arquitetura
+registradas em `.claude/skills/decisao-pendente/references/decisoes-registradas.md`,
+seção "ICMS-ST/NCM" — inclui a pendência ainda aberta de versionamento de
+`tax_state_rates.rate` (equivalente ao §11.2, não resolvida para a tabela nova) e a
+nota de reconciliação de schema entre o DDL provisório de `tax_state_rates` (Bloco 0)
+e o modelo conceitual completo (categoria/NCM × UF × contribuinte) descrito no
+briefing §8 — a decidir no Bloco 4.
+
+Bloco 0 (`feat/00-icms-st-docs`) entrega só a atualização do briefing e o registro das
+decisões de arquitetura — nenhum schema, endpoint ou tela foi tocado ainda. Afeta os
+blocos de implementação futuros do motor de impostos (schema real de `tax_state_rates`,
+cadastro de categoria com NCM, tela de configuração de ICMS-ST por UF), ainda sem
+numeração de milestone própria — a abrir quando a sequência de blocos for definida.
+
 ---
 
 ## Fase 0 — Setup
