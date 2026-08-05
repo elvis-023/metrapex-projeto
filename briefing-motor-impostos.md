@@ -20,10 +20,12 @@ Aqui, **cada tributo que a empresa usa é uma linha de configuração**, não um
 - **Modo de cálculo** — `inclusive` (o preço do catálogo já contém o imposto; extrai-se a base) ou `exclusive` (o imposto é somado ao preço).
 - **Origem da alíquota**, resolvida por hierarquia de especificidade:
   1. **Padrão da empresa** — alíquota única, vale para tudo que não tiver override.
-  2. **Categoria** — a empresa cria suas categorias e define alíquota por categoria. É o substituto genérico do NCM: mesma função (agrupar produtos com tributação igual), sem obrigar ninguém a classificar mercadoria pela TIPI.
+  2. **Categoria** — a empresa cria suas categorias e define alíquota por categoria; a categoria continua sendo o nível de agrupamento usado por `resolveRate`, sem virar um quarto nível de hierarquia. **NCM passa a ser obrigatório por categoria a partir desta mudança** (ver §3) — deixou de ser "substituto opcional do NCM, sem obrigar ninguém a classificar por TIPI". Motivo: a organização agora pode configurar **ICMS-ST por estado** (§8), e ICMS-ST é regido por convênio/protocolo entre estados que classifica a mercadoria **por NCM**, não por um agrupamento livre inventado pela empresa — sem o NCM real, não há como a organização (ou o contador dela) saber a qual regra de ST um produto está sujeito em cada UF. Decisão registrada em `decisoes-registradas.md`, seção "ICMS-ST/NCM".
   3. **Produto** — override mais específico, inclusive para isenção pontual (ex.: item já tributado por substituição tributária upstream).
 
 O nível mais específico vence. Um override existente com alíquota **0 é um override válido** e vence a categoria — isso não é um "vazio" que cai para o nível de cima.
+
+**ICMS-ST por UF é resolvido fora desta hierarquia.** É um mecanismo à parte, dependente de um dado transacional (UF do cliente do documento) que `resolveRate` nunca conhece — ver subseção própria em §3 e a linha correspondente em §8. `resolveRate`/`calcTax` continuam exatamente como descritos em §4/§5, sem nenhuma mudança de assinatura ou de comportamento.
 
 ### Não cumulativo (V1)
 
@@ -36,11 +38,16 @@ Cada tributo é calculado **isoladamente sobre a base do item**. Nunca sobre a b
 DDL em PostgreSQL. Tipos e nomes são portáveis; adapte `uuid`/`org_id` ao que o sistema hospedeiro já usa.
 
 ```sql
--- Categorias de produto da organização. Substituto genérico do NCM.
+-- Categorias de produto da organização. NCM obrigatório (reversão de exclusão
+-- original do V1 — ver §2 e decisão "ICMS-ST/NCM" em decisoes-registradas.md).
+-- A categoria continua sendo o nível de agrupamento de resolveRate; o NCM é
+-- metadado cadastral dela, não um campo do produto nem um nível novo de
+-- hierarquia de alíquota.
 create table product_categories (
   id          uuid primary key default gen_random_uuid(),
   org_id      uuid not null references organizations(id) on delete cascade,
   name        text not null,
+  ncm         text not null check (ncm ~ '^[0-9]{8}$'),
   created_at  timestamptz not null default now(),
   unique (org_id, name)
 );
@@ -95,6 +102,60 @@ create unique index tax_rates_uniq_product
   on tax_rates (tax_type_id, product_id)  where product_id is not null;
 ```
 
+### ICMS-ST por UF (configuração manual)
+
+**Reversão de exclusão original do V1** — ver §8. ICMS-ST **como cálculo** (MVA/IVA-ST,
+pauta fiscal, redução de base) continua fora de escopo; o que entra é a alíquota
+**manual por UF**, generalização do padrão já existente em §8 ("override manual de
+alíquota zero + nota") para múltiplas UFs simultaneamente.
+
+Este mecanismo é deliberadamente **uma tabela separada de `tax_rates`**, não uma
+coluna `uf` nela — `resolveRate` (§4) não conhece cliente nem UF por desenho, e nunca
+vai passar a conhecer. Misturar as duas dimensões de escopo na mesma tabela
+introduziria uma terceira dimensão sem que `resolveRate` tivesse assinatura para
+resolvê-la, e quebraria a garantia de unicidade hoje expressa nos índices de
+`tax_rates` — organização sem ICMS-ST carregaria uma coluna sempre nula, o "coluna
+morta" que o §2 quer evitar. Decisão registrada em `decisoes-registradas.md`, seção
+"ICMS-ST/NCM" (conferida pelo agent `consultor-briefing` antes de fechar).
+
+```sql
+-- Alíquota manual de ICMS-ST por UF. Exatamente um de category_id / product_id
+-- preenchido, igual a tax_rates — mas com uma dimensão extra (uf) porque a
+-- alíquota depende do estado do cliente do documento, não só do produto.
+-- Resolvida por um resolvedor próprio, à parte de resolveRate (§4).
+create table tax_state_rates (
+  id           uuid primary key default gen_random_uuid(),
+  tax_type_id  uuid not null references tax_types(id) on delete cascade,
+  category_id  uuid references product_categories(id) on delete cascade,
+  product_id   uuid references products(id) on delete cascade,
+  uf           text not null check (uf ~ '^[A-Z]{2}$'),
+  rate         numeric(7,4) not null
+               check (rate >= 0 and rate <= 100),
+  note         text,          -- ex.: 'ICMS-ST recolhido pelo fabricante em SP'
+  created_at   timestamptz not null default now(),
+  constraint tax_state_rates_exactly_one_scope
+    check ((category_id is null) <> (product_id is null))
+);
+
+-- Um override por escopo por tributo por UF.
+create unique index tax_state_rates_uniq_category
+  on tax_state_rates (tax_type_id, category_id, uf) where category_id is not null;
+create unique index tax_state_rates_uniq_product
+  on tax_state_rates (tax_type_id, product_id, uf)  where product_id is not null;
+```
+
+Resolução, em prosa (o pseudocódigo de `resolveRate` em §4 não muda): dado o tributo,
+o produto do item e a UF do destinatário do documento, procure em `tax_state_rates` a
+linha com este `tax_type_id`, esta `uf`, e `product_id` = produto do item; achou →
+use. Não achou, e o produto tem categoria → procure a linha com este `tax_type_id`,
+esta `uf`, e `category_id` = categoria do produto; achou → use. Não achou nenhuma das
+duas → o tributo não tem regra manual para esta UF; cai para o comportamento comum de
+`resolveRate` (produto > categoria > padrão da organização) como qualquer outro
+tributo. **Pendência em aberto:** de onde vem a UF do destinatário no documento de
+venda — o schema deste briefing não modela `quotes`/cliente — e como a
+alteração de `tax_state_rates.rate` é versionada (mesma pergunta do §11.2, ainda sem
+resposta própria para esta tabela — ver "ICMS-ST/NCM #3" em `decisoes-registradas.md`).
+
 ```sql
 -- Configuração da organização (ou colunas na tabela organizations existente).
 create table tax_settings (
@@ -123,7 +184,11 @@ create table quote_item_taxes (
 
   rate_applied   numeric(7,4) not null,
   rate_source    text not null
-                 check (rate_source in ('org_default', 'category', 'product')),
+                 check (rate_source in ('org_default', 'category', 'product', 'state_rule')),
+  -- 'state_rule' = veio de tax_state_rates (ICMS-ST por UF, ver §3 acima); nomeado
+  -- pelo mecanismo de resolução, não pelo tributo, para não amarrar o valor ao
+  -- ICMS-ST caso outro tributo precise do mesmo mecanismo no futuro.
+  resolved_uf    text,          -- preenchido só quando rate_source = 'state_rule'
   note           text,
 
   base_amount    numeric(18,6) not null,     -- base da linha (já × quantidade)
@@ -225,6 +290,8 @@ Passos, em prosa, para quem for portar para outra linguagem:
 3. Não achou → devolva `tax_types.default_rate` (`source = 'org_default'`).
 
 Produto sem categoria pula direto do passo 1 para o 3. Tributo inativo (`active = false`) nem entra no laço.
+
+**O `RateSource`/`rate_source` acima é escopo de `resolveRate`.** `quote_item_taxes.rate_source` (§3) é um superconjunto — ganha o quarto valor `'state_rule'`, produzido pelo resolvedor de ICMS-ST por UF (§3, "ICMS-ST por UF"), que roda ao lado de `resolveRate`, não dentro dele. `resolveRate` nunca retorna `'state_rule'`; quem copiar o `type RateSource`/a `interface ResolvedRate` acima para tipar a coluna do snapshot precisa estender com o quarto valor, não usar como está.
 
 ---
 
@@ -458,19 +525,71 @@ Dois pontos que a implementação precisa acertar aqui:
 1. O passo 1 de `resolveRate` encontra a linha de produto com `rate = 0` e **para**. Se o código tratar 0 como "sem valor" (`if (byProduct?.rate)`, `||`, coalescência frouxa), ele cai para a categoria e cobra 18% num item que não deve ser tributado. Teste isso explicitamente.
 2. A `note` do override sobe para `quote_item_taxes.note` e é impressa junto da linha do tributo. É ela que explica ao cliente por que o item aparece zerado — sem a nota, a linha de R$ 0,00 parece erro. A alternativa (esconder linhas com valor zero) é decisão de apresentação; se adotada, a nota precisa aparecer em outro lugar do documento.
 
+**Este exemplo continua válido e não é o mesmo mecanismo do ICMS-ST por UF (§3, §8).** É um override de produto **fixo, sem UF** — vale para qualquer estado, tipicamente porque o próprio produto nunca é tributado por ST (recolhido pelo fabricante, sempre). Quando a alíquota de ST *varia por estado de destino*, o override não serve — é o caso que `tax_state_rates` cobre. As duas rotas coexistem: `tax_rates` (aqui, produto/categoria, sem UF) para isenção/override fixo; `tax_state_rates` (§3) para alíquota que muda por UF.
+
 ---
 
 ## 8. Fora de escopo do V1
 
 | Item | Por que fica de fora |
 |---|---|
-| **ICMS-ST como cálculo** (MVA/IVA-ST, pauta fiscal, redução de base) | Exige base de MVA por NCM × UF de origem × UF de destino e fórmula própria (`base_ST = (valor + frete + IPI) × (1 + MVA)`), que não cabe em "alíquota única com hierarquia". No V1, ST se resolve como **override manual de alíquota zero + nota** — que é o que a maioria das revendas precisa no orçamento. |
-| **DIFAL em venda interestadual** | Depende da UF do destinatário, da condição de contribuinte dele e das alíquotas interestaduais; muda a estrutura do cálculo (partilha entre origem e destino), não só o número. |
+| **DIFAL em venda interestadual** | Depende da UF do destinatário, da condição de contribuinte dele e das alíquotas interestaduais; muda a estrutura do cálculo (partilha entre origem e destino), não só o número. **Motivo prático:** na maior parte dos orçamentos B2B, o DIFAL não é destacado no documento de venda no momento da proposta — é apurado depois, na emissão fiscal de fato (nota fiscal), não no orçamento. Diferente do ICMS-ST (abaixo), que volta a ser suportado nesta mudança, DIFAL continua fora porque não há demanda prática de destacá-lo já no orçamento, não porque seja tecnicamente mais difícil que ICMS-ST. |
 | **PIS/COFINS monofásico** | Regime por produto com alíquota concentrada no início da cadeia; modelar como tributo comum produz destaque incorreto. |
 | **Cumulatividade entre tributos** | Todo tributo do V1 calcula sobre a base do item. Base de um tributo composta pelo valor de outro fica para V2. |
 | **Cálculo do percentual da Lei da Transparência** | V1 imprime o texto configurado pela empresa; não estima o percentual. |
 
-O V1 cobre bem a **venda de produto padrão dentro do estado, sem regime especial** — que é a maior parte do volume de orçamento em revenda.
+O V1 cobre bem a **venda de produto padrão dentro do estado, sem regime especial** — que é a maior parte do volume de orçamento em revenda. ICMS-ST deixou de ser exclusão do V1 (ver seção abaixo); DIFAL, PIS/COFINS monofásico, cumulatividade e o cálculo do percentual da Lei da Transparência continuam fora.
+
+### ICMS-ST — configuração manual por UF (reversão de exclusão original)
+
+**ICMS-ST volta a ser suportado no V1** — não como cálculo automático (isso continua
+fora, ver abaixo), mas como **configuração manual por UF**. Decisão registrada em
+`decisoes-registradas.md`, seção "ICMS-ST/NCM"; schema provisório em §3, tabela
+`tax_state_rates`.
+
+O modelo conceitual é uma chave de três dimensões:
+
+- **Categoria/NCM** — qual mercadoria (a categoria carrega o NCM obrigatório, §2).
+- **UF** — o estado de destino, que determina se há convênio/protocolo de ST para
+  aquela mercadoria e qual a alíquota vigente.
+- **Contribuinte** — se o destinatário é ou não contribuinte de ICMS, porque isso muda
+  se a operação está sujeita a ST.
+
+**O sistema não calcula MVA sozinho.** A empresa (ou o contador dela) cadastra a
+alíquota final e o IVA/MVA vigente por UF — dado público, mas que muda por
+convênio/protocolo e por estado, e que o motor não deriva nem valida. O motor **só
+resolve**: dado o produto (via categoria/NCM), a UF do destinatário e a condição de
+contribuinte, encontra a linha configurada e aplica — mesma divisão de
+responsabilidade do §9 ("o sistema não decide, quem configura precisa trazer a
+resposta").
+
+**Nota de reconciliação de schema:** o DDL de `tax_state_rates` escrito em §3 (Bloco 0
+desta mudança) cobre `tax_type_id` + `category_id`/`product_id` + `uf` + `rate`, mas
+ainda **não** modela a dimensão `contribuinte` nem uma coluna separada para o
+IVA/MVA cadastrado (guarda só a alíquota final resolvida) — este parágrafo descreve o
+modelo conceitual completo; a chave e as colunas de §3 precisam ser revisadas para
+incluir `contribuinte` e o campo de IVA antes de fechar o Bloco 4 (ver fórmula
+abaixo), não estão fechadas ainda.
+
+### Fórmula de base de cálculo do ST — rascunho, a confirmar no Bloco 4
+
+Referência de mercado para quando (ou se) o produto decidir automatizar parte do
+cálculo de ST no futuro — **não é fórmula final, não está implementada, e não faz
+parte do escopo desta mudança** (que é só configuração manual da alíquota já pronta):
+
+```
+base_ST = (valor + frete + IPI) × (1 + MVA)
+```
+
+Onde `MVA` é a Margem de Valor Agregado (ou IVA-ST) cadastrada manualmente por
+UF/NCM — o mesmo dado que a empresa informa na seção acima, aqui mostrado no
+contexto da fórmula que ele alimentaria se o motor viesse a calcular a base de ST em
+vez de só aplicar a alíquota final. Pontos em aberto antes de qualquer implementação
+desta fórmula: se `frete`/`IPI` entram na base em todo caso ou só quando compõem a
+nota fiscal real; se a "redução de base" (§9) se aplica antes ou depois do `× (1 +
+MVA)`; e se o resultado de `base_ST` vira base de um `tax_type` próprio (`mode`
+`exclusive`) ou um campo adicional dentro do `tax_state_rates` existente. Nenhum
+desses pontos é resolvido por este briefing — ficam para quando o Bloco 4 for aberto.
 
 ---
 

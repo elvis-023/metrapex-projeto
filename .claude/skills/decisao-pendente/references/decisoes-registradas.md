@@ -235,3 +235,66 @@ Impacto: `lib/tax-engine/regime-detection.ts` (novo), `lib/integrations/brasil-a
 (`CNPJ_LOOKUP_TIMEOUT_MS`), `lib/tax-engine/actions.ts` (`detectTaxRegimeFromCnpjAction`
 vira wrapper fino), `lib/tax-engine/onboarding-templates.ts` (a função de mapeamento
 que vivia aqui foi removida — superada pela de `regime-detection.ts`).
+
+---
+
+## Decisões fora do §11 — reversão de exclusões do §8: NCM obrigatório por categoria e ICMS-ST por UF
+
+Estas não são das 8 perguntas do briefing — são decisões de arquitetura para a
+reversão de duas exclusões deliberadas do V1 (briefing §8): NCM vai virar obrigatório
+por categoria, e ICMS-ST (com configuração manual por UF) entra no motor. DIFAL
+continua fora de escopo. Diagnóstico prévio (schema de categoria/cliente sem NCM/UF
+validada, dado real de dev sem categoria cadastrada, client de BrasilAPI já genérico)
+e leitura técnica conferida pelo agent `consultor-briefing` antes desta decisão.
+
+### ICMS-ST/NCM #1 — ICMS-ST por UF vira tabela nova, `tax_types`/`tax_rates`/`resolveRate` intocados — decidido em 2026-08-05
+
+Decisão: ICMS-ST com alíquota manual por UF é resolvido por uma tabela nova, dedicada
+(chaveada por `tax_type_id` + `category_id`/`product_id` + `uf`), com um segundo
+resolvedor rodando ao lado de `resolveRate` quando o tributo for ICMS-ST, usando a UF
+do cliente do orçamento. `tax_types`, `tax_rates` e `resolveRate` (hierarquia produto
+> categoria > padrão da organização) permanecem sem alteração.
+Porquê: ICMS-ST-por-UF depende de um dado transacional (UF do cliente), não de
+classificação de produto — é uma regra de natureza diferente da hierarquia já auditada
+e testada (`revisor-invariantes`, `casos-teste-fiscais`). Estender `tax_rates` com uma
+coluna `uf` nullable (opção descartada) introduziria uma terceira dimensão de escopo
+sem que `resolveRate` tenha noção de UF na assinatura, quebraria a garantia de
+unicidade hoje expressa em `tax_rates_uniq_category`/`tax_rates_uniq_product`, e criaria
+coluna sempre nula para organização sem ST — exatamente o "coluna morta" que o §2 quer
+evitar. Confirmado pelo `consultor-briefing`: alinhado ao precedente do §8 (linha 467),
+que já resolve ST no V1 como "override manual de alíquota zero + nota" — esta decisão
+generaliza esse padrão para múltiplas UFs, sem tocar no mecanismo existente.
+Impacto: nova tabela e novo resolvedor em `lib/tax-engine/`, `calcItemTaxes` (ganha UF
+do cliente do orçamento como input novo, que hoje não existe em nenhum lugar do
+motor), schema de `briefing-motor-impostos.md` §3 (Bloco 0, próxima etapa).
+
+### ICMS-ST/NCM #2 — `rate_source` ganha `'state_rule'`; `quote_item_taxes.resolved_uf` registra a UF aplicada — decidido em 2026-08-05
+
+Decisão: `quote_item_taxes.rate_source` ganha um quarto valor no `check`,
+`'state_rule'` — nomeado pelo mecanismo de resolução (regra por estado), não pelo
+tributo, para não amarrar o nome ao ICMS-ST caso outro tributo precise do mesmo
+mecanismo no futuro. `quote_item_taxes` ganha uma coluna nova, `resolved_uf`
+(nullable), preenchida apenas quando `rate_source = 'state_rule'`, registrando qual UF
+foi usada na emissão.
+Porquê: apontado pelo `consultor-briefing` — sem isso, o snapshot de ICMS-ST fica sem
+lugar para registrar de onde veio a alíquota (o `check` de `rate_source` era fechado em
+três valores) e sem qual UF foi usada, quebrando o invariante "fotografia, não
+consulta" (§3) especificamente para esse tributo: reimprimir o documento não teria como
+provar qual UF foi considerada na emissão original.
+Impacto: DDL de `quote_item_taxes` (`briefing-motor-impostos.md` §3, Bloco 0), rotina de
+emissão/snapshot (ICMS-ST/NCM #1), qualquer tela/export que reimprima o motivo da
+alíquota aplicada.
+
+### ICMS-ST/NCM #3 — pendência de versionamento (§11.2) se duplica para a tabela nova de ICMS-ST/UF — sinalizado em 2026-08-05
+
+Decisão: nenhuma ainda — registrado como pendência explícita, não como resolução.
+A tabela nova de ICMS-ST/UF (ICMS-ST/NCM #1) herda a mesma pergunta em aberto do
+§11.2 (alterar alíquota sobrescreve a linha ou versiona com `valid_from`?) de forma
+independente de `tax_rates` — as duas tabelas podem divergir na resposta.
+Porquê: apontado pelo `consultor-briefing`; não há decisão registrada em
+`decisoes-registradas.md` sobre versionamento de alíquota por UF, e a recomendação do
+§11.2 (sobrescrita + log, migrar para `valid_from` se auditoria exigir) não foi
+confirmada como válida também para a tabela nova — precisa ser decidida
+explicitamente antes ou durante a implementação da tabela, não assumida por analogia.
+Impacto: schema da tabela nova de ICMS-ST/UF — a decidir antes de fechar o DDL no
+Bloco 0/planejamento de implementação.
