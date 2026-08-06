@@ -42,6 +42,7 @@ import type {
   TaxRateOverrideSetting,
   TaxTypeSetting,
 } from "@/lib/settings/types";
+import { updateOrganizationStateAction } from "@/lib/organizations/actions";
 import {
   applyRegimeTemplateAction,
   createTaxRateOverrideAction,
@@ -82,6 +83,7 @@ export function TaxSettingsManager({
   initialOverrides,
   initialDocumentFooter,
   initialShowTaxLines,
+  initialOrganizationState,
   categories,
   products,
 }: {
@@ -90,6 +92,8 @@ export function TaxSettingsManager({
   initialOverrides: TaxRateOverrideSetting[];
   initialDocumentFooter: string | null;
   initialShowTaxLines: boolean;
+  /** UF de origem da organização (Bloco 3b) — null = ainda não preenchida. */
+  initialOrganizationState: string | null;
   categories: ProductCategory[];
   products: Product[];
 }) {
@@ -99,6 +103,8 @@ export function TaxSettingsManager({
   const [documentFooter, setDocumentFooter] = useState(initialDocumentFooter ?? "");
   const [showTaxLines, setShowTaxLines] = useState(initialShowTaxLines);
   const [taxRegime, setTaxRegime] = useState(initialTaxRegime);
+  const [organizationState, setOrganizationState] = useState(initialOrganizationState ?? "");
+  const [isSavingOrganizationState, setIsSavingOrganizationState] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isChangingRegime, setIsChangingRegime] = useState(false);
   const [applyDialogOpen, setApplyDialogOpen] = useState(false);
@@ -334,6 +340,25 @@ export function TaxSettingsManager({
       );
     } finally {
       setIsSavingSettings(false);
+    }
+  }
+
+  /**
+   * UF de origem da organização (Bloco 3b) — organizações que não passaram
+   * pelo onboarding com esse campo completam aqui. Alimenta a resolução de
+   * ICMS-ST por UF (origem × destino, Bloco 4) — este bloco só garante que o
+   * dado existe e é editável, não decide como o Bloco 4 vai usá-lo.
+   */
+  async function handleSaveOrganizationState() {
+    setIsSavingOrganizationState(true);
+    try {
+      await updateOrganizationStateAction(organizationState.trim() || null);
+      toast.success("UF de origem salva.");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a UF.");
+    } finally {
+      setIsSavingOrganizationState(false);
     }
   }
 
@@ -981,6 +1006,41 @@ export function TaxSettingsManager({
               </TableBody>
             </Table>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>UF de origem</CardTitle>
+          <CardDescription>
+            Estado onde a organização emite os orçamentos — usado para resolver ICMS-ST por estado.
+            Preenchido automaticamente por quem passou pelo onboarding via CNPJ; quem não passou
+            completa aqui.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="organization-state" className="text-sm font-medium">
+              UF
+            </label>
+            <Input
+              id="organization-state"
+              value={organizationState}
+              maxLength={2}
+              onChange={(event) => setOrganizationState(event.target.value.toUpperCase())}
+              placeholder="Ex.: SP"
+              className="w-20 uppercase"
+            />
+          </div>
+          <div>
+            <Button
+              size="sm"
+              onClick={handleSaveOrganizationState}
+              disabled={isSavingOrganizationState}
+            >
+              Salvar
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

@@ -74,6 +74,7 @@ export function OnboardingWizard() {
     try {
       const { orgId, slug, publicFormKey } = await createOrganizationAction(
         state.organization.name,
+        state.organization.address.state,
       );
       await applyTaxTemplateAction(orgId, {
         templateId: templateIdForRegime(state.taxRegime.regime),

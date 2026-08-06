@@ -52,6 +52,7 @@ export default async function SettingsTaxesPage() {
       initialOverrides={overrides}
       initialDocumentFooter={config.documentFooter}
       initialShowTaxLines={config.showTaxLines}
+      initialOrganizationState={organization.state}
       categories={categories}
       products={products}
     />
