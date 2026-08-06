@@ -9,10 +9,10 @@ import type { Product, ProductCategory } from "@/lib/catalog/types";
  */
 
 export const fakeCategories: ProductCategory[] = [
-  { id: "cat_ferramentas", name: "Ferramentas" },
-  { id: "cat_material-eletrico", name: "Material elétrico" },
-  { id: "cat_hidraulica", name: "Hidráulica" },
-  { id: "cat_acabamento", name: "Acabamento" },
+  { id: "cat_ferramentas", name: "Ferramentas", ncm: "82055900" },
+  { id: "cat_material-eletrico", name: "Material elétrico", ncm: "85444900" },
+  { id: "cat_hidraulica", name: "Hidráulica", ncm: "73071900" },
+  { id: "cat_acabamento", name: "Acabamento", ncm: "69072100" },
 ];
 
 export const fakeProducts: Product[] = [

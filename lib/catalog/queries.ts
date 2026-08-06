@@ -45,7 +45,7 @@ export async function getCategories(): Promise<ProductCategory[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("product_categories")
-    .select("id, name")
+    .select("id, name, ncm")
     .eq("org_id", org.id)
     .order("name");
 

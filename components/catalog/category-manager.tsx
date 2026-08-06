@@ -30,13 +30,25 @@ import {
   deleteCategoryAction,
   updateCategoryAction,
 } from "@/lib/catalog/actions";
+import { onlyDigits } from "@/lib/public-form/mock-data";
 import { cn } from "@/lib/utils";
 
 export type CategoryWithCount = {
   id: string;
   name: string;
+  ncm: string;
   productCount: number;
 };
+
+/** Máscara de leitura do NCM (XXXX.XX.XX) — armazenado como 8 dígitos crus. */
+function formatNcm(digits: string): string {
+  return digits
+    .slice(0, 8)
+    .replace(/(\d{4})(\d)/, "$1.$2")
+    .replace(/(\d{4}\.\d{2})(\d)/, "$1.$2");
+}
+
+const NCM_PATTERN = /^\d{8}$/;
 
 export function CategoryManager({ initialCategories }: { initialCategories: CategoryWithCount[] }) {
   const router = useRouter();
@@ -45,49 +57,57 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     { mode: "create" } | { mode: "edit"; category: CategoryWithCount } | null
   >(null);
   const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [ncm, setNcm] = useState("");
+  const [errors, setErrors] = useState<{ name?: string; ncm?: string; form?: string }>({});
   const [isSaving, setIsSaving] = useState(false);
 
   function openCreate() {
     setDialogState({ mode: "create" });
     setName("");
-    setError(null);
+    setNcm("");
+    setErrors({});
   }
 
   function openEdit(category: CategoryWithCount) {
     setDialogState({ mode: "edit", category });
     setName(category.name);
-    setError(null);
+    setNcm(category.ncm);
+    setErrors({});
   }
 
   async function handleSave() {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      setError("Nome da categoria obrigatório.");
-      return;
-    }
+    const trimmedName = name.trim();
+    const trimmedNcm = ncm.trim();
+    const nextErrors: { name?: string; ncm?: string; form?: string } = {};
+    if (!trimmedName) nextErrors.name = "Nome da categoria obrigatório.";
+    if (!NCM_PATTERN.test(trimmedNcm)) nextErrors.ncm = "NCM deve ter 8 dígitos.";
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
     setIsSaving(true);
     try {
       if (dialogState?.mode === "edit") {
-        await updateCategoryAction(dialogState.category.id, trimmed);
+        await updateCategoryAction(dialogState.category.id, trimmedName, trimmedNcm);
         setCategories((current) =>
           current.map((category) =>
-            category.id === dialogState.category.id ? { ...category, name: trimmed } : category,
+            category.id === dialogState.category.id
+              ? { ...category, name: trimmedName, ncm: trimmedNcm }
+              : category,
           ),
         );
         toast.success("Categoria atualizada.");
       } else {
-        const created = await createCategoryAction(trimmed);
+        const created = await createCategoryAction(trimmedName, trimmedNcm);
         setCategories((current) => [...current, { ...created, productCount: 0 }]);
         toast.success("Categoria criada.");
       }
       setDialogState(null);
       router.refresh();
     } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : "Não foi possível salvar a categoria.",
-      );
+      setErrors({
+        form:
+          saveError instanceof Error ? saveError.message : "Não foi possível salvar a categoria.",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -134,7 +154,8 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
                 {dialogState?.mode === "edit" ? "Editar categoria" : "Nova categoria"}
               </DialogTitle>
               <DialogDescription>
-                Nome exibido no catálogo e no motor de impostos.
+                Nome exibido no catálogo e no motor de impostos. O NCM é obrigatório — usado para
+                classificar a mercadoria em regras de ICMS-ST por estado.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-1.5">
@@ -145,11 +166,27 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
                 id="category-name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                aria-invalid={Boolean(error)}
-                className={cn(error && "border-destructive")}
+                aria-invalid={Boolean(errors.name)}
+                className={cn(errors.name && "border-destructive")}
               />
-              {error ? <p className="text-destructive text-sm">{error}</p> : null}
+              {errors.name ? <p className="text-destructive text-sm">{errors.name}</p> : null}
             </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="category-ncm" className="text-sm font-medium">
+                NCM
+              </label>
+              <Input
+                id="category-ncm"
+                inputMode="numeric"
+                placeholder="0000.00.00"
+                value={formatNcm(ncm)}
+                onChange={(event) => setNcm(onlyDigits(event.target.value).slice(0, 8))}
+                aria-invalid={Boolean(errors.ncm)}
+                className={cn("tabular-nums", errors.ncm && "border-destructive")}
+              />
+              {errors.ncm ? <p className="text-destructive text-sm">{errors.ncm}</p> : null}
+            </div>
+            {errors.form ? <p className="text-destructive text-sm">{errors.form}</p> : null}
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogState(null)}>
                 Cancelar
@@ -172,6 +209,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              <TableHead>NCM</TableHead>
               <TableHead className="text-right">Produtos</TableHead>
               <TableHead className="w-20" />
             </TableRow>
@@ -180,6 +218,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
             {categories.map((category) => (
               <TableRow key={category.id}>
                 <TableCell className="font-medium">{category.name}</TableCell>
+                <TableCell className="tabular-nums">{formatNcm(category.ncm)}</TableCell>
                 <TableCell className="text-right tabular-nums">{category.productCount}</TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">

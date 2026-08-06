@@ -1,6 +1,8 @@
 export type ProductCategory = {
   id: string;
   name: string;
+  /** 8 dígitos, obrigatório (Bloco 1) — dado cadastral da categoria, não do produto. */
+  ncm: string;
 };
 
 /**
