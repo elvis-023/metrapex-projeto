@@ -97,16 +97,30 @@ export async function updateProductAction(id: string, input: ProductActionInput)
   revalidatePath(`/catalog/${id}`);
 }
 
-export async function createCategoryAction(name: string): Promise<{ id: string; name: string }> {
+const NCM_PATTERN = /^[0-9]{8}$/;
+
+function validateNcm(ncm: string): string {
+  const trimmed = ncm.trim();
+  if (!NCM_PATTERN.test(trimmed)) {
+    throw new Error("NCM deve ter 8 dígitos.");
+  }
+  return trimmed;
+}
+
+export async function createCategoryAction(
+  name: string,
+  ncm: string,
+): Promise<{ id: string; name: string; ncm: string }> {
   const org = await requireOrg();
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Nome da categoria obrigatório.");
+  const validatedNcm = validateNcm(ncm);
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("product_categories")
-    .insert({ org_id: org.id, name: trimmed })
-    .select("id, name")
+    .insert({ org_id: org.id, name: trimmed, ncm: validatedNcm })
+    .select("id, name, ncm")
     .single();
 
   if (error || !data) {
@@ -118,15 +132,16 @@ export async function createCategoryAction(name: string): Promise<{ id: string; 
   return data;
 }
 
-export async function updateCategoryAction(id: string, name: string): Promise<void> {
+export async function updateCategoryAction(id: string, name: string, ncm: string): Promise<void> {
   const org = await requireOrg();
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Nome da categoria obrigatório.");
+  const validatedNcm = validateNcm(ncm);
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("product_categories")
-    .update({ name: trimmed })
+    .update({ name: trimmed, ncm: validatedNcm })
     .eq("id", id)
     .eq("org_id", org.id);
 
@@ -170,6 +185,20 @@ export async function deleteCategoryAction(id: string): Promise<void> {
   if (taxRateCount && taxRateCount > 0) {
     throw new Error(
       "Esta categoria tem uma alíquota configurada em Impostos — remova o override antes de excluí-la.",
+    );
+  }
+
+  // Mesma razão do bloqueio de tax_rates acima: a FK de icms_st_state_rules
+  // também é on delete cascade — excluir a categoria sem avisar apagaria a
+  // configuração de ICMS-ST por UF em silêncio.
+  const { count: icmsStRuleCount } = await supabase
+    .from("icms_st_state_rules")
+    .select("id", { count: "exact", head: true })
+    .eq("category_id", id);
+
+  if (icmsStRuleCount && icmsStRuleCount > 0) {
+    throw new Error(
+      "Esta categoria tem regra de ICMS-ST cadastrada — remova as regras por UF antes de excluí-la.",
     );
   }
 
@@ -226,10 +255,13 @@ export type ImportCommitResult = { imported: number; failed: ProductImportRow[] 
 
 /**
  * Confirma a importação: reaproveita `upsert_product_by_external_code` (mesma
- * função do briefing §3 usada pelo CRUD manual) e cria categorias que a
- * planilha referencia por nome e ainda não existem na organização — a
- * planilha guarda o NOME da categoria, não o id (ver ProductImportRow), então
- * "categoria inexistente" nunca é erro bloqueante, apenas cria uma nova.
+ * função do briefing §3 usada pelo CRUD manual). A planilha guarda o NOME da
+ * categoria, não o id (ver ProductImportRow) — mas desde que NCM virou
+ * obrigatório por categoria (Bloco 1), categoria inexistente deixou de ser
+ * criável "on the fly" aqui: a planilha não carrega NCM, e não há valor
+ * seguro para inventar. Linha cuja categoria não existe na organização falha
+ * com mensagem explícita, orientando cadastrar a categoria (com NCM) em
+ * Categorias antes de importar.
  */
 export async function commitImportAction(rows: ProductImportRow[]): Promise<ImportCommitResult> {
   const org = await requireOrg();
@@ -263,17 +295,12 @@ export async function commitImportAction(rows: ProductImportRow[]): Promise<Impo
       const key = categoryName.toLowerCase();
       categoryId = categoryIdByName.get(key) ?? null;
       if (!categoryId) {
-        const { data: newCategory, error: categoryError } = await supabase
-          .from("product_categories")
-          .insert({ org_id: org.id, name: categoryName })
-          .select("id")
-          .single();
-        if (categoryError || !newCategory) {
-          failed.push({ ...row, status: "erro", error: "Não foi possível criar a categoria." });
-          continue;
-        }
-        categoryId = newCategory.id;
-        categoryIdByName.set(key, categoryId);
+        failed.push({
+          ...row,
+          status: "erro",
+          error: `Categoria "${categoryName}" não existe — cadastre-a (com NCM) em Categorias antes de importar.`,
+        });
+        continue;
       }
     }
 

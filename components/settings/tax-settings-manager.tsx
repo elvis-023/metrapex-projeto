@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
@@ -1041,6 +1042,21 @@ export function TaxSettingsManager({
               Salvar
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>ICMS-ST por estado</CardTitle>
+          <CardDescription>
+            Alíquota manual por categoria e UF de destino — configuração fora da hierarquia
+            padrão/categoria/produto acima, feita numa tela própria.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button size="sm" variant="outline" render={<Link href="/settings/taxes/icms-st" />}>
+            Configurar ICMS-ST por estado
+          </Button>
         </CardContent>
       </Card>
 

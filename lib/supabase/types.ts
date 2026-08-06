@@ -265,16 +265,20 @@ export type Database = {
           id: string;
           org_id: string;
           name: string;
+          /** Obrigatório desde 20260805000020_icms_st_schema.sql (Bloco 1). */
+          ncm: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           org_id: string;
           name: string;
+          ncm: string;
           created_at?: string;
         };
         Update: Partial<{
           name: string;
+          ncm: string;
         }>;
         Relationships: [
           {
@@ -282,6 +286,104 @@ export type Database = {
             columns: ["org_id"];
             isOneToOne: false;
             referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      /**
+       * ICMS-ST por UF (Bloco 1, 20260805000020_icms_st_schema.sql) —
+       * configuração manual, uma linha por (categoria, UF). iva_simples/
+       * iva_normal são referência/auditoria, não alimentam cálculo (briefing
+       * §8). cst_comercializacao/cst_consumo/codigo_beneficio/decreto_* são
+       * metadado puro.
+       */
+      icms_st_state_rules: {
+        Row: {
+          id: string;
+          org_id: string;
+          category_id: string;
+          uf: string;
+          icms_contribuinte_rate: number;
+          icms_nao_contribuinte_rate: number;
+          icms_reducao_base: number;
+          st_contribuinte_rate: number;
+          st_nao_contribuinte_rate: number;
+          iva_simples: number | null;
+          iva_normal: number | null;
+          fcp_comercializacao: number;
+          fcp_consumo: number;
+          fcp_st_comercializacao: number;
+          fcp_st_consumo: number;
+          cst_comercializacao: string | null;
+          cst_consumo: string | null;
+          codigo_beneficio: string | null;
+          decreto_contribuinte: string | null;
+          decreto_nao_contribuinte: string | null;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          category_id: string;
+          uf: string;
+          icms_contribuinte_rate: number;
+          icms_nao_contribuinte_rate: number;
+          icms_reducao_base?: number;
+          st_contribuinte_rate: number;
+          st_nao_contribuinte_rate: number;
+          iva_simples?: number | null;
+          iva_normal?: number | null;
+          fcp_comercializacao?: number;
+          fcp_consumo?: number;
+          fcp_st_comercializacao?: number;
+          fcp_st_consumo?: number;
+          cst_comercializacao?: string | null;
+          cst_consumo?: string | null;
+          codigo_beneficio?: string | null;
+          decreto_contribuinte?: string | null;
+          decreto_nao_contribuinte?: string | null;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        // category_id/uf de propósito fora do Update — mesma convenção de
+        // tax_rates: escopo é identidade, não campo editável. Trocar de UF é
+        // excluir e criar de novo, não editar em cima.
+        Update: Partial<{
+          icms_contribuinte_rate: number;
+          icms_nao_contribuinte_rate: number;
+          icms_reducao_base: number;
+          st_contribuinte_rate: number;
+          st_nao_contribuinte_rate: number;
+          iva_simples: number | null;
+          iva_normal: number | null;
+          fcp_comercializacao: number;
+          fcp_consumo: number;
+          fcp_st_comercializacao: number;
+          fcp_st_consumo: number;
+          cst_comercializacao: string | null;
+          cst_consumo: string | null;
+          codigo_beneficio: string | null;
+          decreto_contribuinte: string | null;
+          decreto_nao_contribuinte: string | null;
+          note: string | null;
+          updated_at: string;
+        }>;
+        Relationships: [
+          {
+            foreignKeyName: "icms_st_state_rules_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "icms_st_state_rules_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "product_categories";
             referencedColumns: ["id"];
           },
         ];
