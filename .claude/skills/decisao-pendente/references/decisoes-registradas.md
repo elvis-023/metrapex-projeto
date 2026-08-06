@@ -152,6 +152,14 @@ vira `true` no caso positivo.
 Impacto: `lib/integrations/brasil-api.ts` (tipo `BrasilApiCnpjResponse` e a função de
 detecção), `lib/tax-engine/onboarding-templates.ts` (mapeamento detecção → `TaxRegime`).
 
+**Atualização — caso positivo confirmado em 2026-08-06:** chamada real controlada
+(`GET /api/cnpj/v1/04855833000195`, CLINICA DR CARLOS ALBERTO CORREA NETTO, durante a
+revisão do Bloco 2 "customer-tax-classification") devolveu `opcao_pelo_simples: true`,
+`opcao_pelo_mei: false` — confirma que o campo positivo vem `true` (boolean puro), não
+uma variação inesperada. Suposição do parágrafo anterior ("tratar como razoável, mas não
+confirmada") vira confirmada; `classifyCnpjRegime`/mapeamento em
+`lib/customers/actions.ts` (`lookupCustomerCnpjAction`) não precisam de ajuste.
+
 ### Regime Tributário #6 — gatilho da detecção por contagem de dígitos, sem validação de DV — decidido em 2026-08-02
 
 Decisão: a detecção automática de regime só dispara quando `organization.document`
