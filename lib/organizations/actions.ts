@@ -41,14 +41,24 @@ export async function switchOrganizationAction(orgId: string) {
   revalidatePath("/", "layout");
 }
 
-/** Cria a organização do onboarding (Passo 1) e a torna a organização atual. */
+/**
+ * Cria a organização do onboarding (Passo 1) e a torna a organização atual.
+ *
+ * `state` é a UF de origem, extraída do endereço que o passo 1 já coleta
+ * (auto-preenchido via CNPJ/CEP) — até este bloco ela era descartada depois
+ * de preencher a tela, nunca persistida. O resto do endereço (rua, número,
+ * CEP etc.) continua sendo descartado; só a UF virou dado de verdade, porque
+ * é só o que o motor de ICMS-ST por UF (Bloco 1) precisa como origem.
+ */
 export async function createOrganizationAction(
   name: string,
+  state?: string | null,
 ): Promise<{ orgId: string; slug: string; publicFormKey: string }> {
   const supabase = await createClient();
   const { data: org, error } = await supabase.rpc("create_organization", {
     org_name: name,
     org_slug: slugify(name),
+    org_state: state?.trim() || null,
   });
 
   if (error || !org) {
@@ -131,4 +141,34 @@ export async function removeMemberAction(memberId: string) {
 
   if (error) throw new Error("A organização precisa de pelo menos um administrador.");
   revalidatePath("/settings/team");
+}
+
+const UF_PATTERN = /^[A-Z]{2}$/;
+
+/**
+ * Preenche/corrige a UF de origem para organizações que não passaram pelo
+ * onboarding com esse campo (Bloco 3b) — chamada de `/settings/taxes`, único
+ * lugar hoje onde dado cadastral de organização é editável fora do
+ * onboarding. Escrita restrita a admin só pela RLS de `organizations`
+ * (`organizations_update_admin`) — mesmo modelo de confiança de
+ * `updateOrganizationRegimeAction` (lib/tax-engine/actions.ts), sem checagem
+ * de papel duplicada aqui.
+ */
+export async function updateOrganizationStateAction(state: string | null): Promise<void> {
+  const org = await getCurrentOrganization();
+  if (!org) throw new Error("Não autenticado.");
+
+  const normalized = state?.trim().toUpperCase() || null;
+  if (normalized !== null && !UF_PATTERN.test(normalized)) {
+    throw new Error(`UF inválida: "${state}".`);
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({ state: normalized })
+    .eq("id", org.id);
+
+  if (error) throw new Error("Não foi possível gravar a UF da organização.");
+  revalidatePath("/settings/taxes");
 }

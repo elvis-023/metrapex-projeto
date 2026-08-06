@@ -164,6 +164,8 @@ export type Database = {
           public_form_key: string;
           /** Ver migration 20260801000017_tax_regime.sql. */
           tax_regime: TaxRegime | null;
+          /** UF de origem — ver migration 20260806000022_organization_state.sql. */
+          state: string | null;
           created_at: string;
         };
         Insert: {
@@ -173,6 +175,7 @@ export type Database = {
           plan?: OrgPlan;
           public_form_key?: string;
           tax_regime?: TaxRegime | null;
+          state?: string | null;
           created_at?: string;
         };
         Update: Partial<{
@@ -181,6 +184,7 @@ export type Database = {
           plan: OrgPlan;
           public_form_key: string;
           tax_regime: TaxRegime | null;
+          state: string | null;
         }>;
         Relationships: [];
       };
