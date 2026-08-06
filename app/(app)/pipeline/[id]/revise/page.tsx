@@ -55,6 +55,12 @@ export default async function ReviseQuotePage({ params }: { params: Promise<{ id
     email: "",
     phone: "",
     address: null,
+    // Reconstruído a partir do snapshot do orçamento, não de uma busca real
+    // em `customers` — sem dado de classificação/contribuinte/Simples aqui,
+    // só os defaults neutros do schema (Bloco 1).
+    taxClassification: "consumidor_final",
+    icmsContribuinte: false,
+    simplesNacionalOptante: null,
   };
 
   return (

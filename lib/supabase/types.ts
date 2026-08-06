@@ -925,6 +925,10 @@ export type Database = {
           email: string | null;
           phone: string | null;
           address: PublicCustomerAddressPayload | null;
+          state: string | null;
+          tax_classification: string;
+          icms_contribuinte: boolean;
+          simples_nacional_optante: boolean | null;
           created_at: string;
           updated_at: string;
         };
@@ -936,6 +940,10 @@ export type Database = {
           email?: string | null;
           phone?: string | null;
           address?: PublicCustomerAddressPayload | null;
+          state?: string | null;
+          tax_classification?: string;
+          icms_contribuinte?: boolean;
+          simples_nacional_optante?: boolean | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -945,6 +953,10 @@ export type Database = {
           email: string | null;
           phone: string | null;
           address: PublicCustomerAddressPayload | null;
+          state: string | null;
+          tax_classification: string;
+          icms_contribuinte: boolean;
+          simples_nacional_optante: boolean | null;
           updated_at: string;
         }>;
         Relationships: [

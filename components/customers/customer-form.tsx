@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 import { Loader2Icon, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { upsertCustomerAction } from "@/lib/customers/actions";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
+import { lookupCustomerCnpjAction, upsertCustomerAction } from "@/lib/customers/actions";
 import { cn } from "@/lib/utils";
 import { isValidCnpj } from "@/lib/public-form/cpf-cnpj";
-import { lookupCnpj } from "@/lib/public-form/lookup";
 import { formatDocument, onlyDigits } from "@/lib/public-form/mock-data";
 import type { LookupStatus } from "@/lib/public-form/types";
-import type { Customer } from "@/lib/customers/types";
+import type { Customer, CustomerTaxClassification } from "@/lib/customers/types";
 
 /** Espera o vendedor parar de digitar — mesmo desenho de components/public-form/step-document.tsx e components/quotes/customer-picker.tsx. */
 const LOOKUP_DEBOUNCE_MS = 500;
@@ -31,6 +33,10 @@ type CustomerFormValues = {
   neighborhood: string;
   city: string;
   state: string;
+  taxClassification: CustomerTaxClassification;
+  icmsContribuinte: boolean;
+  /** `null` = não detectado (ou CPF, ou detecção ainda não rodou) — nunca confundir com `false`. */
+  simplesNacionalOptante: boolean | null;
 };
 
 function toFormValues(customer?: Customer): CustomerFormValues {
@@ -46,6 +52,9 @@ function toFormValues(customer?: Customer): CustomerFormValues {
     neighborhood: customer?.address?.neighborhood ?? "",
     city: customer?.address?.city ?? "",
     state: customer?.address?.state ?? "",
+    taxClassification: customer?.taxClassification ?? "consumidor_final",
+    icmsContribuinte: customer?.icmsContribuinte ?? false,
+    simplesNacionalOptante: customer?.simplesNacionalOptante ?? null,
   };
 }
 
@@ -55,6 +64,14 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
   const [errors, setErrors] = useState<Partial<Record<"name" | "document", string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [documentLookupStatus, setDocumentLookupStatus] = useState<LookupStatus>("idle");
+  /**
+   * Só controla o badge "detectado automaticamente pelo CNPJ" nesta sessão
+   * de edição — não é persistido (item 2 da conversa: nenhum outro campo do
+   * sistema registra "foi detecção ou correção humana", este não precisa
+   * ser diferente). Some assim que o vendedor mexe manualmente no toggle ou
+   * o CNPJ muda de novo.
+   */
+  const [simplesJustDetected, setSimplesJustDetected] = useState(false);
   const isEditing = Boolean(customer);
 
   function setField<K extends keyof CustomerFormValues>(field: K, value: CustomerFormValues[K]) {
@@ -62,21 +79,26 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
   }
 
   /**
-   * Mesma lógica de identificação por CNPJ do formulário público
-   * (lib/public-form/lookup.ts) e do CustomerPicker do construtor de
-   * orçamento — só a parte de dados do cliente (razão social + endereço),
-   * sem seleção de produto, que não existe nesta tela. A dedupe por
-   * documento (Milestone 17) continua inteiramente no servidor
-   * (upsert_customer, lib/customers/actions.ts) — esta consulta só
-   * preenche o formulário, nunca decide se o cliente já existe.
+   * Identificação por CNPJ própria desta tela (autenticada) — diferente do
+   * formulário público e do CustomerPicker, que continuam usando a rota
+   * pública `/api/public-quote/lookup-cnpj` (contrato deliberadamente restrito
+   * a legalName+address para o visitante anônimo, decisão "Regime Tributário
+   * #4"). Aqui o vendedor já está logado, então lookupCustomerCnpjAction
+   * (lib/customers/actions.ts) chama a BrasilAPI direto — mesmo padrão da
+   * detecção de regime do onboarding — e já traz nome, endereço e opção pelo
+   * Simples Nacional numa única chamada. A dedupe por documento (Milestone
+   * 17) continua inteiramente no servidor (upsert_customer) — esta consulta
+   * só preenche o formulário, nunca decide se o cliente já existe nem grava
+   * nada sozinha.
    */
   const requestedDocumentRef = useRef<string | null>(null);
 
   const runDocumentLookup = useCallback(async (digits: string) => {
     requestedDocumentRef.current = digits;
     setDocumentLookupStatus("loading");
+    setSimplesJustDetected(false);
     try {
-      const result = await lookupCnpj(digits);
+      const result = await lookupCustomerCnpjAction(digits);
       if (requestedDocumentRef.current !== digits) return;
       setValues((current) => ({
         ...current,
@@ -88,7 +110,9 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
         neighborhood: result.address.neighborhood,
         city: result.address.city,
         state: result.address.state,
+        simplesNacionalOptante: result.simplesNacionalOptante,
       }));
+      setSimplesJustDetected(result.simplesNacionalOptante !== null);
       setDocumentLookupStatus("done");
     } catch {
       if (requestedDocumentRef.current !== digits) return;
@@ -139,6 +163,9 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
           city: values.city,
           state: values.state,
         },
+        taxClassification: values.taxClassification,
+        icmsContribuinte: values.icmsContribuinte,
+        simplesNacionalOptante: values.simplesNacionalOptante,
       });
       toast.success(isEditing ? "Cliente atualizado." : "Cliente cadastrado.");
       router.push(isEditing ? `/customers/${saved.id}` : "/customers");
@@ -156,19 +183,6 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
           <CardTitle>Identificação</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <label htmlFor="name" className="text-sm font-medium">
-              Nome / Razão social
-            </label>
-            <Input
-              id="name"
-              value={values.name}
-              onChange={(event) => setField("name", event.target.value)}
-              aria-invalid={Boolean(errors.name)}
-              className={cn(errors.name && "border-destructive")}
-            />
-            {errors.name ? <p className="text-destructive text-sm">{errors.name}</p> : null}
-          </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="document" className="text-sm font-medium">
               CPF/CNPJ
@@ -211,6 +225,82 @@ export function CustomerForm({ customer }: { customer?: Customer }) {
                 ) : null}
               </div>
             ) : null}
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <label htmlFor="name" className="text-sm font-medium">
+              Nome / Razão social
+            </label>
+            <Input
+              id="name"
+              value={values.name}
+              onChange={(event) => setField("name", event.target.value)}
+              aria-invalid={Boolean(errors.name)}
+              className={cn(errors.name && "border-destructive")}
+            />
+            {errors.name ? <p className="text-destructive text-sm">{errors.name}</p> : null}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium">Classificação fiscal</span>
+            <RadioGroup
+              value={values.taxClassification}
+              onValueChange={(value) =>
+                setField("taxClassification", value as CustomerTaxClassification)
+              }
+              className="flex flex-row gap-4"
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="consumidor_final" id="tax-classification-consumidor-final" />
+                <label htmlFor="tax-classification-consumidor-final" className="text-sm">
+                  Consumidor final
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="revenda" id="tax-classification-revenda" />
+                <label htmlFor="tax-classification-revenda" className="text-sm">
+                  Revenda
+                </label>
+              </div>
+            </RadioGroup>
+            <p className="text-muted-foreground text-xs">
+              Revenda: compra para revender, não para uso próprio.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="icms-contribuinte"
+                checked={values.icmsContribuinte}
+                onCheckedChange={(checked) => setField("icmsContribuinte", checked)}
+              />
+              <label htmlFor="icms-contribuinte" className="text-sm font-medium">
+                Contribuinte de ICMS
+              </label>
+            </div>
+            <p className="text-muted-foreground text-xs">Contribuinte: tem Inscrição Estadual.</p>
+          </div>
+
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="simples-nacional-optante"
+                checked={values.simplesNacionalOptante ?? false}
+                onCheckedChange={(checked) => {
+                  setSimplesJustDetected(false);
+                  setField("simplesNacionalOptante", checked);
+                }}
+              />
+              <label htmlFor="simples-nacional-optante" className="text-sm font-medium">
+                Optante do Simples Nacional
+              </label>
+              {simplesJustDetected ? (
+                <Badge variant="secondary">Detectado pelo CNPJ — confirme ou altere</Badge>
+              ) : null}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Preenchido automaticamente ao informar o CNPJ — confira e ajuste se precisar.
+            </p>
           </div>
         </CardContent>
       </Card>

@@ -14,6 +14,9 @@ function toCustomer(row: CustomerRow): Customer {
     email: row.email ?? "",
     phone: row.phone ?? "",
     address: row.address,
+    taxClassification: row.tax_classification as Customer["taxClassification"],
+    icmsContribuinte: row.icms_contribuinte,
+    simplesNacionalOptante: row.simples_nacional_optante,
   };
 }
 

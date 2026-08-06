@@ -7,6 +7,9 @@ export type CustomerSource = {
 
 export type CustomerAddress = PublicFormAddress;
 
+/** Consumidor final não revende; revenda compra para revender. */
+export type CustomerTaxClassification = "consumidor_final" | "revenda";
+
 /** Uma pessoa associada ao cliente — quem pediu o orçamento, quem compra, o financeiro. */
 export type CustomerContact = {
   id: string;
@@ -24,6 +27,10 @@ export type Customer = {
   email: string;
   phone: string;
   address: CustomerAddress | null;
+  taxClassification: CustomerTaxClassification;
+  icmsContribuinte: boolean;
+  /** `null` = detecção ainda não rodou (ou não se aplica, ex.: CPF) — nunca confundir com `false`. */
+  simplesNacionalOptante: boolean | null;
 };
 
 export type CustomerWithContacts = Customer & { contacts: CustomerContact[] };
